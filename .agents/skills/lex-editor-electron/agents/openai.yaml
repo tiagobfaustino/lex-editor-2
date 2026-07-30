@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lex Editor Electron"
+  short_description: "Electron seguro para o Lex Editor"
+  default_prompt: "Use $lex-editor-electron para implementar ou revisar esta tarefa Electron respeitando o ADR-007 e as specs ativas."
