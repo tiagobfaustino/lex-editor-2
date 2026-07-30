@@ -1,0 +1,21 @@
+# Dependências e builds
+node_modules/
+dist/
+out/
+coverage/
+
+# Ambiente e segredos
+.env
+.env.*
+!.env.example
+
+# Logs e artefatos locais
+*.log
+.playwright-mcp/
+ettings get org.cinnamon.settings-daemon.plugins.power sleep-inactive-ac-type
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
