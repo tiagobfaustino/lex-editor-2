@@ -1,0 +1,110 @@
+# Estado Atual do Repositório
+
+> Verificado em 2026-08-04, contra o working tree (branch `master`,
+> último commit `dbc1416`).
+
+## Situação em uma tabela
+
+| Dimensão | Estado |
+|---|---|
+| Documentação de arquitetura | Completa e aceita (9 ADRs + 5 especificações) |
+| Documentação de produto | Completa (PRD, roadmap e fluxos dos dois produtos) |
+| Specs de implementação | 8 features especificadas; 001 `in_progress`, 002–008 `draft` |
+| Código de aplicação | Shell Electron seguro, sem lógica jurídica |
+| Código de domínio | Módulo público vazio, apenas fronteira de compilação |
+| Testes | 14 unitários + 1 teste de fronteiras de lint; sem E2E |
+| CI | Não existe |
+| Empacotamento | Não configurado |
+| Git | Tudo commitado em `master` e sincronizado com `origin` |
+
+## Comandos e resultado verificado
+
+Executados nesta ordem em 2026-08-04:
+
+| Comando | Resultado |
+|---|---|
+| `npm run typecheck` | Passa (workspaces, node e renderer) |
+| `npm run test:unit` | Passa — 3 arquivos, 14 testes |
+| `npm run test:boundaries` | Passa |
+| `npm run lint` | Passa com `--max-warnings 0` |
+| `npm run format:check` | Passa |
+| `npm run check:pre-commit` | Passa |
+| `npm run test:e2e` | Não existe |
+
+`format:check` reprovava os cinco arquivos de `exemplos/` até 2026-08-04, o que
+travava o hook de pre-commit e manteve todo o código fora do Git. Era falha de
+configuração, não de código: são textos legais de referência que não devem ser
+reformatados. `exemplos/` entrou no `.prettierignore`, ao lado de `docs/` e
+`spec/`, que já estavam lá pelo mesmo motivo.
+
+## O que existe no disco
+
+```text
+docs/
+  architecture/    9 ADRs + BLOCK_ID_SPEC, MARKDOWN_SPEC, DATA_MODEL,
+                   SYSTEM_ARCHITECTURE, UPDATE_PIPELINE
+  lex-editor/      PRD, ROADMAP, USER_FLOWS da ferramenta editorial
+  vinculex/        PRD, ROADMAP, USER_FLOWS do SaaS
+  contexto/        este registro
+spec/
+  README, DEVELOPMENT_RULES, TEST_STRATEGY, FEATURE_INDEX, templates/
+  lex-editor/      001 a 008, cada uma com spec.md, plan.md e tasks.md
+packages/
+  legal-domain/    pacote puro; src/index.ts ainda vazio por decisão
+src/
+  main/            ciclo Electron, janela, segurança, IPC
+  preload/         ponte contextBridge, empacotada como CJS
+  renderer/        shell React + tokens CSS
+  shared/ipc/      contratos zod compartilhados pelos dois lados da ponte
+tests/
+  main/            3 suítes de fronteira
+  config/          verificação executável das regras de import do ESLint
+exemplos/          CF/88, CP, Lei 14.133, Lei Maria da Penha e LINDB em Markdown
+prompts/           prompt mestre usado para gerar a documentação inicial
+scripts/           configuração do caminho de hooks do Git
+.agents/skills/    skills consultadas pelos agentes, incl. lex-editor-electron
+out/               build de desenvolvimento gerado por electron-vite
+```
+
+## Feature 001 — progresso real
+
+Concluídas e validadas:
+
+- **T001-01** workspace npm com `workspaces: ["packages/*"]`, scripts canônicos
+  e `tsconfig.base.json` estrito (`noUncheckedIndexedAccess`,
+  `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, entre outros);
+- **T001-02** `packages/legal-domain` isolado, com `exports` declarado e matriz
+  de dependências entre camadas registrada no `plan.md`;
+- **T001-03** ESLint flat config aplicando as fronteiras, Prettier como única
+  autoridade de formatação e hook `pre-commit` via `core.hooksPath`;
+- **T001-04** `BrowserWindow` endurecida e API `lexDesktop` v1 exposta por
+  `contextBridge` com uma única capacidade;
+- **T001-05** `executeValidatedIpcHandler` centralizando origem, frame, schema
+  e limite de tamanho em ambos os sentidos;
+- **T001-06** shell React com as três áreas previstas na Fase 0 do roadmap e
+  tokens semânticos para estado jurídico e severidade;
+- **T001-07** Vitest configurado e três suítes negativas de fronteira.
+
+Pendentes:
+
+- **T001-08** Playwright Electron com smoke test — a dependência sequer está
+  instalada;
+- **T001-09** build empacotado, fuses/integridade ASAR e CI — não há
+  `.github/workflows/` nem `electron-builder`;
+- **T001-10** execução de todos os comandos, inspeção do bundle e demonstração
+  dos critérios de aceite.
+
+Nenhum dos cinco critérios de aceite da Feature 001 está marcado. A feature
+**não** pode passar a `done` no estado atual, e a Feature 002 não pode ser
+ativada antes disso.
+
+## O que deliberadamente não existe
+
+Estes vazios são decisão registrada, não esquecimento:
+
+- parser, NormaAST, Block IDs e Formatter — Features 002 a 004;
+- download por URL e leitura arbitrária de arquivo — Feature 005;
+- Git, Supabase, autenticação editorial e publicação — Feature 007;
+- worker de atualização legislativa — Feature 008;
+- acabamento visual definitivo — a paleta atual é baseline substituível,
+  porque os valores oficiais de marca do Vinculex não estão no repositório.
