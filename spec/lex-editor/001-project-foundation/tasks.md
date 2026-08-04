@@ -19,7 +19,7 @@
 ## Qualidade
 
 - [x] T001-07 Configurar Vitest e testes negativos da fronteira IPC/janela.
-- [ ] T001-08 Configurar Playwright Electron com smoke test.
+- [x] T001-08 Configurar Playwright Electron com smoke test.
 - [ ] T001-09 Configurar build empacotado, fuses/integridade aplicáveis e CI.
 - [ ] T001-10 Executar todos os comandos, inspecionar bundle e demonstrar os
   critérios de aceite.

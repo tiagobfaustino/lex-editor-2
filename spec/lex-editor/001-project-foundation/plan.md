@@ -100,6 +100,19 @@ camadas, quando os respectivos diretórios existirem.
   por `createRoot` e verificada em modo estrito. Manipulação manual do DOM foi
   usada apenas no placeholder inicial e foi substituída porque não oferece uma
   base adequada para as áreas e estados incrementais das próximas features.
+- `@playwright/test@1.62.1`: runner do smoke E2E pela API `_electron`, única
+  forma de exercitar main, preload, IPC e preferências efetivas da janela em um
+  processo Electron real. Um E2E sobre a página do Vite foi rejeitado porque não
+  carrega preload nem `webPreferences` e provaria apenas que o React renderiza.
+  Os navegadores do Playwright não são baixados: o Electron usa o próprio
+  Chromium.
+- O smoke lança o diretório do aplicativo, não `out/main/index.js`. Apontar para
+  o arquivo faz o Electron ignorar o `package.json` e `app.getVersion()` cair no
+  fallback da versão do runtime, divergindo do pacote real.
+- O smoke remove `ELECTRON_RUN_AS_NODE` do ambiente herdado. Terminais
+  embarcados em aplicativos Electron exportam essa variável, e herdá-la faz o
+  binário subir como Node puro, rejeitar as flags do Chromium e nunca abrir
+  janela.
 - O preload é empacotado como CommonJS (`.cjs`). Preloads associados a um
   renderer sandboxed não executam em contexto ESM, ainda que o pacote raiz use
   `"type": "module"`; manter o sandbox e gerar o formato compatível foi
