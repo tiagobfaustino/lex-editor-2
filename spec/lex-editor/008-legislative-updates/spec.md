@@ -40,6 +40,7 @@ publicar.
 - Feature 007.
 - `../../../docs/architecture/ADR-004-pipeline-publicacao.md`
 - `../../../docs/architecture/ADR-005-status-fields.md`
+- `../../../docs/architecture/ADR-009-fontes-compiladas-e-historicas.md`
 - `../../../docs/architecture/UPDATE_PIPELINE.md`
 - `../../../docs/architecture/DATA_MODEL.md`
 

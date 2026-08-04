@@ -7,8 +7,8 @@
   dos schemas e testes de fase.
 - [ ] T002-03 Implementar artigos, parágrafos, incisos, alíneas, itens e penas
   junto dos schemas e casos mínimos.
-- [ ] T002-04 Implementar anexos, tabelas, origem, evidência e históricos com
-  suas invariantes.
+- [ ] T002-04 Implementar anexos, tabelas, conjunto de fontes, evidência e
+  históricos com suas invariantes.
 
 ## Validação
 

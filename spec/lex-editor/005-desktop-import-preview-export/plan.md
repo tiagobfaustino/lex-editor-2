@@ -24,6 +24,8 @@ não envia conteúdo/path arbitrário.
 ## Decisões locais
 
 - Allowlist inicial de hosts oficiais do Planalto.
+- Uma URL inicial pode resolver páginas relacionadas, cada uma novamente
+  submetida aos controles de rede e preservada como snapshot próprio.
 - Revalidação de DNS e destino a cada redirect.
 - Renderização virtualizada para lei extensa.
 

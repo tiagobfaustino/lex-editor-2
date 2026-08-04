@@ -38,6 +38,7 @@ orquestrá-lo sem transferir rede, filesystem, HTML ou autoridade ao renderer.
 
 - Features 001 e 004.
 - `../../../docs/architecture/ADR-007-fronteira-segura-publicacao.md`
+- `../../../docs/architecture/ADR-009-fontes-compiladas-e-historicas.md`
 - `../../../docs/architecture/MARKDOWN_SPEC.md`
 - `../../../docs/lex-editor/USER_FLOWS.md`
 

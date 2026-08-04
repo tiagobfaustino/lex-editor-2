@@ -40,6 +40,7 @@ a fidelidade do produto.
 - Feature 003.
 - `../../../docs/architecture/ADR-001-block-ids-imutaveis.md`
 - `../../../docs/architecture/ADR-006-historico-redacoes-no-corpo.md`
+- `../../../docs/architecture/ADR-009-fontes-compiladas-e-historicas.md`
 - `../../../docs/architecture/BLOCK_ID_SPEC.md`
 - `../../../docs/architecture/MARKDOWN_SPEC.md`
 - `../../../docs/architecture/DATA_MODEL.md`
@@ -63,8 +64,11 @@ a fidelidade do produto.
 
 ### Lei complexa
 
-Dada a fixture do Código Penal, quando processada, então todos os artigos e a
-amostra acordada de subordinados correspondem à fonte oficial.
+Dado o snapshot do [Código Penal compilado](https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm),
+quando processado, então todos os artigos e a amostra acordada de subordinados
+correspondem à fonte oficial. O arquivo
+`../../../exemplos/Decreto-Lei n° 2.848 (CP).md` serve apenas como referência
+editorial comparativa.
 
 ### Atualização
 

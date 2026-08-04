@@ -18,14 +18,17 @@ reconciliador de identidade.
 
 ## Contratos e fluxo
 
-HTML limpo e sinais do snapshot alimentam candidatos com `sourceRef`; regras
-constroem `ParsedNormaAST`; reconciliação compara base publicada e candidata;
+HTMLs compilado/anotado, projeções limpas e sinais dos snapshots alimentam
+candidatos com `sourceRef` e `supportingSourceRefs`; regras constroem
+`ParsedNormaAST`; reconciliação compara base publicada e candidata;
 IDs/redirects produzem AST identificada; Formatter e projeção consomem a mesma
 AST.
 
 ## Decisões locais
 
 - Uma fixture mínima por ramificação precede a lei completa.
+- Texto vigente vem de `primary_current`; história de
+  `historical_auxiliary` nunca o sobrescreve silenciosamente.
 - Match de identidade retorna confiança/evidência; não apenas booleano.
 - Projeção Postgres é testada como adaptador puro antes de banco real.
 

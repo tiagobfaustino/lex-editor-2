@@ -17,8 +17,8 @@ e devolve contrato validado; a CLI apenas orquestra e faz escrita atômica.
 ## Contratos e fluxo
 
 ```text
-arquivo → SourceSnapshot → ParsedNormaAST → IdentifiedNormaAST
-        → validation report → Markdown bytes
+arquivo(s) → SourceSnapshot[] → ParsedNormaAST → IdentifiedNormaAST
+            → validation report → Markdown bytes
 ```
 
 O arquivo final é escrito em temporário no mesmo diretório e renomeado somente
@@ -47,7 +47,7 @@ depois que todas as etapas passam.
 ## Ordem
 
 1. Selecionar e documentar fixture.
-2. Snapshot.
+2. Conjunto de snapshots, com exatamente uma fonte primária.
 3. Parser mínimo.
 4. IDs.
 5. Formatter.

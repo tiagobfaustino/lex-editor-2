@@ -23,7 +23,9 @@ persistidos; schemas isolados dos tipos tendem a divergir.
 - Enums e uniões discriminadas descritos em `DATA_MODEL.md`.
 - Schemas runtime e tipos inferidos na mesma unidade.
 - Fases `parsed` e `identified`.
-- `SourceReference`, `ParseEvidence`, históricos e tabelas.
+- `SourceReference`, referências complementares, `ParseEvidence`, históricos
+  e tabelas.
+- Funções e variantes do conjunto de fontes definido na ADR-009.
 - Validação de IDs internos, ordem, árvore, texto obrigatório e fase de AST.
 - Serialização JSON determinística no nível semântico.
 
@@ -40,6 +42,7 @@ persistidos; schemas isolados dos tipos tendem a divergir.
 - `../../../docs/architecture/ADR-002-norma-ast.md`
 - `../../../docs/architecture/ADR-005-status-fields.md`
 - `../../../docs/architecture/ADR-006-historico-redacoes-no-corpo.md`
+- `../../../docs/architecture/ADR-009-fontes-compiladas-e-historicas.md`
 - `../../../docs/architecture/DATA_MODEL.md`
 
 ## Requisitos
@@ -49,7 +52,8 @@ persistidos; schemas isolados dos tipos tendem a divergir.
   dispositivo referenciável.
 - RF-002-03: dispositivo revogado exige decisão
   `preservarTextoRevogado`.
-- RF-002-04: `sourceRef` e `parseEvidence` são obrigatórios em cada nó.
+- RF-002-04: `sourceRef` e `parseEvidence` são obrigatórios em cada nó;
+  `supportingSourceRefs` preserva evidências adicionais quando existirem.
 - RF-002-05: nenhum contrato usa campo genérico `status`.
 
 ## Invariantes

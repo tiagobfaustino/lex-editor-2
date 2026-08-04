@@ -2,7 +2,7 @@
 
 > Componentes: Worker de Atualização Legislativa + Lex Editor + Serviço de Publicação
 > Status: Especificação de arquitetura (MVP)
-> Última atualização: 2026-07-30
+> Última atualização: 2026-07-31
 
 ## Sumário
 
@@ -26,8 +26,8 @@ fonte oficial (Planalto, LexML) e refletir o novo texto no acervo — mas
 nunca de forma automática e silenciosa.
 
 Um worker de atualização legislativa roda de forma independente do Lex
-Editor e do SaaS. Ele periodicamente busca a fonte oficial de cada lei
-cadastrada, reaproveita a mesma cadeia snapshot → Defuddle → Parser →
+Editor e do SaaS. Ele periodicamente busca o conjunto de fontes oficiais de
+cada lei cadastrada, reaproveita a mesma cadeia snapshots → Defuddle → Parser →
 `ParsedNormaAST` usada na
 importação inicial, calcula um hash do conteúdo normalizado e compara com o
 hash da última versão publicada. Quando encontra divergência, o worker gera
@@ -77,7 +77,7 @@ sequenceDiagram
     participant SUPA as Supabase
 
     CRON->>WORKER: dispara job (lei X, verificação periódica)
-    WORKER->>FONTE: GET conteúdo atual da lei
+    WORKER->>FONTE: GET conjunto de fontes da lei
     alt fonte indisponível / timeout
         WORKER->>DB: registra falha de verificação (retry agendado)
     else fonte respondeu
@@ -164,14 +164,22 @@ verificações sem aprovação não acumule diffs incrementais incorretos.
 
 ### 3.3 Fontes monitoradas
 
-- Planalto (planalto.gov.br) — fonte primária para legislação federal.
-- LexML — fonte complementar, usada como referência cruzada e para leis
-  não disponíveis em formato estável no Planalto.
-- Cada lei cadastrada armazena a URL canônica de origem e, quando
-  aplicável, uma URL secundária de checagem cruzada. Divergência entre
-  fontes primária e secundária é sinalizada separadamente e não gera
-  atualização pendente automática — apenas um alerta para investigação
-  manual.
+A seleção e a precedência seguem
+`./ADR-009-fontes-compiladas-e-historicas.md`:
+
+- a página oficial compilada do Planalto é preferida como `primary_current`;
+- a página oficial anotada é registrada como `historical_auxiliary` quando
+  disponível;
+- se não houver compilada, a melhor página oficial disponível pode assumir a
+  função primária, com revisão obrigatória quando houver ambiguidade;
+- LexML é `cross_check` e também cobre normas sem representação estável no
+  Planalto.
+
+O worker preserva e compara separadamente URL final, data de captura e SHA-256
+de cada artefato. Alteração apenas na fonte histórica, no leiaute ou na
+evidência gera alerta técnico ou editorial específico. Divergência entre a
+fonte primária e uma auxiliar não cria atualização normativa silenciosa e
+sempre exige investigação humana.
 
 ## 4. Estrutura do diff
 

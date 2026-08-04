@@ -44,6 +44,8 @@ type PublicationStatus = 'draft' | 'review' | 'approved' | 'published' | 'archiv
 type DeviceStatus = 'active' | 'revoked' | 'vetoed' | 'included' | 'amended' | 'renumbered' | 'suspended' | 'unknown';
 type AstPhase = 'parsed' | 'identified';
 type ParseConfidence = 'high' | 'medium' | 'low';
+type SourceRole = 'primary_current' | 'historical_auxiliary' | 'cross_check';
+type SourceVariant = 'compiled' | 'annotated' | 'other';
 type ParseConfidenceReason =
   | 'exact_legal_designator'
   | 'known_source_markup'
@@ -69,12 +71,18 @@ interface NormaNodeBase {
   ordem: number;
   /** Localiza este nó no snapshot imutável da fonte e no texto limpo. */
   sourceRef: SourceReference;
+  /** Evidências complementares, sem substituir a referência principal. */
+  supportingSourceRefs?: SourceReference[];
   /** Explica a confiança da interpretação estrutural; não é só um score opaco. */
   parseEvidence: ParseEvidence;
 }
 
 interface SourceReference {
   sourceType: 'planalto_html' | 'lexml_xml' | 'markdown' | 'local_file';
+  /** Função deste artefato no conjunto de fontes definido na ADR-009. */
+  sourceRole: SourceRole;
+  /** Forma publicada da fonte; não determina sozinha a sua precedência. */
+  sourceVariant: SourceVariant;
   sourceUrl?: string;
   sourceArtifactSha256: string;
   cssSelector?: string;
@@ -152,7 +160,7 @@ interface LeiNode extends NormaNodeBase {
   numero: string;               // ex.: "2.848"
   ano: number;                  // ex.: 1940
   ramo: string;                 // ex.: "penal"
-  fonte: string;                // URL da fonte oficial
+  fonte: string;                // URL da fonte primary_current
   dataPublicacao: string;       // date YYYY-MM-DD
   dataAtualizacaoLegal: string; // date YYYY-MM-DD
   dataFormatacaoVinculex: string; // date YYYY-MM-DD
@@ -167,7 +175,7 @@ interface LeiNode extends NormaNodeBase {
   revogadaPor?: string | null;
   redacoesDadasPor?: ReferenciaRedacao[];
   idsDepreciados?: BlockIdDepreciado[];
-  fontesSecundarias?: string[];
+  fontesSecundarias?: string[]; // URLs historical_auxiliary/cross_check
   /**
    * Metadado interno usado no callout obrigatório de fonte oficial.
    * Não deve ser obtida do relógio durante a formatação.
@@ -195,7 +203,7 @@ interface BlockIdDepreciado {
 Os schemas de runtime são normativos, não apenas auxiliares:
 
 - `ParsedNormaASTSchema` exige `astPhase: 'parsed'`, proíbe `blockId` em
-  dispositivos e valida `sourceRef`/`parseEvidence`;
+  dispositivos e valida `sourceRef`/`supportingSourceRefs`/`parseEvidence`;
 - `IdentifiedNormaASTSchema` exige `astPhase: 'identified'` e `blockId` em
   artigo, parágrafo, inciso, alínea, item, pena, anexo e tabela;
 - ambos rejeitam nós desconhecidos, filhos incompatíveis, ciclos, ordens
@@ -346,9 +354,9 @@ Notas de modelagem:
 - `redacaoAtualDadaPor`, `redacoesAnteriores` e `renumeradoPara` vivem em
   `DispositivoNodeBase`, pois alterações e renumerações podem ocorrer abaixo
   do nível de artigo.
-- Todo `sourceRef` aponta para um snapshot identificado por SHA-256; seletores
-  e intervalos são evidência de localização, nunca a única garantia de
-  integridade.
+- Toda entrada de `sourceRef` ou `supportingSourceRefs` aponta para um snapshot
+  identificado por SHA-256; seletores e intervalos são evidência de
+  localização, nunca a única garantia de integridade.
 
 ---
 
@@ -417,9 +425,6 @@ CREATE TABLE versoes_lei (
     restaura_versao_id          uuid,
     git_commit_sha              text NOT NULL,             -- release commit no branch canônico
     conteudo_sha256             text NOT NULL,             -- manifesto canônico da publicação
-    source_type                 text NOT NULL,
-    source_artifact_sha256      text NOT NULL,
-    source_artifact_uri         text NOT NULL,             -- ponteiro imutável para HTML/XML/Markdown de entrada
     data_atualizacao_legal      date NOT NULL,              -- data do fato jurídico (nova redação etc.)
     data_formatacao_vinculex    date NOT NULL,
     total_artigos               integer NOT NULL CHECK (total_artigos >= 0),
@@ -436,8 +441,6 @@ CREATE TABLE versoes_lei (
     aprovado_por                uuid NOT NULL REFERENCES auth.users(id),
     publicado_em                timestamptz NOT NULL DEFAULT now(),
     created_at                  timestamptz NOT NULL DEFAULT now(),
-    CHECK (source_type IN ('planalto_html','lexml_xml','markdown','local_file')),
-    CHECK (source_artifact_sha256 ~ '^[0-9a-f]{64}$'),
     CHECK (conteudo_sha256 ~ '^[0-9a-f]{64}$'),
     CHECK (git_commit_sha ~ '^[0-9a-f]{40}([0-9a-f]{24})?$'),
     CHECK (versao_vinculex ~ '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'),
@@ -467,6 +470,30 @@ ALTER TABLE leis
         publication_status <> 'published'
         OR versao_publicada_id IS NOT NULL
     );
+
+-- Artefatos oficiais preservados separadamente para cada versão (ADR-009).
+CREATE TABLE artefatos_fonte (
+    id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    versao_lei_id     uuid NOT NULL REFERENCES versoes_lei(id) ON DELETE CASCADE,
+    source_type       text NOT NULL
+        CHECK (source_type IN ('planalto_html','lexml_xml','markdown','local_file')),
+    source_role       text NOT NULL
+        CHECK (source_role IN ('primary_current','historical_auxiliary','cross_check')),
+    source_variant    text NOT NULL
+        CHECK (source_variant IN ('compiled','annotated','other')),
+    source_url        text,
+    final_url         text,
+    artifact_sha256   text NOT NULL CHECK (artifact_sha256 ~ '^[0-9a-f]{64}$'),
+    artifact_uri      text NOT NULL,
+    captured_at       timestamptz NOT NULL,
+    created_at        timestamptz NOT NULL DEFAULT now(),
+
+    UNIQUE (versao_lei_id, source_role, artifact_sha256)
+);
+
+CREATE UNIQUE INDEX artefatos_fonte_uma_primaria_por_versao
+    ON artefatos_fonte (versao_lei_id)
+    WHERE source_role = 'primary_current';
 
 -- Registro histórico de Block IDs, preservando estabilidade entre versões
 CREATE TABLE block_ids (
@@ -529,6 +556,7 @@ CREATE TABLE dispositivos (
     redacoes_anteriores         jsonb NOT NULL DEFAULT '[]'::jsonb,
     renumerado_para_block_id    text,
     source_ref                  jsonb NOT NULL,
+    supporting_source_refs      jsonb NOT NULL DEFAULT '[]'::jsonb,
     parse_evidence              jsonb NOT NULL,
     created_at                  timestamptz NOT NULL DEFAULT now(),
 
@@ -554,6 +582,7 @@ CREATE TABLE dispositivos (
     ),
     CHECK (jsonb_typeof(redacoes_anteriores) = 'array'),
     CHECK (jsonb_typeof(source_ref) = 'object'),
+    CHECK (jsonb_typeof(supporting_source_refs) = 'array'),
     CHECK (jsonb_typeof(parse_evidence) = 'object'),
     CHECK (
         tipo <> 'tabela'
@@ -655,9 +684,10 @@ CREATE TABLE publicacoes (
 Uma publicação lógica é identificada por `idempotency_key` e por um manifesto
 imutável contendo, no mínimo: lei, versão SemVer alvo, tipo de publicação,
 commit-base esperado, hashes do Markdown, do `UPDATE.md`, da
-`IdentifiedNormaAST` e do snapshot de origem, além do editor que aprovou. O
-manifesto é persistido no diário local durável do Lex Editor antes do commit e
-espelhado em `publicacoes` assim que o Supabase estiver acessível.
+`IdentifiedNormaAST`, além de função, variante, URL e hash de todos os snapshots
+de origem e do editor que aprovou. O manifesto é persistido no diário local
+durável do Lex Editor antes do commit e espelhado em `publicacoes` assim que o
+Supabase estiver acessível.
 
 Regras normativas:
 
@@ -684,8 +714,9 @@ Regras normativas:
    local está em `committed_local`; candidato remoto está em `pushed`; nenhum
    dos dois está “publicado”.
 6. Somente o Serviço de Publicação lê o release commit pelo SHA, verifica
-   aprovação/manifesto e grava em uma única transação: `versoes_lei`, o
-   snapshot completo de `dispositivos`, novos
+   aprovação/manifesto e grava em uma única transação: `versoes_lei`, exatamente
+   uma fonte `primary_current`, os demais `artefatos_fonte`, o snapshot completo
+   de `dispositivos`, novos
    `block_ids`/redirecionamentos e, por último, o ponteiro
    `leis.versao_publicada_id` e, na publicação inicial,
    `publication_status = 'published'`. Atualização parcial apenas dos
@@ -732,8 +763,10 @@ Regras normativas:
    `redacoes_anteriores`; não é reconstruído por parsing do Markdown.
 6. `renumeradoPara` exige o redirecionamento correspondente em
    `block_id_redirects`.
-7. `sourceRef` e `parseEvidence` são persistidos sem remoção de campos. O
-   `sourceArtifactSha256` de cada nó deve coincidir com o snapshot da versão.
+7. `sourceRef`, `supportingSourceRefs` e `parseEvidence` são persistidos sem
+   remoção de campos. O `sourceArtifactSha256` de cada referência deve coincidir
+   com um registro de `artefatos_fonte` da versão, com função e variante
+   coerentes com a ADR-009.
 8. O teste de round-trip reconstrói a `IdentifiedNormaAST` a partir do banco e
    exige igualdade semântica com a árvore de entrada, ignorando apenas UUIDs
    internos gerados na persistência. Perda de texto, história, hierarquia,
@@ -755,6 +788,7 @@ Regras normativas:
 | `redacoesAnteriores` | `redacoes_anteriores` | JSON ordenado |
 | `renumeradoPara` | `renumerado_para_block_id` | Exige alias permanente |
 | `sourceRef` | `source_ref` | JSON preservado integralmente |
+| `supportingSourceRefs` | `supporting_source_refs` | Evidências complementares ordenadas |
 | `parseEvidence` | `parse_evidence` | JSON preservado integralmente |
 | `children` + `ordem` | `parent_id` + `ordem` | Materializa a árvore |
 | `TabelaNode.headers/rows` | `conteudo_estruturado` | JSON retangular |
@@ -767,6 +801,7 @@ Regras normativas:
 erDiagram
     LEIS ||--o{ VERSOES_LEI : possui
     LEIS ||--o| VERSOES_LEI : "versao_publicada_id"
+    VERSOES_LEI ||--|{ ARTEFATOS_FONTE : preserva
     VERSOES_LEI ||--o{ DISPOSITIVOS : contem
     VERSOES_LEI ||--o{ FAVORITOS : "snapshot ao favoritar"
     VERSOES_LEI ||--o{ NOTAS : "snapshot ao criar"
@@ -827,9 +862,15 @@ erDiagram
         uuid restaura_versao_id FK
         text git_commit_sha
         text conteudo_sha256
-        text source_artifact_sha256
-        text source_artifact_uri
         jsonb mudancas
+    }
+    ARTEFATOS_FONTE {
+        uuid id PK
+        uuid versao_lei_id FK
+        text source_role
+        text source_variant
+        text artifact_sha256
+        text artifact_uri
     }
     DISPOSITIVOS {
         uuid id PK
@@ -841,6 +882,7 @@ erDiagram
         text device_status
         jsonb redacoes_anteriores
         jsonb source_ref
+        jsonb supporting_source_refs
         jsonb parse_evidence
     }
     BLOCK_IDS {
@@ -1379,7 +1421,8 @@ CREATE TABLE auditoria_admin (
 |---|---|---|
 | `leis` | `anon`/`authenticated` recebem somente colunas públicas e linhas `published`, preferencialmente via `api.leis_publicadas` | Somente função privada chamada pela role do publicador |
 | `versoes_lei` | Somente projeção pública de changelog, sem fonte, aprovador, hashes internos ou URIs | Somente função privada do publicador |
-| `dispositivos` | Somente colunas de leitura da versão indicada por `leis.versao_publicada_id`; `source_ref`/`parse_evidence` não têm grant público | Somente função privada do publicador |
+| `artefatos_fonte` | Sem grant público; URLs, hashes e URIs integram a trilha interna de auditoria | Somente função privada do publicador |
+| `dispositivos` | Somente colunas de leitura da versão indicada por `leis.versao_publicada_id`; referências de fonte e `parse_evidence` não têm grant público | Somente função privada do publicador |
 | `block_ids` | Sem grant para clientes; leitura por serviços internos | Somente função privada do publicador |
 | `block_id_redirects` | Sem grant direto; acessada apenas pelo resolvedor oficial | Somente função privada do publicador |
 | `updates_legislativos` | Sem acesso direto pela Data API; editor usa endpoints/RPCs autenticados e o worker usa função restrita de inserção | Funções distintas para worker e decisão editorial; nunca escrita normativa |

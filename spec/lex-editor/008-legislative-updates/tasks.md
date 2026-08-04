@@ -2,10 +2,12 @@
 
 ## Detecção
 
-- [ ] T008-01 Implementar projeção normativa e hashes bruto/normativo.
+- [ ] T008-01 Implementar projeção normativa, conjunto de fontes e hashes
+  brutos por artefato/normativo.
 - [ ] T008-02 Implementar diff estrutural e fixtures antes/depois para
   inclusão, alteração, revogação e renumeração.
-- [ ] T008-03 Testar mudança cosmética, baixa confiança e identidade ambígua.
+- [ ] T008-03 Testar mudança cosmética ou apenas histórica, conflito entre
+  fontes, baixa confiança e identidade ambígua.
 
 ## Worker e fila
 

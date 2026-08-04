@@ -39,6 +39,7 @@ serialização sem depender de Electron, rede, Git ou banco.
 ## Dependências
 
 - Feature 002.
+- `../../../docs/architecture/ADR-009-fontes-compiladas-e-historicas.md`
 - `../../../docs/architecture/BLOCK_ID_SPEC.md`
 - `../../../docs/architecture/MARKDOWN_SPEC.md`
 - `../../../docs/architecture/DATA_MODEL.md`

@@ -18,8 +18,8 @@
 
 ## Fluxo de rede
 
-- [ ] T005-07 Implementar fetch Planalto com allowlist, DNS/redirect,
-  timeout, tamanho e tipo de conteúdo.
+- [ ] T005-07 Implementar resolução/fetch do conjunto Planalto com allowlist,
+  DNS/redirect, timeout, tamanho, tipo de conteúdo e snapshot por artefato.
 - [ ] T005-08 Integrar Defuddle no main e provar paridade URL/arquivo.
 
 ## Validação

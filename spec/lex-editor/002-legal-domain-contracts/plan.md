@@ -26,6 +26,8 @@ do validador subjacente.
 - Uniões discriminadas por `tipo`.
 - Helpers recursivos compartilhados, mas schemas `parsed` e `identified`
   públicos e distintos.
+- Origem separa a referência principal das evidências complementares e valida
+  função/variante do artefato.
 - IDs internos de runtime e Block IDs são validados separadamente.
 
 ## Erros e recuperação

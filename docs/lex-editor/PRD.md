@@ -294,14 +294,18 @@ está em `../architecture/DATA_MODEL.md`.
 ## 11. Parser
 
 O parser é responsável por transformar os artefatos de origem em
-`ParsedNormaAST`. No adaptador Planalto ele recebe simultaneamente o HTML bruto
-imutável e o Markdown limpo do Defuddle: o segundo facilita segmentação
-textual; o primeiro preserva marcação, seletores e tabelas que a limpeza pode
-eliminar.
+`ParsedNormaAST`. No adaptador Planalto ele recebe o conjunto de snapshots
+brutos e as projeções limpas do Defuddle. O texto oficial compilado é preferido
+para a redação vigente; a página anotada preserva evidência histórica. A
+precedência completa está na
+`../architecture/ADR-009-fontes-compiladas-e-historicas.md`.
 
 **Fontes suportadas:**
 
-- **Planalto (HTML)**: fonte primária para a maior parte da legislação federal (CF/88, CP, CPP, ECA, CTB, Lei 14.133 e correlatas). Passa por Defuddle antes do parser jurídico.
+- **Planalto (HTML)**: fonte primária para a maior parte da legislação federal
+  (CF/88, CP, CPP, ECA, CTB, Lei 14.133 e correlatas). Quando disponíveis, a
+  página compilada fornece o texto vigente e a página anotada fornece o
+  histórico; cada uma mantém snapshot e proveniência próprios.
 - **LexML**: fonte posterior ao MVP inicial, usada como parser adicional e
   checagem cruzada depois que o Planalto estiver validado de ponta a ponta.
 - **Markdown**: entrada direta de Markdown já semi-estruturado (ex.: reimportação de conteúdo já processado, ou fontes que fornecem Markdown nativamente).
@@ -313,7 +317,10 @@ eliminar.
 
 **Tratamento de casos especiais:**
 
-- **Dispositivo revogado**: o parser reconhece marcadores textuais típicos da fonte oficial (ex.: "(Revogado pela Lei nº ...)", "(Revogado)") e marca o nó correspondente com `deviceStatus: 'revoked'`, preservando o texto histórico e a referência à norma revogadora extraída do próprio marcador.
+- **Dispositivo revogado**: o parser reconhece marcadores textuais típicos da
+  fonte oficial e marca o nó correspondente com `deviceStatus: 'revoked'`,
+  preservando o texto histórico e a referência à norma revogadora. Ausência na
+  página compilada, sem evidência oficial complementar, não prova revogação.
 - **Dispositivo vetado**: reconhecido por marcadores como "(VETADO)" ou notas de rodapé oficiais de veto; o nó é marcado com `deviceStatus: 'vetoed'` e, quando disponível na fonte, a mensagem de veto é preservada como metadado.
 - **Redação dada por lei posterior**: quando a fonte indica "(Redação dada pela Lei nº ...)", o parser preserva essa informação como metadado do nó (histórico de redação), sem afetar o Block ID do dispositivo — o ID identifica a posição jurídica, não a redação vigente.
 - **Ambiguidade estrutural**: o nó recebe `parseEvidence.confidence = 'low'`,
@@ -333,7 +340,10 @@ NormaAST permanece desacoplado desses formatos.
 
 - **Páginas dinâmicas (JavaScript-rendered)**: o Defuddle opera sobre o HTML estático recebido; páginas que renderizam o conteúdo da lei via JavaScript no client-side podem retornar Markdown vazio ou incompleto. Nesses casos, a importação por URL falha e o Lex Editor deve orientar o editor a usar importação por arquivo local (salvando o HTML já renderizado do navegador).
 - **HTML malformado ou com tabelas complexas**: leis com tabelas (ex.: tabelas de infrações do CTB, tabelas de valores da Lei 14.133) podem ser extraídas de forma imprecisa; o resultado precisa ser conferido no preview antes da publicação.
-- **Múltiplas versões na mesma página**: algumas páginas do Planalto exibem a redação original e a redação atualizada lado a lado ou com anotações de rodapé extensas; o Defuddle pode não conseguir isolar automaticamente qual texto é o vigente, exigindo revisão do editor.
+- **Múltiplas versões na mesma página**: páginas anotadas do Planalto podem
+  misturar redação vigente, texto superado e notas extensas. O adaptador usa a
+  página compilada quando disponível e exige revisão quando as fontes
+  divergem ou não permitem separar as redações com confiança.
 - **Falha silenciosa de estrutura**: o Defuddle otimiza para legibilidade geral de artigo, não para hierarquia jurídica; cabeçalhos de capítulo/seção podem ser "achatados" no Markdown resultante, exigindo que o parser jurídico (não o Defuddle) reconstrua essa hierarquia por outras heurísticas.
 
 Quando o Defuddle falha ou produz uma saída de baixa confiança, o Lex Editor sinaliza a falha explicitamente na UI (nunca publica um resultado degradado sem aviso) e oferece como alternativa a importação manual por arquivo local ou colagem direta de Markdown.
@@ -627,22 +637,31 @@ interface ParseResult {
   ast: ParsedNormaAST;
   warnings: ParseWarning[];     // derivadas de parseEvidence, sem pseudo-status
   metadata: {
-    sourceType: SourceType;
-    sourceArtifactSha256: string;
+    sourceArtifacts: {
+      sourceRole: SourceRole;
+      sourceVariant: SourceVariant;
+      sourceArtifactSha256: string;
+    }[];
     tempoExecucaoMs: number;
     totalNosReconhecidos: number;
   };
 }
 
-interface SourceInput {
+interface SourceArtifactInput {
   sourceType: SourceType;
+  sourceRole: SourceRole;
+  sourceVariant: SourceVariant;
   rawArtifact: string;
   cleanedMarkdown?: string;
   sourceArtifactSha256: string;
   sourceUrl?: string;
 }
 
-function parse(input: SourceInput): ParseResult;
+interface SourceBundleInput {
+  artifacts: SourceArtifactInput[]; // exatamente um primary_current
+}
+
+function parse(input: SourceBundleInput): ParseResult;
 ```
 
 **ParsedNormaAST → reconciliador → IdentifiedNormaAST**
@@ -698,8 +717,14 @@ interface PublicationManifest {
     markdownSha256: string;
     updateSha256: string;
     astSha256: string;
-    sourceArtifactSha256: string;
   };
+  sourceArtifacts: {
+    sourceRole: SourceRole;
+    sourceVariant: SourceVariant;
+    sourceUrl?: string;
+    finalUrl?: string;
+    sourceArtifactSha256: string;
+  }[]; // ordem canônica por função, URL e hash
 }
 
 interface PublicationPreview {
@@ -813,3 +838,7 @@ Esta seção apresenta a visão geral por fases; o detalhamento de entregas, cri
 - **`../architecture/ADR-004-pipeline-publicacao.md`** — registra a decisão de que nenhuma publicação (primeira publicação ou atualização legislativa) ocorre sem aprovação humana explícita, mesmo quando o worker detecta divergência com alta confiança. Sustenta os capítulos 8 (Fluxo 2), 18 e o requisito RF-22.
 - **`../architecture/ADR-005-status-fields.md`** — registra a proibição de um campo genérico `status` em favor de campos semanticamente nomeados. No Lex Editor, são `legal_status`, `publication_status`, `device_status`, `update_review_status` para a fila do worker e `publication_attempt_status` para a execução idempotente da publicação, cada um com enum e fonte da verdade próprios. Sustenta o capítulo 15 (Frontmatter) deste PRD e o schema de `../architecture/DATA_MODEL.md`.
 - **`../architecture/ADR-007-fronteira-segura-publicacao.md`** — separa a decisão editorial da autoridade técnica de produção: a estação envia apenas um release candidate, enquanto o Serviço de Publicação revalida e promove o SHA exato antes do sync privado e transacional. Sustenta os capítulos 18 e 23, RF-17/RF-18 e RNF-09 a RNF-12.
+- **`../architecture/ADR-009-fontes-compiladas-e-historicas.md`** — define a
+  página compilada como fonte preferencial do texto vigente, a página anotada
+  como evidência histórica e a preservação independente dos artefatos. Sustenta
+  os capítulos 8, 11 e 12 e o pipeline de atualização legislativa.

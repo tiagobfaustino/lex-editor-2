@@ -90,7 +90,7 @@ O Git guarda a história completa e é a fonte de verdade; o Supabase é uma **c
 
 ```mermaid
 flowchart TD
-    A["URL da lei\n(Planalto inicialmente)"] --> B["Snapshot imutável\nHTML bruto + SHA-256"]
+    A["Conjunto de fontes oficiais\nprimária + auxiliares"] --> B["Snapshots imutáveis\num SHA-256 por artefato"]
     B --> C["Defuddle\nMarkdown limpo"]
     B --> D["Adaptador da fonte / Parser"]
     C --> D
@@ -115,16 +115,22 @@ flowchart TD
 
 ## Componentes do pipeline
 
-**URL da lei.** Ponto de entrada: um link para a publicação oficial (Planalto, LexML ou outra fonte confiável). É o único artefato que o editor precisa fornecer para iniciar a importação de uma lei nova.
+**Conjunto de fontes oficiais.** O editor pode iniciar a importação com uma
+única URL. O adaptador resolve o conjunto aplicável: prefere a página oficial
+compilada como `primary_current`, usa a página anotada como
+`historical_auxiliary` quando disponível e mantém fontes de checagem separadas.
+Ausência ou conflito nunca é resolvido como revogação implícita. Precedência,
+fallback e proveniência seguem `./ADR-009-fontes-compiladas-e-historicas.md`.
 
 **Defuddle (extração HTML → Markdown limpo).** Remove ruído de navegação,
 scripts, propaganda e formatação inconsistente, produzindo uma projeção textual
-útil. É uma etapa de limpeza, não de interpretação jurídica. O HTML bruto é
-preservado como snapshot imutável com SHA-256; o Markdown limpo nunca o
-substitui como evidência de origem.
+útil. É uma etapa de limpeza, não de interpretação jurídica. Cada artefato
+bruto é preservado como snapshot imutável com SHA-256 próprio; o Markdown limpo
+nunca o substitui como evidência de origem.
 
-**Parser.** Cada adaptador interpreta os artefatos adequados à fonte — o
-Planalto pode usar HTML bruto e Markdown limpo em conjunto — e produz
+**Parser.** Cada adaptador interpreta os artefatos adequados à fonte. O
+Planalto pode usar os HTMLs compilado e anotado, além das respectivas projeções
+limpas, preservando a proveniência de cada conclusão. O adaptador produz
 `ParsedNormaAST` com rastreabilidade e evidência por nó. Reconhece livros,
 títulos, capítulos, seções, subseções, artigos, parágrafos, incisos, alíneas,
 itens, penas autônomas, anexos, tabelas e estados jurídicos de dispositivos.
@@ -161,7 +167,11 @@ em uma transação idempotente. Somente no final troca
 
 **Vinculex SaaS.** Consome exclusivamente dados já publicados no Supabase via Postgres/Auth/RLS. Não tem qualquer dependência de tempo de execução do Lex Editor, do Parser ou do Git.
 
-**Worker de atualização legislativa.** Processo cron independente que periodicamente busca a fonte oficial, calcula hash do conteúdo, compara com o hash da última versão publicada e, ao detectar divergência, gera um diff e cria uma proposta de atualização para revisão no Lex Editor. Nunca publica automaticamente — apenas alimenta a fila de revisão humana. Fluxo detalhado em `./UPDATE_PIPELINE.md`.
+**Worker de atualização legislativa.** Processo cron independente que busca o
+conjunto de fontes oficiais, acompanha o hash bruto de cada artefato e compara
+a projeção normativa com a última versão publicada. Ao detectar divergência
+normativa, gera um diff e cria uma proposta para revisão no Lex Editor. Nunca
+publica automaticamente. Fluxo detalhado em `./UPDATE_PIPELINE.md`.
 
 ---
 

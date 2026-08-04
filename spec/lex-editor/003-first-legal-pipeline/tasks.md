@@ -2,13 +2,14 @@
 
 ## Preparação
 
-- [ ] T003-01 Selecionar fixture oficial curta, registrar origem/hash e revisão
-  humana esperada.
+- [ ] T003-01 Selecionar fixture oficial curta, registrar função, variante,
+  origem/hash de cada artefato e revisão humana esperada.
 - [ ] T003-02 Definir relatório estruturado e contratos entre estágios.
 
 ## Corte vertical
 
-- [ ] T003-03 Implementar snapshot local imutável com `sourceRef`.
+- [ ] T003-03 Implementar conjunto de snapshots locais imutáveis com
+  `sourceRef` e `supportingSourceRefs`.
 - [ ] T003-04 Implementar parser mínimo da fixture e seus casos negativos.
 - [ ] T003-05 Implementar atribuição inicial determinística de IDs do
   subconjunto com validação de unicidade.

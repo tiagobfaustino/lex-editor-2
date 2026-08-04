@@ -16,13 +16,13 @@ autoridades diferentes.
 
 ## Contratos e fluxo
 
-Snapshot atual → ParsedAST → projeção normativa/hash → comparação →
+Conjunto de snapshots atual → ParsedAST → projeção normativa/hash → comparação →
 reconciliação/diff → pendência. Aprovação cria nova revisão e entra na Feature
 007; rejeição/supersessão nunca altera conteúdo público.
 
 ## Decisões locais
 
-- Hash bruto e normativo são persistidos separadamente.
+- Hash bruto de cada artefato e hash normativo são persistidos separadamente.
 - Chave de deduplicação inclui lei, base publicada e hash candidato.
 - Scheduler aplica backoff/jitter e suspende fonte degradada.
 
