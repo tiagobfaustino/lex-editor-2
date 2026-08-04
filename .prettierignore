@@ -1,0 +1,16 @@
+.agents/
+.claude/
+CLAUDE.md
+.playwright-mcp/
+docs/
+spec/
+exemplos/
+node_modules/
+dist/
+out/
+build/
+release/
+artifacts/
+coverage/
+package-lock.json
+skills-lock.json
