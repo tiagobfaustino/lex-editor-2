@@ -1,21 +1,95 @@
-# Dependências e builds
+# Dependências
 node_modules/
+.pnpm-store/
+.npm/
+
+# Builds, bundles e caches
 dist/
 out/
-coverage/
+build/
+release/
+artifacts/
+.cache/
+.parcel-cache/
+.turbo/
+.nx/
+.vite/
+.eslintcache
+*.tsbuildinfo
 
-# Ambiente e segredos
+# Testes e cobertura
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+
+# Variáveis de ambiente e segredos
 .env
 .env.*
 !.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.mobileprovision
 
-# Logs e artefatos locais
+# Pacotes e artefatos Electron
+*.asar
+*.blockmap
+*.AppImage
+*.deb
+*.dmg
+*.exe
+*.msi
+*.pkg
+*.rpm
+*.snap
+builder-debug.yml
+builder-effective-config.yaml
+.electron-gyp/
+
+# Logs, diagnósticos e processos
 *.log
-.playwright-mcp/
-ettings get org.cinnamon.settings-daemon.plugins.power sleep-inactive-ac-type
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.pid
+*.pid.lock
+*.seed
 
-# Sistema e editores
+# Temporários e dados locais
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Ferramentas locais de agentes e navegador
+.playwright-mcp/
+
+# Arquivo acidental criado por um comando incompleto
+/ettings get org.cinnamon.settings-daemon.plugins.power sleep-inactive-ac-type
+
+# Sistemas operacionais
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
 Thumbs.db
+.directory
+Desktop.ini
+
+# IDEs e editores
 .idea/
-.vscode/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
