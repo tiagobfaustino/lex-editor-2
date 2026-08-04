@@ -1,0 +1,9 @@
+# Skills de agente de terceiros (Vercel, etc.) - nao descrevem este projeto
+.agents/
+.claude/
+
+# Textos legais de referencia - fixtures das Features 003/004, nao conhecimento do projeto
+exemplos/
+
+# Saida do proprio graphify
+graphify-out/

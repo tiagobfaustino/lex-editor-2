@@ -15,6 +15,7 @@
 | Testes | 14 unitários + 1 teste de fronteiras de lint; sem E2E |
 | CI | Não existe |
 | Empacotamento | Não configurado |
+| Grafo de conhecimento | 417 nós, 437 arestas, 56 comunidades — gerado, não versionado |
 | Git | Tudo commitado em `master` e sincronizado com `origin` |
 
 ## Comandos e resultado verificado
@@ -64,7 +65,21 @@ prompts/           prompt mestre usado para gerar a documentação inicial
 scripts/           configuração do caminho de hooks do Git
 .agents/skills/    skills consultadas pelos agentes, incl. lex-editor-electron
 out/               build de desenvolvimento gerado por electron-vite
+graphify-out/      grafo de conhecimento gerado; não versionado
 ```
+
+## Grafo de conhecimento
+
+`graphify-out/` guarda um grafo de 417 nós e 437 arestas sobre `docs/`, `spec/`,
+`src/`, `packages/` e `tests/` — 57 dos 61 documentos do escopo. Os 4 ausentes
+são os `spec/templates/`, formulários em branco sem conceito a extrair.
+
+O escopo vive em `.graphifyignore`: skills de agente de terceiros e os textos
+legais de `exemplos/` ficam fora, porque descreveriam bibliotecas alheias e
+legislação, não este projeto.
+
+O grafo é derivado — reconstruível de `docs/` e do código — e por isso não é
+versionado. `CLAUDE.md` traz o comando de reconstrução.
 
 ## Feature 001 — progresso real
 

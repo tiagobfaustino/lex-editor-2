@@ -72,6 +72,12 @@ temp/
 
 # Ferramentas locais de agentes e navegador
 .playwright-mcp/
+.claude/
+
+# Grafo de conhecimento gerado pelo graphify.
+# Regenerável a partir do código e da documentação; o escopo está em
+# .graphifyignore, que é versionado.
+graphify-out/
 
 # Arquivo acidental criado por um comando incompleto
 /ettings get org.cinnamon.settings-daemon.plugins.power sleep-inactive-ac-type
