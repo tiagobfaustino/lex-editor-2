@@ -73,6 +73,12 @@ temp/
 # Ferramentas locais de agentes e navegador
 .playwright-mcp/
 .claude/
+.kilocode/
+
+# Regras de ferramenta pessoal por plataforma de agente (RTK e similares).
+# São preferência de quem opera o agente, não contrato deste projeto, e
+# dependem de binários que podem não existir em outra máquina.
+.agents/rules/
 
 # Grafo de conhecimento gerado pelo graphify.
 # Regenerável a partir do código e da documentação; o escopo está em
