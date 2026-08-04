@@ -83,6 +83,32 @@ test('aplica as preferências seguras na janela real', async () => {
   });
 });
 
+test('serve o bundle sob a CSP restritiva da ADR-007', async () => {
+  const policy = await mainWindow
+    .locator('meta[http-equiv="Content-Security-Policy"]')
+    .getAttribute('content');
+
+  expect(policy).not.toBeNull();
+
+  // O desenvolvimento relaxa style-src e connect-src para viabilizar o HMR.
+  // Nenhuma das duas concessões pode alcançar o pacote.
+  expect(policy).not.toContain('unsafe-inline');
+  expect(policy).not.toContain('unsafe-eval');
+  expect(policy).toContain("connect-src 'none'");
+
+  for (const directive of [
+    "default-src 'none'",
+    "script-src 'self'",
+    "style-src 'self'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'none'",
+  ]) {
+    expect(policy).toContain(directive);
+  }
+});
+
 test('não entrega Node, Electron ou ipcRenderer ao renderer', async () => {
   const reachable = await mainWindow.evaluate(() => {
     const globalScope = globalThis as unknown as Record<string, unknown>;

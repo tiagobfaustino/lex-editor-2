@@ -14,7 +14,15 @@ const productionCsp = [
   "form-action 'none'",
 ].join('; ');
 
-const developmentCsp = productionCsp.replace("connect-src 'none'", "connect-src 'self' ws:");
+// A CSP de produção acima é a normativa da ADR-007 e não é relaxada aqui.
+// O desenvolvimento precisa de duas concessões, ambas ausentes do pacote:
+// o Vite injeta o CSS por `<style>` inline para permitir HMR — sem
+// 'unsafe-inline' a janela abre sem estilo algum —, e o cliente de HMR fala
+// com o dev server por HTTP e WebSocket em loopback. No build o CSS vira
+// arquivo próprio servido da mesma origem, então `style-src 'self'` basta.
+const developmentCsp = productionCsp
+  .replace("style-src 'self'", "style-src 'self' 'unsafe-inline'")
+  .replace("connect-src 'none'", "connect-src 'self' ws:");
 
 const contentSecurityPolicyPlugin = (): Plugin => ({
   name: 'lex-editor-content-security-policy',
