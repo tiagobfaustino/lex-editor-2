@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: draft
+- `implementation_status`: done
 - `priority`: P0
 - `owner`: não atribuído
 
@@ -79,11 +79,11 @@ então o contrato o rejeita com localização acionável.
 
 ## Critérios de aceite
 
-- [ ] Todos os nós de `DATA_MODEL.md` existem em tipo e schema.
-- [ ] Fixtures mínimas `parsed` e `identified` passam.
-- [ ] Casos inválidos de fase, hierarquia, tabela e revogação falham.
-- [ ] Pacote não importa infraestrutura.
-- [ ] Typecheck prova que o tipo é derivado ou testado contra o schema runtime.
+- [x] Todos os nós de `DATA_MODEL.md` existem em tipo e schema.
+- [x] Fixtures mínimas `parsed` e `identified` passam.
+- [x] Casos inválidos de fase, hierarquia, tabela e revogação falham.
+- [x] Pacote não importa infraestrutura.
+- [x] Typecheck prova que o tipo é derivado ou testado contra o schema runtime.
 
 ## Validação mínima
 

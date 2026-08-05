@@ -1,7 +1,7 @@
 # Estado Atual do Repositório
 
 > Verificado em 2026-08-05, contra o working tree (branch `master`,
-> último commit `16dda01`).
+> último commit `5294bfe`).
 
 ## Situação em uma tabela
 
@@ -9,10 +9,10 @@
 |---|---|
 | Documentação de arquitetura | Completa e aceita (9 ADRs + 5 especificações) |
 | Documentação de produto | Completa (PRD, roadmap e fluxos dos dois produtos) |
-| Specs de implementação | 8 features especificadas; 001 `done`, 002–008 `draft` |
+| Specs de implementação | 8 features especificadas; 001 e 002 `done`, 003–008 `draft` |
 | Código de aplicação | Shell Electron seguro, sem lógica jurídica |
-| Código de domínio | Módulo público vazio, apenas fronteira de compilação |
-| Testes | 14 unitários + 1 teste de fronteiras de lint + 8 smoke E2E (Playwright/Electron) |
+| Código de domínio | NormaAST completa: 14 tipos de nó, duas fases e validador estrutural |
+| Testes | 57 unitários + 1 teste de fronteiras de lint + 8 smoke E2E (Playwright/Electron) |
 | CI | GitHub Actions, 3 jobs verdes na primeira execução (2026-08-05) |
 | Empacotamento | electron-builder + fuses + inspeção do asar (`scripts/inspect-bundle.mjs`) |
 | Grafo de conhecimento | 417 nós, 437 arestas, 56 comunidades — gerado, não versionado |
@@ -20,12 +20,12 @@
 
 ## Comandos e resultado verificado
 
-Executados nesta ordem em 2026-08-04:
+Executados nesta ordem em 2026-08-05:
 
 | Comando | Resultado |
 |---|---|
 | `npm run typecheck` | Passa (workspaces, node e renderer) |
-| `npm run test:unit` | Passa — 3 arquivos, 14 testes |
+| `npm run test:unit` | Passa — 5 arquivos, 57 testes |
 | `npm run test:boundaries` | Passa |
 | `npm run lint` | Passa com `--max-warnings 0` |
 | `npm run format:check` | Passa |
@@ -33,6 +33,7 @@ Executados nesta ordem em 2026-08-04:
 | `npm run test:e2e` | Passa — 8 smoke no Playwright/Electron (2026-08-04) |
 | `npm run build` | Passa — AppImage e `.deb` em `release/`, além do `linux-unpacked` |
 | `node scripts/inspect-bundle.mjs release/linux-unpacked` | Passa — 350 entradas, sem violações |
+| `npm run check:data-model` | Passa — 21 interfaces conferidas, 0 divergências |
 
 `format:check` reprovava os cinco arquivos de `exemplos/` até 2026-08-04, o que
 travava o hook de pre-commit e manteve todo o código fora do Git. Era falha de
@@ -53,7 +54,8 @@ spec/
   README, DEVELOPMENT_RULES, TEST_STRATEGY, FEATURE_INDEX, templates/
   lex-editor/      001 a 008, cada uma com spec.md, plan.md e tasks.md
 packages/
-  legal-domain/    pacote puro; src/index.ts ainda vazio por decisão
+  legal-domain/    pacote puro; NormaAST em src/ast/ (enums, schemas,
+                   nodes, validate e fixtures)
 src/
   main/            ciclo Electron, janela, segurança, IPC
   preload/         ponte contextBridge, empacotada como CJS
@@ -61,10 +63,11 @@ src/
   shared/ipc/      contratos zod compartilhados pelos dois lados da ponte
 tests/
   main/            3 suítes de fronteira
+  domain/          contrato da NormaAST e pureza do pacote
   config/          verificação executável das regras de import do ESLint
 exemplos/          CF/88, CP, Lei 14.133, Lei Maria da Penha e LINDB em Markdown
 prompts/           prompt mestre usado para gerar a documentação inicial
-scripts/           configuração do caminho de hooks do Git
+scripts/           hooks do Git, inspeção do bundle e auditoria do DATA_MODEL
 .agents/skills/    skills consultadas pelos agentes, incl. lex-editor-electron
 out/               build de desenvolvimento gerado por electron-vite
 graphify-out/      grafo de conhecimento gerado; não versionado
@@ -117,11 +120,33 @@ feature está `done` no `FEATURE_INDEX.md`. O que sobrou dela está registrado n
 `review.md`: a divergência aberta com a ADR-007 §4, que exige assinatura por
 plataforma, e as dívidas de empacotamento em macOS e Windows.
 
+## Feature 002 — o que foi entregue
+
+`packages/legal-domain/src/ast/` traz os 14 tipos de nó do `DATA_MODEL.md` em
+tipo e em schema de runtime, nas duas fases: `parsed` sem Block ID e
+`identified` com Block ID em todo nó referenciável. A distinção vale em tempo de
+compilação, não só em runtime.
+
+- **T002-01 a T002-04** enums da ADR-005, erros com código estável e caminho,
+  origem/evidência da ADR-009, históricos da ADR-006, e as famílias de nó
+  construídas por uma fábrica instanciada uma vez por fase;
+- **T002-05** validador estrutural iterativo: unicidade de id e de Block ID,
+  ordem entre irmãos, hierarquia, ciclo, texto obrigatório e `totalArtigos`
+  derivado;
+- **T002-06 a T002-09** fixtures mínimas e completa, 43 testes de contrato e
+  pureza, e conferência campo a campo contra o `DATA_MODEL.md`.
+
+O `review.md` da feature registra o que não se deduz do código: por que os tipos
+não são `z.infer` direto (limite TS7056), como a equivalência é provada em
+compilação, e a descoberta de que a validação produz forma canônica de
+serialização — útil para o `conteudo_sha256` da Feature 007.
+
 ## O que deliberadamente não existe
 
 Estes vazios são decisão registrada, não esquecimento:
 
-- parser, NormaAST, Block IDs e Formatter — Features 002 a 004;
+- parser, Block IDs e Formatter — Features 003 e 004 (a NormaAST em si já
+  existe, entregue pela 002);
 - download por URL e leitura arbitrária de arquivo — Feature 005;
 - Git, Supabase, autenticação editorial e publicação — Feature 007;
 - worker de atualização legislativa — Feature 008;
