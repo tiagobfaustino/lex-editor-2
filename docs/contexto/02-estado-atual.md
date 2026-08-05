@@ -103,8 +103,8 @@ Concluídas e validadas:
 - **T001-07** Vitest configurado e três suítes negativas de fronteira;
 - **T001-08** Playwright Electron com 8 smoke tests sobre o app compilado;
 - **T001-09** `electron-builder.yml` com fuses, `scripts/inspect-bundle.mjs`
-  para integridade do asar e CI mínima em `.github/workflows/ci.yml`
-  (validate, e2e e package);
+  para conteúdo do asar e fuses gravados no binário, e CI mínima em
+  `.github/workflows/ci.yml` (validate, e2e e package);
 - **T001-10** todos os comandos executados, bundle inspecionado (350 entradas,
   apenas `zod` embarcado) e os cinco critérios de aceite demonstrados.
 

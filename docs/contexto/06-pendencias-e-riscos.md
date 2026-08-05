@@ -25,10 +25,13 @@ de aceite demonstrados.
 
 - **T001-08** — smoke E2E com Playwright/Electron sobre o app compilado
   (8 testes, inclusive preferências seguras da janela e allowlist IPC).
-- **T001-09** — `electron-builder` escolhido, fuses aplicados, integridade do
-  asar verificada por `scripts/inspect-bundle.mjs` e CI mínima em
+- **T001-09** — `electron-builder` escolhido, fuses aplicados e conferidos no
+  binário por `scripts/inspect-bundle.mjs`, e CI mínima em
   `.github/workflows/ci.yml` (validate, e2e e package), verde na primeira
-  execução.
+  execução. O que o script prova é o bit gravado de cada fuse, incluindo
+  `EnableEmbeddedAsarIntegrityValidation`; ele não prova que a validação de
+  integridade seja exercida em runtime — veja a dívida sobre integridade do
+  asar no Linux.
 - **T001-10** — todos os comandos executados (locais e no CI), bundle
   inspecionado (350 entradas no asar, apenas `zod` embarcado, sem AST, HTML
   bruto, paths ou secrets) e pacote aberto manualmente na estação de
@@ -63,9 +66,15 @@ Não são atrasos; são o roadmap.
 - **`test:boundaries` fora do `npm test`.** O script existe e passa, mas não
   entra na suíte padrão; o CI o executa explicitamente, então o risco de
   esquecimento local ficou coberto.
-- **`chrome-sandbox` sem setuid na estação de desenvolvimento.** O binário
-  empacotado só abre localmente com `--no-sandbox`; em `.deb`/AppImage o
-  electron-builder trata isso, mas vale registrar como nota de ambiente.
+- **Integridade do asar não é exercida no Linux.** O fuse
+  `EnableEmbeddedAsarIntegrityValidation` está ligado e o
+  `scripts/inspect-bundle.mjs` confere o bit, mas o `package.json` dentro do
+  `app.asar` não tem bloco `ElectronAsarIntegrity`: o electron-builder só
+  emite esse metadado para macOS e Windows. Como o Linux é a única plataforma
+  empacotada até aqui, não há hash a validar e o fuse é inócuo. A ADR-007 §4
+  pede validação de integridade "quando suportada", então a configuração está
+  conforme — o que falta é construir em macOS/Windows para que a proteção
+  passe a valer, e então reconferir com o mesmo script.
 - **Playwright não conecta no binário empacotado nesta estação** (timeout no
   launch). O smoke roda sobre o app compilado com configuração equivalente à
   produção, conforme decisão registrada no `playwright.config.ts`.
