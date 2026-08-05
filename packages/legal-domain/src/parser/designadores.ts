@@ -13,7 +13,8 @@ export const DIVISOES = ['livro', 'titulo', 'capitulo', 'secao', 'subsecao'] as 
 
 export type TipoDivisao = (typeof DIVISOES)[number];
 
-export type TipoDispositivo = 'artigo' | 'paragrafo' | 'inciso' | 'alinea' | 'item' | 'pena';
+export type TipoDispositivo =
+  'artigo' | 'paragrafo' | 'inciso' | 'alinea' | 'item' | 'pena' | 'anexo' | 'tabela';
 
 export type TipoReconhecido = TipoDivisao | TipoDispositivo;
 
@@ -62,6 +63,20 @@ export const REGRAS: readonly Regra[] = [
   regraDeDivisao('capitulo', 'CAP[ÍI]TULO'),
   regraDeDivisao('subsecao', 'SUBSE[ÇC][ÃA]O'),
   regraDeDivisao('secao', 'SE[ÇC][ÃA]O'),
+  {
+    // `ANEXO I` com título na linha seguinte, ou `Anexo I - Tabela Oficial`.
+    // É dispositivo referenciável, não divisão: recebe Block ID `anx-{n}`.
+    tipo: 'anexo',
+    padrao: /^ANEXO\s+([IVXLCDM]+|\d+|[A-Za-z])\s*(?:[-–—.]\s*)?(.*)$/iu,
+    extrair: (m) => semTitulo(m[1] ?? '', m[2] ?? ''),
+  },
+  {
+    // Tabela simples suportada, na forma canônica da MARKDOWN_SPEC §3.3:
+    // `Tabela 1. Legenda | Cab1; Cab2 | a1; b1 / a2; b2`
+    tipo: 'tabela',
+    padrao: /^Tabela\s+(\d+)\s*[.\-–—]?\s*([^|]*)\|(.*)$/iu,
+    extrair: (m) => ({ numero: m[1] ?? '', texto: `${(m[2] ?? '').trim()}|${m[3] ?? ''}` }),
+  },
   {
     // `Art. 121.` e `Art. 121-A.` — o sufixo alfabético é parte do número
     // (BLOCK_ID_SPEC §2.3.6), não um subdispositivo.
@@ -140,7 +155,13 @@ export const PAIS_POSSIVEIS: Readonly<Record<TipoDispositivo, readonly TipoDispo
     // A pena pode pender de qualquer dispositivo textual; qual deles é o certo
     // é decidido pela regra de ancoragem, não por esta lista.
     pena: ['item', 'alinea', 'inciso', 'paragrafo', 'artigo'],
+    anexo: [],
+    // Tabela pende do anexo quando há um aberto; solta, é nó de topo.
+    tabela: ['anexo'],
   });
+
+/** Nós que abrem um novo contexto de topo, como o artigo. */
+export const ABREM_CONTEXTO: ReadonlySet<TipoDispositivo> = new Set(['artigo', 'anexo']);
 
 export const ehDivisao = (tipo: TipoReconhecido): tipo is TipoDivisao =>
   (DIVISOES as readonly string[]).includes(tipo);

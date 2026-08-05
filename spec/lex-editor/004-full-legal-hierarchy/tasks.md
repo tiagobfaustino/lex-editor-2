@@ -6,8 +6,11 @@
   mínimas. Ver `COBERTURA.md`.
 - [x] T004-02 Implementar gramática completa de divisões e dispositivos com
   evidência/confiança.
-- [ ] T004-03 Implementar mesclagem compilada/anotada, estados, redações,
-  tabelas, anexos e referências cruzadas com testes específicos.
+- [~] T004-03 Implementar mesclagem compilada/anotada, estados, redações,
+  tabelas, anexos e referências cruzadas com testes específicos. **Parcial**:
+  estados, redações, tabelas e anexos entregues; a mesclagem entre fonte
+  compilada e anotada e as referências cruzadas seguem abertas — ver
+  `COBERTURA.md` §6 e §8.11.
 
 ## Identidade
 

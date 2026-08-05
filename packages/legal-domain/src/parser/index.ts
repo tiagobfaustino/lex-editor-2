@@ -17,6 +17,7 @@ import {
 } from '../ast/errors.js';
 import type { ParsedNormaAST, ParseEvidence, SourceReference } from '../ast/nodes.js';
 import {
+  ABREM_CONTEXTO,
   ehDivisao,
   nivelDaDivisao,
   PAIS_POSSIVEIS,
@@ -25,6 +26,7 @@ import {
   type TipoDivisao,
   type TipoReconhecido,
 } from './designadores.js';
+import { interpretarNota, lerLinhaRiscada, type RedacaoAnteriorBruta } from './notas.js';
 
 export interface MetadadosDaNorma {
   readonly titulo: string;
@@ -53,9 +55,6 @@ export interface EntradaDoParser {
   readonly metadados: MetadadosDaNorma;
 }
 
-const REVOGACAO = /^\(Revogad[oa][^)]*\)$/u;
-const VETO = /^\(Vetad[oa][^)]*\)$/u;
-
 /** Um dispositivo que termina em dois-pontos anuncia o que vem abaixo. */
 const anunciaSubordinado = (texto: string): boolean => texto.trimEnd().endsWith(':');
 
@@ -66,8 +65,8 @@ interface NoEmConstrucao {
   readonly linha: number;
   readonly filhos: NoEmConstrucao[];
   evidencia: ParseEvidence;
-  readonly revogado: boolean;
-  readonly vetado: boolean;
+  readonly estado: ReturnType<typeof interpretarNota>;
+  readonly redacoesAnteriores: RedacaoAnteriorBruta[];
 }
 
 const EVIDENCIA_EXATA: ParseEvidence = {
@@ -183,13 +182,24 @@ const materializar = (
     };
   }
 
-  // MARKDOWN_SPEC §5.3: sem texto anterior preservado, o texto residual oficial
-  // é reproduzido como está e a decisão editorial é `false`.
-  const estado = no.revogado
-    ? { deviceStatus: 'revoked' as const, preservarTextoRevogado: false, notaStatus: no.texto }
-    : no.vetado
-      ? { deviceStatus: 'vetoed' as const, notaStatus: no.texto }
-      : { deviceStatus: 'active' as const };
+  // O estado vem da nota oficial interpretada em `notas.ts`, não de inferência
+  // sobre o texto: a MARKDOWN_SPEC §5.3 proíbe o Formatter adivinhar, e o
+  // parser é quem tem a nota à mão.
+  const estado = {
+    deviceStatus: no.estado.deviceStatus,
+    ...(no.estado.notaStatus === undefined ? {} : { notaStatus: no.estado.notaStatus }),
+    ...(no.estado.preservarTextoRevogado === undefined
+      ? {}
+      : { preservarTextoRevogado: no.estado.preservarTextoRevogado }),
+    ...(no.estado.redacaoAtualDadaPor === undefined
+      ? {}
+      : { redacaoAtualDadaPor: no.estado.redacaoAtualDadaPor }),
+    // ADR-006 §4: ordem cronológica, da mais antiga para a mais nova. O
+    // percurso já as acumulou nessa ordem.
+    ...(no.redacoesAnteriores.length === 0
+      ? {}
+      : { redacoesAnteriores: no.redacoesAnteriores.map((r) => ({ ...r })) }),
+  };
 
   switch (no.tipo) {
     case 'artigo':
@@ -202,6 +212,30 @@ const materializar = (
       return { ...comum, ...estado, tipo: 'alinea', letra: no.numero, texto: no.texto };
     case 'item':
       return { ...comum, ...estado, tipo: 'item', numero: no.numero, texto: no.texto };
+    case 'anexo':
+      return { ...comum, ...estado, tipo: 'anexo', numero: no.numero, titulo: no.texto };
+    case 'tabela': {
+      // Forma canônica da §3.3: `legenda|cab1; cab2|a1; b1 / a2; b2`.
+      const [legenda = '', cabecalhos = '', linhasDaTabela = ''] = no.texto.split('|');
+
+      return {
+        ...comum,
+        ...estado,
+        tipo: 'tabela',
+        numero: no.numero,
+        caption: legenda.trim(),
+        headers: cabecalhos
+          .split(';')
+          .map((c) => c.trim())
+          .filter((c) => c.length > 0),
+        rows: linhasDaTabela
+          .split('/')
+          .map((linha) => linha.trim())
+          .filter((linha) => linha.length > 0)
+          .map((linha) => linha.split(';').map((celula) => celula.trim())),
+        children: [],
+      };
+    }
     default:
       return {
         ...comum,
@@ -224,6 +258,8 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
   let abertos: NoEmConstrucao[] = [];
   /** Divisão cujo título vem na próxima linha. */
   let aguardandoTitulo: NoEmConstrucao | undefined;
+  /** Redações anteriores lidas e ainda não anexadas ao dispositivo vigente. */
+  const historicoPendente: RedacaoAnteriorBruta[] = [];
   let artigos = 0;
 
   if (entrada.conteudo.trim().length === 0) {
@@ -256,6 +292,16 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
       return;
     }
 
+    // ADR-006 §2 e MD §5.5: linha riscada sem Block ID é redação anterior.
+    // Acumula e anexa ao próximo dispositivo — histórico é apresentação, não
+    // posição referenciável, e por isso não vira nó nem recebe ID.
+    const riscada = lerLinhaRiscada(linha);
+
+    if (riscada !== undefined) {
+      historicoPendente.push(riscada);
+      return;
+    }
+
     const reconhecido = reconhecer(linha);
 
     if (reconhecido === undefined) {
@@ -269,15 +315,28 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
       return;
     }
 
+    // O riscado costuma envolver só o texto, depois do designador:
+    // `§ 1º ~~texto antigo~~ (Revogado pela Lei ...)`. Desembrulha antes de
+    // interpretar, para que a nota seja lida da mesma forma nos dois casos.
+    const semRiscado = /^~~(.*)~~\s*(\(.*\))?\s*$/u.exec(reconhecido.texto);
+    const riscado = semRiscado !== null;
+    const textoParaNota = riscado
+      ? `${semRiscado[1] ?? ''} ${semRiscado[2] ?? ''}`.trim()
+      : reconhecido.texto;
+
+    const estado = ehDivisao(reconhecido.tipo)
+      ? { texto: reconhecido.texto, deviceStatus: 'active' as const }
+      : interpretarNota(textoParaNota, riscado);
+
     const no: NoEmConstrucao = {
       tipo: reconhecido.tipo,
       numero: reconhecido.numero,
-      texto: reconhecido.texto,
+      texto: estado.texto,
       linha: indice,
       filhos: [],
       evidencia: EVIDENCIA_EXATA,
-      revogado: REVOGACAO.test(reconhecido.texto),
-      vetado: VETO.test(reconhecido.texto),
+      estado,
+      redacoesAnteriores: historicoPendente.splice(0),
     };
 
     if (ehDivisao(reconhecido.tipo)) {
@@ -296,10 +355,28 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
       return;
     }
 
-    if (reconhecido.tipo === 'artigo') {
-      destinoDeTopo().push(no);
-      abertos = [no];
-      artigos += 1;
+    if (ABREM_CONTEXTO.has(reconhecido.tipo)) {
+      // Artigo e anexo reiniciam a lista de dispositivos abertos. Um artigo
+      // dentro de anexo, porém, pende dele: é o que faz o Block ID carregar o
+      // segmento `anx-` antes do `art-` (BID §2.3.10).
+      const anexoAberto = abertos.find((aberto) => aberto.tipo === 'anexo');
+
+      if (reconhecido.tipo === 'artigo' && anexoAberto !== undefined) {
+        anexoAberto.filhos.push(no);
+        abertos = [anexoAberto, no];
+      } else {
+        destinoDeTopo().push(no);
+        abertos = [no];
+      }
+
+      if (reconhecido.tipo === 'artigo') {
+        artigos += 1;
+      }
+
+      if (reconhecido.tituloPendente === true) {
+        aguardandoTitulo = no;
+      }
+
       return;
     }
 

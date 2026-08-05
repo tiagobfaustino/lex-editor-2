@@ -68,11 +68,11 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 | Regra | Fonte normativa | Fixture mínima | Estado |
 |---|---|---|---|
 | `revoked` com texto residual, sem riscado | MD §5.1.1, §5.3 | cp-art-121 (inciso VI) | `003` |
-| `revoked` com texto preservado e riscado | MD §5.1.2, §5.3 | `estados/revogado-preservado.txt` | `[ ]` |
-| `vetoed` com nota padronizada | MD §5.1.3 | `estados/vetado.txt` | `[ ]` |
-| `included`, `amended`, `suspended` | ADR-005 §3 | `estados/demais-estados.txt` | `[ ]` |
-| `renumbered` com `renumeradoPara` | ADR-005 §3 | `identidade/renumeracao.txt` | `[ ]` |
-| Block ID preservado em revogado | MD §5.1.4 | `estados/revogado-preservado.txt` | `[ ]` |
+| `revoked` com texto preservado e riscado | MD §5.1.2, §5.3 | `estados-e-anexos.test.ts` estados | coberta |
+| `vetoed` com nota padronizada | MD §5.1.3 | `estados-e-anexos.test.ts` estados | coberta |
+| `included`, `amended`, `suspended` | ADR-005 §3 | `estados-e-anexos.test.ts` estados | coberta |
+| `renumbered` com `renumeradoPara` | ADR-005 §3 | `estados-e-anexos.test.ts` estados (estado); `renumeradoPara` na T004-05 | parcial |
+| Block ID preservado em revogado | MD §5.1.4 | `estados-e-anexos.test.ts` estados | coberta |
 | Ativo não pode ter marcação de revogado | MD §9.7 | `estados/ativo-com-marcacao.txt` | `[ ]` |
 
 ## 4. Histórico de redações (T004-03)
@@ -81,12 +81,12 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 
 | Regra | Fonte normativa | Fixture mínima | Estado |
 |---|---|---|---|
-| Redação anterior vira linha riscada acima da vigente | ADR-006 §1 | `historico/uma-redacao.txt` | `[ ]` |
-| Ordem cronológica, mais antiga primeiro | ADR-006 §4 | `historico/varias-redacoes.txt` | `[ ]` |
-| Linha de histórico **não** recebe Block ID | ADR-006 §2 | `historico/uma-redacao.txt` | `[ ]` |
+| Redação anterior vira linha riscada acima da vigente | ADR-006 §1 | `estados-e-anexos.test.ts` histórico | coberta |
+| Ordem cronológica, mais antiga primeiro | ADR-006 §4 | `estados-e-anexos.test.ts` histórico | coberta |
+| Linha de histórico **não** recebe Block ID | ADR-006 §2 | `estados-e-anexos.test.ts` histórico | coberta |
 | `(Redação dada…)` riscada sem ID ≠ `(Revogado…)` com ID | MD §5.5 | `historico/distinguir-nota.txt` | `[ ]` |
-| Parsing inverso acumula histórico no próximo nó com ID | MD §5.5 | `historico/parsing-inverso.txt` | `[ ]` |
-| Contagem de artigos vem da AST, não de itens de nível 0 | ADR-006, MD §9.4 | `historico/contagem.txt` | `[ ]` |
+| Parsing inverso acumula histórico no próximo nó com ID | MD §5.5 | `estados-e-anexos.test.ts` histórico | coberta |
+| Contagem de artigos vem da AST, não de itens de nível 0 | ADR-006, MD §9.4 | `estados-e-anexos.test.ts` histórico | coberta |
 
 ## 5. Anexos e tabelas (T004-03)
 
@@ -94,13 +94,13 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 
 | Regra | Fonte normativa | Fixture mínima | Estado |
 |---|---|---|---|
-| Anexo vira `## Anexo {n} - {titulo} ^{id}` | MD §3.3 | `anexos/anexo.txt` | `[ ]` |
-| Anexo usa segmento `anx-{numero}` normalizado | BID §2.3.10 | `anexos/anexo-romano.txt` | `[ ]` |
-| Artigo dentro de anexo carrega o segmento | BID §2.3.10 | `anexos/artigo-em-anexo.txt` | `[ ]` |
-| Tabela referenciável no nível da tabela inteira | DM regra 2 | `anexos/tabela.txt` | `[ ]` |
-| Serialização `; ` entre células e ` / ` entre linhas | MD §3.3.3 | `anexos/tabela.txt` | `[ ]` |
-| Linha irregular falha antes da serialização | MD §3.3.5, §9.12 | `anexos/tabela-irregular.txt` | parcial (schema, 002) |
-| Célula/linha não recebe Block ID | DM regra 2 | `anexos/tabela.txt` | `[ ]` |
+| Anexo vira `## Anexo {n} - {titulo} ^{id}` | MD §3.3 | `estados-e-anexos.test.ts` anexos | coberta |
+| Anexo usa segmento `anx-{numero}` normalizado | BID §2.3.10 | `estados-e-anexos.test.ts` anexos | coberta |
+| Artigo dentro de anexo carrega o segmento | BID §2.3.10 | `estados-e-anexos.test.ts` anexos | coberta |
+| Tabela referenciável no nível da tabela inteira | DM regra 2 | `estados-e-anexos.test.ts` anexos | coberta |
+| Serialização `; ` entre células e ` / ` entre linhas | MD §3.3.3 | `estados-e-anexos.test.ts` anexos | coberta |
+| Linha irregular falha antes da serialização | MD §3.3.5, §9.12 | `estados-e-anexos.test.ts` anexos | coberta |
+| Célula/linha não recebe Block ID | DM regra 2 | `estados-e-anexos.test.ts` anexos | coberta |
 
 ## 6. Conjunto de fontes e evidência (T004-03)
 

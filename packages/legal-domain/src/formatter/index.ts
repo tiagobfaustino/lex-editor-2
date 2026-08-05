@@ -51,6 +51,21 @@ const aspas = (valor: string): string => JSON.stringify(valor);
 const listaEmLinha = (valores: readonly string[]): string => `[${valores.map(aspas).join(', ')}]`;
 
 /**
+ * Tabela simples suportada, em uma linha canônica (§3.3.3): cabeçalhos
+ * separados por `; `, linhas por ` / `, células por `; `. Linha e célula não
+ * recebem Block ID nesta versão — o bloco referenciável é a tabela inteira.
+ */
+const serializarTabela = (no: Record<string, unknown>): string => {
+  const caption = typeof no['caption'] === 'string' ? no['caption'] : '';
+  const numero = typeof no['numero'] === 'string' ? no['numero'] : '';
+  const headers = Array.isArray(no['headers']) ? (no['headers'] as string[]) : [];
+  const rows = Array.isArray(no['rows']) ? (no['rows'] as string[][]) : [];
+  const corpo = rows.map((linha) => linha.join('; ')).join(' / ');
+
+  return `Tabela ${numero}. ${caption} | ${headers.join('; ')} | ${corpo}`;
+};
+
+/**
  * Reconstrói o designador oficial a partir do nó. O parser guardou o número e
  * o texto separados; a serialização é responsabilidade daqui.
  */
@@ -77,6 +92,8 @@ const designador = (no: Record<string, unknown>): string => {
       return `${numero}. ${texto}`;
     case 'pena':
       return texto;
+    case 'tabela':
+      return serializarTabela(no);
     default:
       return texto;
   }
@@ -101,7 +118,12 @@ const comSinalizacao = (no: Record<string, unknown>, linha: string): string => {
   }
 
   if (estado === 'vetoed') {
-    return nota.length > 0 ? linha : `${linha} *(Vetado)*`;
+    // §5.1.3: a nota de veto é emitida em itálico. Ela já está no texto — é o
+    // único conteúdo que um dispositivo vetado tem —, então o que falta é
+    // envolvê-la.
+    return /\([^)]*\)\s*$/u.test(linha)
+      ? linha.replace(/(\([^)]*\))\s*$/u, '*$1*')
+      : `${linha} *(Vetado)*`;
   }
 
   return linha;
@@ -131,6 +153,20 @@ const serializarNo = (no: Record<string, unknown>, nivelDoPai: number): string[]
   const tipo = typeof no['tipo'] === 'string' ? no['tipo'] : '';
   const filhos = Array.isArray(no['children']) ? (no['children'] as Record<string, unknown>[]) : [];
 
+  // Anexo é heading de nível 2 e, ao contrário das divisões, é referenciável:
+  // leva Block ID ao final da linha (§3.3 e §3.1).
+  if (tipo === 'anexo') {
+    const numero = typeof no['numero'] === 'string' ? no['numero'] : '';
+    const titulo = typeof no['titulo'] === 'string' ? no['titulo'] : '';
+    const blockId = typeof no['blockId'] === 'string' ? ` ^${no['blockId']}` : '';
+
+    return [
+      `## Anexo ${numero} - ${titulo}${blockId}`,
+      '',
+      ...filhos.flatMap((filho) => serializarNo(filho, -1)),
+    ];
+  }
+
   if (HEADING[tipo] !== undefined) {
     const numero = typeof no['numero'] === 'string' ? no['numero'] : '';
     const titulo = typeof no['titulo'] === 'string' ? no['titulo'] : '';
@@ -145,7 +181,7 @@ const serializarNo = (no: Record<string, unknown>, nivelDoPai: number): string[]
   }
 
   // Pena fica exatamente um nível abaixo do dispositivo a que pertence (§3.1).
-  const nivel = tipo === 'pena' ? nivelDoPai + 1 : (NIVEL[tipo] ?? nivelDoPai + 1);
+  const nivel = tipo === 'pena' ? nivelDoPai + 1 : (NIVEL[tipo] ?? Math.max(0, nivelDoPai + 1));
   const recuo = INDENTACAO.repeat(nivel);
   const blockId = typeof no['blockId'] === 'string' ? no['blockId'] : '';
   const corpo = comSinalizacao(no, designador(no));
