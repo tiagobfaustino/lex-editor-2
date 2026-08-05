@@ -8,6 +8,10 @@ CLAUDE.md
 docs/
 spec/
 exemplos/
+# O golden é a saída canônica do Formatter, definida pela MARKDOWN_SPEC §2.4.
+# Deixar o Prettier reescrevê-lo faria o teste byte a byte comparar a saída do
+# Formatter com a formatação de outra ferramenta — e falhar, como falhou.
+fixtures/
 node_modules/
 dist/
 out/

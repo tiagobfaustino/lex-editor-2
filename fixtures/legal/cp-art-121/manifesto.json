@@ -1,0 +1,25 @@
+{
+  "descricao": "Metadados que o Formatter não pode inventar nem obter do relógio. Ver README.md desta pasta.",
+  "sigla": "cp",
+  "titulo": "Código Penal",
+  "tipoNorma": "decreto-lei",
+  "numero": "2.848",
+  "ano": 1940,
+  "ramo": "penal",
+  "fonte": "https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm",
+  "dataPublicacao": "1940-12-07",
+  "dataAtualizacaoLegal": "2025-01-01",
+  "dataFormatacaoVinculex": "2026-08-05",
+  "dataVerificacaoIntegridade": "2026-08-05",
+  "versaoVinculex": "1.0.0",
+  "legalStatus": "vigente",
+  "publicationStatus": "draft",
+  "sourceType": "local_file",
+  "sourceRole": "primary_current",
+  "sourceVariant": "compiled",
+  "tags": ["penal", "fixture"],
+  "notasEditoriais": [
+    "Recorte do art. 121 para fins de teste do pipeline; não é o artigo íntegro.",
+    "Texto ainda não conferido contra a fonte oficial — ver README.md desta pasta."
+  ]
+}
