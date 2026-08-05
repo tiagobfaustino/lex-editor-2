@@ -27,6 +27,7 @@
     "check:pre-commit": "npm run lint && npm run format:check",
     "test": "npm run test:unit",
     "test:boundaries": "node tests/config/eslint-boundaries.test.mjs",
+    "check:data-model": "node scripts/audit-data-model.mjs",
     "test:unit": "vitest run",
     "typecheck": "npm run typecheck:workspaces && npm run typecheck:node && npm run typecheck:renderer",
     "typecheck:workspaces": "npm run typecheck --workspaces --if-present",
