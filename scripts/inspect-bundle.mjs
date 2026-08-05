@@ -5,15 +5,11 @@
 // Uso: node scripts/inspect-bundle.mjs [caminho/do/unpacked]
 // Sai com código 1 na primeira violação encontrada.
 
-import { createPackage as _unused, extractAll, listPackage } from '@electron/asar';
+import { extractAll, listPackage } from '@electron/asar';
 import { FuseV1Options, getCurrentFuseWire } from '@electron/fuses';
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
-import { readdirSync } from 'node:fs';
-
-void _unused;
 
 const unpackedDirectory = process.argv[2] ?? 'release/linux-unpacked';
 const asarPath = join(unpackedDirectory, 'resources', 'app.asar');
@@ -186,4 +182,3 @@ if (violations.length > 0) {
 }
 
 console.log('\nInspeção do bundle: sem violações.');
-void execFileSync;
