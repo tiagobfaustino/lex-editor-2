@@ -1,3 +1,116 @@
-// O domínio será introduzido na Feature 002. Este módulo vazio estabelece
-// agora apenas o ponto público e a fronteira de compilação do pacote.
-export {};
+// Ponto público do pacote de domínio.
+//
+// O que sai daqui é contrato para o parser, o reconciliador, o Formatter, a
+// validação bloqueante e o worker de atualização. O pacote é puro: não importa
+// Electron, React, filesystem, rede nem banco, e a Feature 002 prova isso por
+// lint e por teste.
+
+export {
+  astPhaseSchema,
+  deviceStatusSchema,
+  legalStatusSchema,
+  parseConfidenceReasonSchema,
+  parseConfidenceSchema,
+  publicationStatusSchema,
+  sourceRoleSchema,
+  sourceTypeSchema,
+  sourceVariantSchema,
+  tipoNormaSchema,
+  tipoNoSchema,
+  TIPOS_DIVISAO,
+  TIPOS_REFERENCIAVEIS,
+} from './ast/enums.js';
+
+export type {
+  AstPhase,
+  DeviceStatus,
+  LegalStatus,
+  ParseConfidence,
+  ParseConfidenceReason,
+  PublicationStatus,
+  SourceRole,
+  SourceType,
+  SourceVariant,
+  TipoDivisao,
+  TipoNo,
+  TipoNorma,
+  TipoReferenciavel,
+} from './ast/enums.js';
+
+export { CODIGOS_PROBLEMA, LIMITE_PROBLEMAS } from './ast/errors.js';
+
+export type {
+  CodigoProblema,
+  ProblemaValidacao,
+  ResultadoValidacao,
+  SegmentoCaminho,
+} from './ast/errors.js';
+
+export type {
+  AlineaNode,
+  AnexoNode,
+  ArtigoNode,
+  BlockIdDepreciado,
+  CapituloNode,
+  DispositivoNodeBase,
+  DivisaoNodeBase,
+  IdentifiedChildNode,
+  IdentifiedNormaAST,
+  IncisoNode,
+  ItemNode,
+  LeiNode,
+  LivroNode,
+  NormaChildNode,
+  NormaNode,
+  NormaNodeBase,
+  ParagrafoNode,
+  ParsedChildNode,
+  ParsedNormaAST,
+  ParseEvidence,
+  PenaNode,
+  RedacaoAnterior,
+  ReferenciaRedacao,
+  SecaoNode,
+  SlotBlockIdOpcional,
+  SlotComBlockId,
+  SlotSemBlockId,
+  SourceReference,
+  SubsecaoNode,
+  TabelaNode,
+  TituloNode,
+} from './ast/nodes.js';
+
+export {
+  blockIdDepreciadoSchema,
+  identifiedAnexoSchema,
+  identifiedArtigoSchema,
+  identifiedNormaAstSchema,
+  identifiedTabelaSchema,
+  normaAstSchema,
+  parseEvidenceSchema,
+  parsedAnexoSchema,
+  parsedArtigoSchema,
+  parsedNormaAstSchema,
+  parsedTabelaSchema,
+  redacaoAnteriorSchema,
+  referenciaRedacaoSchema,
+  sourceReferenceSchema,
+} from './ast/schemas.js';
+
+export {
+  percorrer,
+  validarEstrutura,
+  validarIdentifiedNormaAst,
+  validarNormaAst,
+  validarParsedNormaAst,
+} from './ast/validate.js';
+
+export {
+  evidenciaAlta,
+  evidenciaBaixa,
+  identifiedCompleta,
+  identifiedMinima,
+  origemHistorica,
+  origemMinima,
+  parsedMinima,
+} from './ast/fixtures/minimas.js';
