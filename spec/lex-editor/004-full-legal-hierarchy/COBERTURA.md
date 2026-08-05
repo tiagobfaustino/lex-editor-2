@@ -114,7 +114,7 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 | Ausência de compilada não bloqueia importação | ADR-009 §4 | `fontes/so-anotada/` | `[ ]` |
 | `supportingSourceRefs` preserva a evidência complementar | ADR-009 §6 | `fontes/compilada-e-anotada/` | `[ ]` |
 | Conflito entre fontes exige revisão humana | ADR-009 §6 | `fontes/conflito.txt` | `[ ]` |
-| Ausência na compilada ≠ revogação | ADR-009 §7 | `identidade/ausente-na-candidata.txt` | `[ ]` |
+| Ausência na compilada ≠ revogação | ADR-009 §7 | `identidade.test.ts` namespace | coberta |
 | Confiança `low` exige `requiresHumanReview` | DM §NormaAST | validado no schema | `002` |
 | Baixa confiança não avança para identificada | spec, invariante | `gramatica.test.ts` baixa confiança | coberta |
 
@@ -126,13 +126,13 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 |---|---|---|---|
 | Colisão na primeira publicação falha ou qualifica | BID §7.3 | `gramatica.test.ts` desambiguação | coberta |
 | Qualificação usa a menor divisão que desambigua | BID §2.4 | `gramatica.test.ts` desambiguação | coberta |
-| ID publicado não é reciclado nem recalculado | ADR-001 | `identidade/id-publicado-estavel.txt` | `[ ]` |
-| Alteração textual não muda identidade | RF-004-03 | `identidade/mudanca-textual.txt` | `[ ]` |
-| Colisão tardia não renomeia dispositivo publicado | BID §2.4 | `identidade/colisao-tardia.txt` | `[ ]` |
-| Alias é permanente e acíclico | invariante | `identidade/alias-ciclo.txt` | `[ ]` |
-| Renumeração produz redirect, não novo ID | RF-004-03 | `identidade/renumeracao.txt` | `[ ]` |
-| Namespace histórico inclui revogados e depreciados | BID §2.4 | `identidade/namespace-historico.txt` | `[ ]` |
-| Ambiguidade de identidade bloqueia | RF-004-04 | `identidade/ambiguo.txt` | `[ ]` |
+| ID publicado não é reciclado nem recalculado | ADR-001 | `identidade.test.ts` namespace | coberta |
+| Alteração textual não muda identidade | RF-004-03 | `identidade.test.ts` identidade/texto | coberta |
+| Colisão tardia não renomeia dispositivo publicado | BID §2.4 | `identidade.test.ts` colisão tardia | coberta |
+| Alias é permanente e acíclico | invariante | `identidade.test.ts` aliases | coberta |
+| Renumeração produz redirect, não novo ID | RF-004-03 | `reconciliar` emite alias a partir de `renumeradoPara` | parcial — falta caso ponta a ponta |
+| Namespace histórico inclui revogados e depreciados | BID §2.4 | `identidade.test.ts` namespace | coberta |
+| Ambiguidade de identidade bloqueia | RF-004-04 | `identidade.test.ts` ambiguidade | coberta |
 
 ## 8. Formatter e validação canônica (T004-06)
 

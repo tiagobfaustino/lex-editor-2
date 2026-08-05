@@ -14,9 +14,9 @@
 
 ## Identidade
 
-- [ ] T004-04 Implementar reconciliação de identidade e bloqueio de
+- [x] T004-04 Implementar reconciliação de identidade e bloqueio de
   ambiguidade.
-- [ ] T004-05 Implementar namespace histórico, colisões tardias, aliases e
+- [x] T004-05 Implementar namespace histórico, colisões tardias, aliases e
   renumerações sem reciclar IDs.
 - [ ] T004-06 Completar Formatter e validações canônicas para toda a gramática.
 

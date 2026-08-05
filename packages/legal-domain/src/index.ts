@@ -135,5 +135,13 @@ export type {
   Relatorio,
 } from './pipeline/relatorio.js';
 
+export {
+  reconciliar,
+  registrarPublicacao,
+  REGISTRO_VAZIO,
+  verificarAliases,
+} from './reconciliation/index.js';
+export type { RegistroPublicado, ResultadoDaReconciliacao } from './reconciliation/index.js';
+
 export { processar } from './pipeline/processar.js';
 export type { ResultadoDoPipeline } from './pipeline/processar.js';
