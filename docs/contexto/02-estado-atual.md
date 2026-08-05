@@ -15,7 +15,7 @@
 | Testes | 57 unitários + 1 teste de fronteiras de lint + 8 smoke E2E (Playwright/Electron) |
 | CI | GitHub Actions, 3 jobs verdes na primeira execução (2026-08-05) |
 | Empacotamento | electron-builder + fuses + inspeção do asar (`scripts/inspect-bundle.mjs`) |
-| Grafo de conhecimento | 417 nós, 437 arestas, 56 comunidades — gerado, não versionado |
+| Grafo de conhecimento | 682 nós, 865 arestas, 73 comunidades — gerado, não versionado |
 | Git | Tudo commitado em `master` e sincronizado com `origin` |
 
 ## Comandos e resultado verificado
@@ -75,9 +75,13 @@ graphify-out/      grafo de conhecimento gerado; não versionado
 
 ## Grafo de conhecimento
 
-`graphify-out/` guarda um grafo de 417 nós e 437 arestas sobre `docs/`, `spec/`,
-`src/`, `packages/` e `tests/` — 57 dos 61 documentos do escopo. Os 4 ausentes
-são os `spec/templates/`, formulários em branco sem conceito a extrair.
+`graphify-out/` guarda um grafo de 682 nós e 865 arestas sobre `docs/`, `spec/`,
+`src/`, `packages/` e `tests/`. Os `spec/templates/` ficam de fora por serem
+formulários em branco, sem conceito a extrair.
+
+O salto em relação aos 417 nós anteriores é a Feature 002: o pacote de domínio
+deixou de ser um módulo vazio. Reextrair depois de mexer em código é
+`graphify update .`, sem custo de API.
 
 O escopo vive em `.graphifyignore`: skills de agente de terceiros e os textos
 legais de `exemplos/` ficam fora, porque descreveriam bibliotecas alheias e
