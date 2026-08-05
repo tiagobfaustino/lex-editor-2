@@ -1,7 +1,7 @@
 # Estado Atual do Repositório
 
-> Verificado em 2026-08-04, contra o working tree (branch `master`,
-> último commit `dbc1416`).
+> Verificado em 2026-08-05, contra o working tree (branch `master`,
+> último commit `16dda01`).
 
 ## Situação em uma tabela
 
@@ -12,9 +12,9 @@
 | Specs de implementação | 8 features especificadas; 001 `in_progress`, 002–008 `draft` |
 | Código de aplicação | Shell Electron seguro, sem lógica jurídica |
 | Código de domínio | Módulo público vazio, apenas fronteira de compilação |
-| Testes | 14 unitários + 1 teste de fronteiras de lint; sem E2E |
-| CI | Não existe |
-| Empacotamento | Não configurado |
+| Testes | 14 unitários + 1 teste de fronteiras de lint + 8 smoke E2E (Playwright/Electron) |
+| CI | GitHub Actions, 3 jobs verdes na primeira execução (2026-08-05) |
+| Empacotamento | electron-builder + fuses + inspeção do asar (`scripts/inspect-bundle.mjs`) |
 | Grafo de conhecimento | 417 nós, 437 arestas, 56 comunidades — gerado, não versionado |
 | Git | Tudo commitado em `master` e sincronizado com `origin` |
 
@@ -30,7 +30,9 @@ Executados nesta ordem em 2026-08-04:
 | `npm run lint` | Passa com `--max-warnings 0` |
 | `npm run format:check` | Passa |
 | `npm run check:pre-commit` | Passa |
-| `npm run test:e2e` | Não existe |
+| `npm run test:e2e` | Passa — 8 smoke no Playwright/Electron (2026-08-04) |
+| `npm run build:unpacked` | Passa — pacote gerado em `release/linux-unpacked` |
+| `node scripts/inspect-bundle.mjs release/linux-unpacked` | Passa — 350 entradas, sem violações |
 
 `format:check` reprovava os cinco arquivos de `exemplos/` até 2026-08-04, o que
 travava o hook de pre-commit e manteve todo o código fora do Git. Era falha de
@@ -98,20 +100,21 @@ Concluídas e validadas:
   e limite de tamanho em ambos os sentidos;
 - **T001-06** shell React com as três áreas previstas na Fase 0 do roadmap e
   tokens semânticos para estado jurídico e severidade;
-- **T001-07** Vitest configurado e três suítes negativas de fronteira.
+- **T001-07** Vitest configurado e três suítes negativas de fronteira;
+- **T001-08** Playwright Electron com 8 smoke tests sobre o app compilado;
+- **T001-09** `electron-builder.yml` com fuses, `scripts/inspect-bundle.mjs`
+  para integridade do asar e CI mínima em `.github/workflows/ci.yml`
+  (validate, e2e e package);
+- **T001-10** todos os comandos executados, bundle inspecionado (350 entradas,
+  apenas `zod` embarcado) e os cinco critérios de aceite demonstrados.
 
 Pendentes:
 
-- **T001-08** Playwright Electron com smoke test — a dependência sequer está
-  instalada;
-- **T001-09** build empacotado, fuses/integridade ASAR e CI — não há
-  `.github/workflows/` nem `electron-builder`;
-- **T001-10** execução de todos os comandos, inspeção do bundle e demonstração
-  dos critérios de aceite.
+- nenhum dentro da Feature 001.
 
-Nenhum dos cinco critérios de aceite da Feature 001 está marcado. A feature
-**não** pode passar a `done` no estado atual, e a Feature 002 não pode ser
-ativada antes disso.
+Os cinco critérios de aceite da Feature 001 estão marcados no `spec.md`. A
+feature pode ser promovida a `done` no `FEATURE_INDEX.md`; a Feature 002 só
+pode ser ativada depois dessa promoção, conforme a regra de ativação.
 
 ## O que deliberadamente não existe
 

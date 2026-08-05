@@ -73,11 +73,11 @@ main rejeita a solicitação e não executa efeito privilegiado.
 
 ## Critérios de aceite
 
-- [ ] Scripts de dev, build, lint, typecheck, unitário e E2E passam.
-- [ ] Smoke test abre e fecha a aplicação.
-- [ ] Teste confirma as preferências seguras da janela e a allowlist IPC.
-- [ ] Bundle/DTOs não contêm AST, HTML bruto, paths ou secrets.
-- [ ] Limites entre domínio, main, preload e renderer estão documentados.
+- [x] Scripts de dev, build, lint, typecheck, unitário e E2E passam.
+- [x] Smoke test abre e fecha a aplicação.
+- [x] Teste confirma as preferências seguras da janela e a allowlist IPC.
+- [x] Bundle/DTOs não contêm AST, HTML bruto, paths ou secrets.
+- [x] Limites entre domínio, main, preload e renderer estão documentados.
 
 ## Validação mínima
 

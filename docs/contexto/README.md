@@ -1,6 +1,6 @@
 # Contexto de Desenvolvimento — Lex Editor
 
-> Última atualização: 2026-08-04
+> Última atualização: 2026-08-05
 > Escopo: registro do que já foi construído, decidido e validado neste
 > repositório até a data acima.
 

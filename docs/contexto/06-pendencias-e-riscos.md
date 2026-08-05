@@ -18,21 +18,33 @@ como histórico:
   configurações, a ADR-009 e o realinhamento documental entraram em dez commits
   na `master`.
 
+## Resolvido em 2026-08-05
+
+A Feature 001 foi fechada: T001-08 a T001-10 concluídas e os cinco critérios
+de aceite demonstrados.
+
+- **T001-08** — smoke E2E com Playwright/Electron sobre o app compilado
+  (8 testes, inclusive preferências seguras da janela e allowlist IPC).
+- **T001-09** — `electron-builder` escolhido, fuses aplicados, integridade do
+  asar verificada por `scripts/inspect-bundle.mjs` e CI mínima em
+  `.github/workflows/ci.yml` (validate, e2e e package), verde na primeira
+  execução.
+- **T001-10** — todos os comandos executados (locais e no CI), bundle
+  inspecionado (350 entradas no asar, apenas `zod` embarcado, sem AST, HTML
+  bruto, paths ou secrets) e pacote aberto manualmente na estação de
+  desenvolvimento.
+
+Divergência resolvida durante a T001-09: a inspeção inicial esperava o fuse
+`GrantFileProtocolExtraPrivileges` desligado, mas um A/B empírico mostrou que o
+renderer deste app é servido por `file://` dentro do asar e o fuse precisa
+ficar ligado (`electron-builder.yml` já estava correto; o `inspect-bundle.mjs`
+é que tinha a expectativa errada e foi corrigido).
+
 ## Feature 001 — o que falta para fechar
 
-| Tarefa | Falta | Consequência |
-|---|---|---|
-| T001-08 | Playwright Electron e smoke test; a dependência nem está instalada | Nenhuma evidência automatizada de que a aplicação abre |
-| T001-09 | Build empacotado, fuses/integridade ASAR e CI (`.github/workflows/` não existe) | RF-001-02 não demonstrado; nenhuma validação roda em push/PR |
-| T001-10 | Executar todos os comandos, inspecionar o bundle e demonstrar os critérios de aceite | A feature não pode passar a `done` |
-
-Nenhum dos cinco critérios de aceite da Feature 001 está marcado. Em especial,
-o critério "bundle/DTOs não contêm AST, HTML bruto, paths ou secrets" exige a
-inspeção prevista na T001-10 — hoje é uma afirmação de desenho, não uma
-evidência.
-
-Enquanto isso não fechar, a Feature 002 não pode ser ativada: a regra de
-ativação exige dependências `done`.
+Nada. T001-08 a T001-10 estão concluídas e os cinco critérios de aceite estão
+marcados no `spec.md`. Falta apenas o ato administrativo de promover a feature
+para `done` no `FEATURE_INDEX.md` e, só então, ativar a Feature 002.
 
 ## Pendências de escopo já previstas
 
@@ -48,14 +60,18 @@ Não são atrasos; são o roadmap.
 
 ## Dívidas menores
 
-- **`out/` está no disco** com um build antigo. Como não há garantia de que
-  corresponde ao código atual, não serve de evidência de nada; a T001-09 deve
-  regerar tudo.
-- **Empacotamento não escolhido.** Não há `electron-builder` nem equivalente,
-  então fuses, integridade ASAR e assinatura por plataforma — todos exigidos
-  pelo critério de saída da Fase 0 do roadmap — continuam sem implementação.
 - **`test:boundaries` fora do `npm test`.** O script existe e passa, mas não
-  entra na suíte padrão; sem CI, ele só roda se alguém lembrar.
+  entra na suíte padrão; o CI o executa explicitamente, então o risco de
+  esquecimento local ficou coberto.
+- **`chrome-sandbox` sem setuid na estação de desenvolvimento.** O binário
+  empacotado só abre localmente com `--no-sandbox`; em `.deb`/AppImage o
+  electron-builder trata isso, mas vale registrar como nota de ambiente.
+- **Playwright não conecta no binário empacotado nesta estação** (timeout no
+  launch). O smoke roda sobre o app compilado com configuração equivalente à
+  produção, conforme decisão registrada no `playwright.config.ts`.
+- **Ações de CI ainda em `@v4`.** O runner emite aviso de deprecação do Node
+  20 para `actions/checkout@v4` e `actions/setup-node@v4`; subir para `@v5`
+  em limpeza futura.
 - **Tokens visuais são baseline.** Os valores oficiais de marca do Vinculex
   precisam substituir as cores atuais antes de a UI ser considerada pronta. A
   semântica dos nomes não muda.
@@ -101,12 +117,8 @@ necessário.
 
 ## Sugestão de sequência
 
-1. Fechar T001-08: instalar Playwright e escrever o smoke test sobre a
-   aplicação empacotada ou configuração equivalente à produção, não sobre a
-   página Vite isolada.
-2. Fechar T001-09: escolher o empacotador, aplicar fuses e integridade ASAR, e
-   criar a CI mínima de lint, typecheck, testes e fronteiras.
-3. Fechar T001-10: executar tudo, inspecionar o bundle contra AST, HTML bruto,
-   paths e secrets, e demonstrar os cinco critérios de aceite.
+1. ~~Fechar T001-08~~ — feito em 2026-08-05.
+2. ~~Fechar T001-09~~ — feito em 2026-08-05.
+3. ~~Fechar T001-10~~ — feito em 2026-08-05.
 4. Marcar a Feature 001 como `done` no `FEATURE_INDEX.md` e só então ativar a
    Feature 002.
