@@ -9,7 +9,7 @@
 |---|---|
 | Documentação de arquitetura | Completa e aceita (9 ADRs + 5 especificações) |
 | Documentação de produto | Completa (PRD, roadmap e fluxos dos dois produtos) |
-| Specs de implementação | 8 features especificadas; 001 `in_progress`, 002–008 `draft` |
+| Specs de implementação | 8 features especificadas; 001 `done`, 002–008 `draft` |
 | Código de aplicação | Shell Electron seguro, sem lógica jurídica |
 | Código de domínio | Módulo público vazio, apenas fronteira de compilação |
 | Testes | 14 unitários + 1 teste de fronteiras de lint + 8 smoke E2E (Playwright/Electron) |
@@ -112,9 +112,10 @@ Pendentes:
 
 - nenhum dentro da Feature 001.
 
-Os cinco critérios de aceite da Feature 001 estão marcados no `spec.md`. A
-feature pode ser promovida a `done` no `FEATURE_INDEX.md`; a Feature 002 só
-pode ser ativada depois dessa promoção, conforme a regra de ativação.
+Os cinco critérios de aceite da Feature 001 estão marcados no `spec.md` e a
+feature está `done` no `FEATURE_INDEX.md`. O que sobrou dela está registrado no
+`review.md`: a divergência aberta com a ADR-007 §4, que exige assinatura por
+plataforma, e as dívidas de empacotamento em macOS e Windows.
 
 ## O que deliberadamente não existe
 

@@ -13,7 +13,7 @@
 
 | ID | Feature | Prioridade | Implementation status | Dependências | Resultado verificável |
 |---|---|---:|---|---|---|
-| 001 | [Fundação do projeto](./lex-editor/001-project-foundation/spec.md) | P0 | in_progress | — | Workspace, qualidade, shell seguro e smoke test executáveis |
+| 001 | [Fundação do projeto](./lex-editor/001-project-foundation/spec.md) | P0 | done | — | Workspace, qualidade, shell seguro e smoke test executáveis |
 | 002 | [Contratos do domínio jurídico](./lex-editor/002-legal-domain-contracts/spec.md) | P0 | draft | 001 | Objetos `parsed`/`identified` validados em runtime sem Electron |
 | 003 | [Primeiro pipeline jurídico vertical](./lex-editor/003-first-legal-pipeline/spec.md) | P0 | draft | 002 | Fixture local produz Markdown canônico por CLI |
 | 004 | [Hierarquia jurídica completa](./lex-editor/004-full-legal-hierarchy/spec.md) | P0 | draft | 003 | Três leis de referência cobrem a gramática normativa completa |

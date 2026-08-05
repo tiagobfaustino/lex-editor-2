@@ -45,9 +45,9 @@ ficar ligado (`electron-builder.yml` já estava correto; o `inspect-bundle.mjs`
 
 ## Feature 001 — o que falta para fechar
 
-Nada. T001-08 a T001-10 estão concluídas e os cinco critérios de aceite estão
-marcados no `spec.md`. Falta apenas o ato administrativo de promover a feature
-para `done` no `FEATURE_INDEX.md` e, só então, ativar a Feature 002.
+Nada. T001-08 a T001-10 estão concluídas, os cinco critérios de aceite estão
+marcados no `spec.md` e a feature está `done` no `FEATURE_INDEX.md`. O que
+ficou em aberto não bloqueava o fechamento e está no `review.md` da feature.
 
 ## Pendências de escopo já previstas
 
