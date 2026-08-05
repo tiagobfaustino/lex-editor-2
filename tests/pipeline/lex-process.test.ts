@@ -172,6 +172,52 @@ describe('conteúdo canônico (MARKDOWN_SPEC)', () => {
   });
 });
 
+describe('fidelidade ao texto oficial', () => {
+  // A fixture foi conferida contra
+  // https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm
+  // em 2026-08-05. O texto compilado oficial preserva grafias sem acento e usa
+  // sinais próprios; a invariante da feature proíbe "corrigir" texto jurídico.
+  // Estes casos existem para que uma correção bem-intencionada quebre o teste
+  // em vez de silenciosamente alterar a lei.
+  const entrada = readFileSync(ENTRADA, 'utf8');
+  const golden = readFileSync(GOLDEN, 'utf8');
+
+  it('preserva as grafias sem acento do texto compilado', () => {
+    expect(entrada).toContain('Matar alguem:');
+    expect(entrada).toContain('por motivo futil;');
+    expect(entrada).toContain('torne impossivel a defesa');
+
+    expect(entrada).not.toContain('alguém');
+    expect(entrada).not.toContain('fútil');
+    expect(entrada).not.toContain('impossível');
+  });
+
+  it('preserva os dois pontos ao final do inciso V', () => {
+    expect(entrada).toContain('vantagem de outro crime:');
+  });
+
+  it('aceita o sinal de grau do § 2º e o travessão do inciso VII', () => {
+    // O oficial escreve "§ 1º" com ordinal e "§ 2°" com sinal de grau, e usa
+    // travessão em "VII –". O parser tem de engolir as três formas.
+    expect(entrada).toContain('§ 2°');
+    expect(entrada).toContain('VII – contra:');
+  });
+
+  it('carrega o texto normativo para o Markdown sem alterá-lo', () => {
+    expect(golden).toContain('Matar alguem:');
+    expect(golden).toContain('por motivo futil;');
+    expect(golden).toContain('torne impossivel a defesa');
+  });
+
+  it('canoniza o designador na serialização, sem tocar no texto', () => {
+    // O designador é reconstruído pelo Formatter a partir do número no nó, então
+    // sai na forma canônica da MARKDOWN_SPEC. Só o marcador muda; o texto
+    // normativo continua literal, e é essa separação que a spec exige.
+    expect(golden).toContain('- § 2º Se o homicídio é cometido:');
+    expect(golden).toContain('- VII - contra:');
+  });
+});
+
 describe('falha segura', () => {
   it('recusa inciso órfão na etapa de parsing e não grava saída', () => {
     const alvo = join(temporario, 'nao-deve-existir.md');

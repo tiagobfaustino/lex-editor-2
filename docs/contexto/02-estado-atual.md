@@ -9,10 +9,10 @@
 |---|---|
 | Documentação de arquitetura | Completa e aceita (9 ADRs + 5 especificações) |
 | Documentação de produto | Completa (PRD, roadmap e fluxos dos dois produtos) |
-| Specs de implementação | 8 features especificadas; 001 e 002 `done`, 003 `review`, 004–008 `draft` |
+| Specs de implementação | 8 features especificadas; 001 a 003 `done`, 004–008 `draft` |
 | Código de aplicação | Shell Electron seguro, sem lógica jurídica |
 | Código de domínio | NormaAST + pipeline vertical: parser, Block IDs, Formatter e CLI `lex process` |
-| Testes | 80 unitários + 1 teste de fronteiras de lint + 8 smoke E2E (Playwright/Electron) |
+| Testes | 85 unitários + 1 teste de fronteiras de lint + 8 smoke E2E (Playwright/Electron) |
 | CI | GitHub Actions, 3 jobs verdes na primeira execução (2026-08-05) |
 | Empacotamento | electron-builder + fuses + inspeção do asar (`scripts/inspect-bundle.mjs`) |
 | Grafo de conhecimento | 819 nós, 1121 arestas, 81 comunidades — gerado, não versionado |
@@ -25,7 +25,7 @@ Executados nesta ordem em 2026-08-05:
 | Comando | Resultado |
 |---|---|
 | `npm run typecheck` | Passa (workspaces, node e renderer) |
-| `npm run test:unit` | Passa — 6 arquivos, 80 testes |
+| `npm run test:unit` | Passa — 6 arquivos, 85 testes |
 | `npm run test:boundaries` | Passa |
 | `npm run lint` | Passa com `--max-warnings 0` |
 | `npm run format:check` | Passa |
@@ -153,11 +153,13 @@ Corte vertical completo, da fixture local ao Markdown canônico, acionado por
 `lex process` e sem tocar rede, Electron ou banco. Duas execuções da CLI e o
 golden compartilham um único SHA-256.
 
-A feature está em `review`, não `done`: os cinco critérios de aceite estão
-demonstrados, mas a T003-10 pede conferência do texto da fixture contra o
-Planalto, que exige rede e revisor humano. O `review.md` registra isso como
-divergência aberta — um golden estruturalmente perfeito sobre texto jurídico
-errado é o risco que a própria spec nomeia.
+A conferência da fixture contra o Planalto encontrou **seis divergências de
+texto jurídico** herdadas de `exemplos/` — grafias sem acento que o texto
+compilado preserva, pontuação final e sinais gráficos. Todas corrigidas para o
+oficial e fixadas em teste. Nenhuma delas seria pega por revisão estrutural:
+produziam árvore válida, Block IDs corretos e golden determinístico. É o
+melhor argumento disponível para a regra da ADR-009 de que `exemplos/` não é
+fonte normativa.
 
 ## O que deliberadamente não existe
 

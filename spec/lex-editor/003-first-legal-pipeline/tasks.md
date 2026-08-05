@@ -21,7 +21,6 @@
 
 - [x] T003-08 Criar golden e testar duas execuções byte a byte.
 - [x] T003-09 Testar inciso órfão/falha intermediária e códigos de saída.
-- [~] T003-10 Revisar golden contra a fonte e demonstrar o comando ponta a
-  ponta. **Parcial**: o comando ponta a ponta está demonstrado; a conferência
-  do texto contra o Planalto exige acesso à rede e revisor humano. Ver
-  `review.md`.
+- [x] T003-10 Revisar golden contra a fonte e demonstrar o comando ponta a
+  ponta. A conferência contra o Planalto encontrou seis divergências, todas
+  corrigidas e fixadas em teste; ver `review.md`.

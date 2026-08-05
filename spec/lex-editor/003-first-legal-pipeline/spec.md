@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: review
+- `implementation_status`: done
 - `priority`: P0
 - `owner`: não atribuído
 

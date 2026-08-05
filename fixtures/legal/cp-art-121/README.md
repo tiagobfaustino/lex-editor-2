@@ -34,20 +34,25 @@ costurados de partes distantes da lei:
   inclui divisão por padrão (`BLOCK_ID_SPEC.md` §2.4) e o recorte não tem
   colisão de numeração a desambiguar.
 
-## Proveniência e verificação pendente
+## Proveniência e verificação
 
 O texto foi transcrito a partir de `exemplos/Decreto-Lei n° 2.848 (CP).md`,
-removendo marcação editorial (spans HTML, realces, âncoras de bloco do Obsidian
-e rótulos de nomen juris). A ADR-009 é explícita: os arquivos de `exemplos/`
-são referência editorial legada, **não são fonte normativa**.
+removendo marcação editorial, e depois **conferido contra a fonte oficial** —
+<https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm> — em
+2026-08-05.
 
-> **Verificação humana pendente (T003-10).** A conferência do texto contra
-> a fonte oficial — <https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm>
-> — não foi feita: o ambiente de desenvolvimento não tem acesso à rede e a
-> Feature 003 exclui download por URL do escopo. O `manifesto.json` registra o
-> SHA-256 do arquivo local, que prova integridade do que está no repositório,
-> **não** fidelidade ao texto oficial. Um golden estruturalmente perfeito sobre
-> texto jurídico errado é exatamente o risco que a spec nomeia.
+A conferência encontrou seis divergências e todas foram corrigidas para o texto
+oficial. O `review.md` da Feature 003 traz a tabela. Em resumo: o texto
+compilado preserva `alguem`, `futil` e `impossivel` sem acento, encerra o inciso
+V com dois-pontos e usa `§ 2°` com sinal de grau e `VII –` com travessão.
+
+> **Não "corrija" essas grafias.** Elas são o texto oficial, e há teste
+> automatizado fixando cada uma. A ADR-009 é explícita: os arquivos de
+> `exemplos/` são referência editorial legada, não fonte normativa — foi
+> justamente confiar neles que introduziu os seis erros.
+
+O SHA-256 do `manifesto.json` prova integridade do arquivo no repositório; a
+fidelidade ao texto oficial é garantida pela conferência acima e pelos testes.
 
 ## Papel no conjunto de fontes
 

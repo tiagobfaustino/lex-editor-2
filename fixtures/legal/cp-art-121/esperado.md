@@ -27,15 +27,15 @@ tags: ["penal", "fixture"]
 > [!note] Nota Editorial
 > Texto ainda não conferido contra a fonte oficial — ver README.md desta pasta.
 
-- Art. 121. Matar alguém: ^cp-art-121
+- Art. 121. Matar alguem: ^cp-art-121
   - Pena - reclusão, de seis a vinte anos. ^cp-art-121-pena
   - § 1º Se o agente comete o crime impelido por motivo de relevante valor social ou moral, ou sob o domínio de violenta emoção, logo em seguida a injusta provocação da vítima, o juiz pode reduzir a pena de um sexto a um terço. ^cp-art-121-par-1
   - § 2º Se o homicídio é cometido: ^cp-art-121-par-2
     - I - mediante paga ou promessa de recompensa, ou por outro motivo torpe; ^cp-art-121-par-2-inc-i
-    - II - por motivo fútil; ^cp-art-121-par-2-inc-ii
+    - II - por motivo futil; ^cp-art-121-par-2-inc-ii
     - III - com emprego de veneno, fogo, explosivo, asfixia, tortura ou outro meio insidioso ou cruel, ou de que possa resultar perigo comum; ^cp-art-121-par-2-inc-iii
-    - IV - à traição, de emboscada, ou mediante dissimulação ou outro recurso que dificulte ou torne impossível a defesa do ofendido; ^cp-art-121-par-2-inc-iv
-    - V - para assegurar a execução, a ocultação, a impunidade ou vantagem de outro crime; ^cp-art-121-par-2-inc-v
+    - IV - à traição, de emboscada, ou mediante dissimulação ou outro recurso que dificulte ou torne impossivel a defesa do ofendido; ^cp-art-121-par-2-inc-iv
+    - V - para assegurar a execução, a ocultação, a impunidade ou vantagem de outro crime: ^cp-art-121-par-2-inc-v
     - VI - (Revogado pela Lei nº 14.994, de 2024) ^cp-art-121-par-2-inc-vi
     - VII - contra: ^cp-art-121-par-2-inc-vii
       - a) autoridade ou agente descrito nos arts. 142 e 144 da Constituição Federal, integrantes do sistema prisional e da Força Nacional de Segurança Pública, no exercício da função ou em decorrência dela, ou contra seu cônjuge, companheiro ou parente consanguíneo até o terceiro grau, em razão dessa condição; ^cp-art-121-par-2-inc-vii-ali-a

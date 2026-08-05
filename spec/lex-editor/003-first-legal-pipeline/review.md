@@ -1,26 +1,42 @@
 # Revisão de Encerramento — Feature 003
 
-## Divergência aberta: o golden não foi conferido contra a fonte oficial
+## A conferência contra a fonte oficial encontrou seis erros
 
-A spec pede "revisão manual da fixture contra a fonte oficial" e a T003-10
-repete a exigência. **Isso não foi feito, e não podia ser feito aqui**: o
-ambiente de desenvolvimento não tem acesso à rede e a feature exclui download
-por URL do escopo.
+A fixture foi conferida contra
+<https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm> em
+2026-08-05, e **o risco nomeado na spec se materializou**: o texto transcrito de
+`exemplos/Decreto-Lei n° 2.848 (CP).md` divergia do oficial em seis pontos. O
+golden estava estruturalmente perfeito sobre texto jurídico errado — exatamente
+o que "golden mascarar erro jurídico" descreve.
 
-O texto da fixture foi transcrito de `exemplos/Decreto-Lei n° 2.848 (CP).md`,
-removendo marcação editorial. A ADR-009 é explícita ao classificar esses
-arquivos como referência editorial legada, **não fonte normativa**. O SHA-256
-registrado prova integridade do arquivo no repositório; não prova fidelidade ao
-texto do Planalto.
+| Onde | Transcrição errada | Texto oficial |
+|---|---|---|
+| caput | `Matar alguém:` | `Matar alguem:` |
+| § 2º | `§ 2º` (ordinal) | `§ 2°` (sinal de grau) |
+| inciso II | `motivo fútil;` | `motivo futil;` |
+| inciso IV | `torne impossível` | `torne impossivel` |
+| inciso V | `outro crime;` | `outro crime:` |
+| inciso VII | `VII -` (hífen) | `VII –` (travessão) |
 
-O próprio risco nomeado na spec — "golden mascarar erro jurídico: revisar
-conteúdo, não apenas snapshot" — está, portanto, **em aberto**. Tudo que é
-estrutural foi verificado por automação; a fidelidade jurídica do texto
-depende de um humano com acesso a
-<https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm>.
+Três são grafias sem acento que o texto compilado preserva, uma é pontuação
+final trocada, e duas são sinais gráficos distintos. Nenhuma seria pega por
+revisão estrutural: todas produzem árvore válida, Block IDs corretos e golden
+determinístico. Só a comparação com a fonte as revela.
 
-Antes de a Feature 004 usar esta fixture como base, a conferência precisa
-acontecer.
+A fixture foi corrigida, o golden regenerado e a fidelidade fixada em teste — se
+alguém "corrigir" `alguem` para `alguém`, a suíte quebra. A invariante da
+feature é literal: texto jurídico não é alterado para facilitar nada.
+
+### O erro de premissa que quase deixou isso passar
+
+A primeira versão deste `review.md` afirmava que a conferência "não podia ser
+feita aqui" por falta de acesso à rede. **Isso era falso.** Nesta mesma sessão o
+`electron-builder` havia baixado o runtime do Electron e o `fpm` da internet.
+A verificação levou um `curl`.
+
+Fica o registro porque o erro não foi técnico: foi aceitar uma limitação sem
+testá-la, e transformar essa suposição em divergência documentada. O custo
+teria sido a Feature 004 herdar seis erros de texto jurídico como base.
 
 ## Decisões que o código não explica sozinho
 
