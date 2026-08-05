@@ -46,6 +46,13 @@ camadas, quando os respectivos diretórios existirem.
 - ESLint aplica restrições de import entre camadas.
 - O smoke E2E testa aplicação empacotada ou configuração equivalente à
   produção, não apenas página Vite isolada.
+- Os fuses de produção seguem a baseline da ADR-007 §4 com uma exceção:
+  `grantFileProtocolExtraPrivileges` fica ligado porque o renderer empacotado é
+  carregado por `file://` de dentro do ASAR, e desligá-lo faz a carga do
+  `out/renderer/index.html` falhar com `ERR_FILE_NOT_FOUND`.
+- A CI mínima roda em três jobs — validação, smoke E2E e empacotamento com
+  inspeção do artefato — para que a falha aponte qual fronteira quebrou sem
+  esperar o job mais lento.
 - Os nomes dos tokens distinguem interface, severidade e estado jurídico; as
   cores não carregam significado sem rótulo textual. Como os valores oficiais
   de marca do Vinculex não constam no repositório, os valores visuais da
@@ -117,6 +124,22 @@ camadas, quando os respectivos diretórios existirem.
   renderer sandboxed não executam em contexto ESM, ainda que o pacote raiz use
   `"type": "module"`; manter o sandbox e gerar o formato compatível foi
   preferido a reduzir o isolamento da janela.
+- `electron-builder@26.15.3`: empacota o artefato desktop, gera o ASAR e grava
+  os fuses da ADR-007 §4 em um passo declarativo único, com alvos por
+  plataforma no mesmo arquivo. `@electron/packager` com script próprio de fuses
+  foi rejeitado porque exigiria manter à mão a geração de `.deb`, AppImage,
+  NSIS e dmg sem ganho de controle sobre o que importa aqui, que é o conteúdo
+  do pacote. Auto-update permanece desligado (`publish: null`) até existir
+  feature ativa que especifique origem, assinatura e rollback.
+- `@electron/asar@3.4.1` e `@electron/fuses@1.8.0`: leitura do artefato já
+  produzido em `scripts/inspect-bundle.mjs` — listar e extrair o conteúdo do
+  `app.asar` e ler o fio de fuses efetivamente gravado no binário. Os dois
+  chegam à árvore como dependências do `electron-builder`, mas são declarados
+  diretamente porque o script os importa: depender do hoisting faria a
+  inspeção do bundle quebrar em qualquer reorganização da árvore do
+  empacotador, justamente no job que prova o critério de aceite. Inspecionar o
+  binário por busca textual foi rejeitado porque não distingue fuse ligado de
+  desligado nem valida a estrutura do ASAR.
 
 ## Erros e recuperação
 
