@@ -74,6 +74,7 @@ temp/
 .playwright-mcp/
 .claude/
 .kilocode/
+.kilo/
 .serena/
 
 # Regras de ferramenta pessoal por plataforma de agente (RTK e similares).

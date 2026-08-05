@@ -2,6 +2,8 @@
 .claude/
 CLAUDE.md
 .playwright-mcp/
+.kilo/
+.kilocode/
 .serena/
 docs/
 spec/
