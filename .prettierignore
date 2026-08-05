@@ -2,6 +2,7 @@
 .claude/
 CLAUDE.md
 .playwright-mcp/
+.serena/
 docs/
 spec/
 exemplos/

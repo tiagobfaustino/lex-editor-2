@@ -74,6 +74,7 @@ temp/
 .playwright-mcp/
 .claude/
 .kilocode/
+.serena/
 
 # Regras de ferramenta pessoal por plataforma de agente (RTK e similares).
 # São preferência de quem opera o agente, não contrato deste projeto, e
