@@ -75,9 +75,14 @@ Não são atrasos; são o roadmap.
   pede validação de integridade "quando suportada", então a configuração está
   conforme — o que falta é construir em macOS/Windows para que a proteção
   passe a valer, e então reconferir com o mesmo script.
-- **Playwright não conecta no binário empacotado nesta estação** (timeout no
-  launch). O smoke roda sobre o app compilado com configuração equivalente à
-  produção, conforme decisão registrada no `playwright.config.ts`.
+- **Playwright não dirige o binário empacotado, e nunca vai dirigir.** Não é
+  limitação da estação: o launcher passa `--inspect=0` e espera a linha
+  `Debugger listening on ws://…`, que o fuse `enableNodeCliInspectArguments:
+  false` impede de existir. Um A/B no artefato confirmou — ligando só esse
+  fuse o launch conecta, desligando volta a expirar. O fuse deve continuar
+  desligado, então o smoke roda sobre o app compilado com configuração
+  equivalente à produção, conforme o `playwright.config.ts`. Detalhes e
+  consequências no `review.md` da Feature 001.
 - **Ações de CI ainda em `@v4`.** O runner emite aviso de deprecação do Node
   20 para `actions/checkout@v4` e `actions/setup-node@v4`; subir para `@v5`
   em limpeza futura.
