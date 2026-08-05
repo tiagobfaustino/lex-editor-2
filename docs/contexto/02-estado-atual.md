@@ -31,7 +31,7 @@ Executados nesta ordem em 2026-08-04:
 | `npm run format:check` | Passa |
 | `npm run check:pre-commit` | Passa |
 | `npm run test:e2e` | Passa — 8 smoke no Playwright/Electron (2026-08-04) |
-| `npm run build:unpacked` | Passa — pacote gerado em `release/linux-unpacked` |
+| `npm run build` | Passa — AppImage e `.deb` em `release/`, além do `linux-unpacked` |
 | `node scripts/inspect-bundle.mjs release/linux-unpacked` | Passa — 350 entradas, sem violações |
 
 `format:check` reprovava os cinco arquivos de `exemplos/` até 2026-08-04, o que

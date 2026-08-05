@@ -65,18 +65,12 @@ adotar auto-update.
   aqui. A ADR-007 pede validação "quando suportada", então a configuração está
   conforme — a proteção só passa a valer quando houver build de macOS ou
   Windows.
-- **`npm run build` não é exercido em lugar nenhum.** A CI roda
-  `build:unpacked`, que é `--dir`. Os alvos instaláveis (AppImage, deb, nsis,
-  dmg) foram gerados e abertos manualmente em 2026-08-05, mas uma regressão
-  que só apareça no empacotamento final passaria despercebida.
 - **CI só constrói em `ubuntu-latest`.** Windows e macOS nunca foram
-  empacotados; os alvos existem apenas como configuração.
+  empacotados; os alvos existem apenas como configuração. É o que mantém a
+  dívida acima de pé.
 - **`test:boundaries` fora do `npm test`.** A CI o executa como passo
   explícito, então o risco fica restrito à execução local.
 - **Ações de CI em `@v4`.** O runner emite aviso de depreciação do Node 20.
-- **Imports mortos em `scripts/inspect-bundle.mjs`.** `createPackage` e
-  `execFileSync` são importados e mantidos vivos por `void` só para calar o
-  lint; devem sair.
 
 ## Evidência dos critérios de aceite
 
@@ -89,8 +83,7 @@ desenvolvimento:
 | `test:unit` | 14 testes, 3 arquivos |
 | `test:boundaries` | passa |
 | `test:e2e` | 8 smoke Playwright/Electron |
-| `build:unpacked` + `inspect-bundle.mjs` | 350 entradas no ASAR, só `zod`, zero violações |
-| `build` completo | AppImage e `.deb` gerados |
+| `build` completo + `inspect-bundle.mjs` | AppImage e `.deb` gerados; 350 entradas no ASAR, só `zod`, zero violações |
 | `dev` | sobe main, preload e dev server |
 | Binário empacotado | abre e permanece de pé, inclusive sem `--no-sandbox` |
 

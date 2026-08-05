@@ -56,7 +56,15 @@ jobs:
           cache: npm
       - name: Instalar dependências
         run: npm ci
-      - name: Build empacotado (unpacked)
-        run: npm run build:unpacked
+      # `npm run build`, não `build:unpacked`: o RF-001-02 fala em pacote
+      # instalável, e o `--dir` para antes de gerar os alvos. O build completo
+      # produz `release/linux-unpacked` no caminho, então a inspeção continua
+      # valendo sobre o mesmo artefato.
+      - name: Build empacotado e alvos instaláveis
+        run: npm run build
       - name: Inspeção do bundle e fuses
         run: node scripts/inspect-bundle.mjs release/linux-unpacked
+      # Um alvo removido da configuração não faria o build falhar; sem esta
+      # conferência, o RF-001-02 deixaria de ser exercido em silêncio.
+      - name: Alvos instaláveis presentes
+        run: ls -1 release/*.AppImage release/*.deb
