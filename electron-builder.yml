@@ -1,0 +1,54 @@
+appId: br.com.vinculex.lex-editor
+productName: Lex Editor
+copyright: Vinculex
+
+directories:
+  output: release
+  buildResources: build
+
+# Somente o bundle dos três processos e o manifesto. Fonte, testes, fixtures
+# jurídicas, documentação e specs não pertencem ao artefato distribuído.
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+  - '!**/*.ts'
+  - '!**/*.tsx'
+
+asar: true
+
+# Baseline de produção da ADR-007 §4. `runAsNode: false` fecha o mesmo atalho
+# ELECTRON_RUN_AS_NODE que, em desenvolvimento, faz o binário subir como Node
+# puro: no pacote ele deixa de existir.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  grantFileProtocolExtraPrivileges: true
+  enableCookieEncryption: true
+  loadBrowserProcessSpecificV8Snapshot: false
+
+# Distribuição interna à equipe editorial, conforme a tabela de deploy de
+# docs/architecture/SYSTEM_ARCHITECTURE.md. Não há publicação em loja pública
+# nem auto-update: adicioná-lo exigiria feature ativa com origem, assinatura e
+# política de rollback especificadas.
+publish: null
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Office
+  synopsis: Editor desktop de conteúdo legislativo
+  maintainer: Vinculex <contato@vinculex.com.br>
+
+win:
+  target:
+    - nsis
+
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg

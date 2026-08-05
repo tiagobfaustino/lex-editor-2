@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  validate:
+    name: Lint, format, typecheck e testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Instalar dependências
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Formatação
+        run: npm run format:check
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Testes unitários
+        run: npm run test:unit
+      - name: Fronteiras de módulo
+        run: npm run test:boundaries
+
+  e2e:
+    name: Smoke E2E (Electron)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Instalar dependências
+        run: npm ci
+      - name: Smoke E2E
+        run: xvfb-run --auto-servernum npm run test:e2e
+
+  package:
+    name: Empacotamento e integridade do bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Instalar dependências
+        run: npm ci
+      - name: Build empacotado (unpacked)
+        run: npm run build:unpacked
+      - name: Inspeção do bundle e fuses
+        run: node scripts/inspect-bundle.mjs release/linux-unpacked
