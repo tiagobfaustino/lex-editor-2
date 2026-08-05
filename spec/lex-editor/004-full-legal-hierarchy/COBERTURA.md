@@ -193,3 +193,53 @@ com uma norma real e pequena.
 2. As leis integrais entram por último, quando a gramática já estiver coberta
    por casos mínimos — a ordem do `plan.md`.
 3. A T004-10 fecha a matriz: toda linha em `coberta` ou com destino registrado.
+
+---
+
+## Divergência aberta — alínea diretamente sob artigo
+
+Encontrada na T004-07, ao rodar a LINDB integral pela primeira vez.
+
+O `DATA_MODEL.md` §NormaAST modela `AlineaNode` **apenas** como filha de
+`IncisoNode`:
+
+```typescript
+interface IncisoNode  { children: (AlineaNode | PenaNode)[]; }
+interface ArtigoNode  { children: (ParagrafoNode | IncisoNode | PenaNode)[]; }
+```
+
+O texto oficial compilado da LINDB contradiz isso no art. 15:
+
+```
+Art. 15. Será executada no Brasil a sentença proferida no estrangeiro, que
+reuna os seguintes requisitos:
+a) haver sido proferida por juiz competente;
+b) terem sido os partes citadas ou haver-se legalmente verificado à revelia;
+...
+```
+
+As alíneas pendem do caput, sem inciso intermediário. Não é caso isolado nem
+erro de extração: é a estrutura da norma.
+
+**Não corrigi o parser nem o modelo.** A DEVELOPMENT_RULES §5 manda parar e
+registrar em conflito documental real, e a AGENTS.md proíbe ajustar contrato
+superior em silêncio para o código passar. As duas saídas possíveis mudam
+coisas diferentes:
+
+1. **Estender o `DATA_MODEL`** para admitir `AlineaNode` em `ArtigoNode.children`
+   e em `ParagrafoNode.children`. Reflete a legislação real, mas altera
+   especificação normativa e exige rever a gramática de Block ID — hoje
+   `ali-` só aparece depois de `inc-`, e um ID como `lindb-art-15-ali-a` não é
+   produzível pela §2.1 vigente.
+2. **Tratar como irregularidade da fonte**, marcando confiança baixa e exigindo
+   decisão editorial. Preserva o modelo, mas joga para revisão humana uma
+   estrutura que é corriqueira — a LINDB tem cinco alíneas assim num artigo só.
+
+A primeira parece certa, mas é decisão de arquitetura, não de implementação.
+
+## Achado menor — artigos sem o prefixo `Art.`
+
+Na mesma execução, os arts. 20, 21 e seguintes da LINDB (incluídos pela Lei
+13.655/2018) chegam como `20. Nas esferas administrativa...`, sem `Art.`. Ou o
+HTML os marca de outra forma, ou a extração está separando o prefixo. Investigar
+na T004-08, que é a tarefa de auditoria.

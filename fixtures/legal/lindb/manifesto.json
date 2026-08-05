@@ -1,0 +1,24 @@
+{
+  "descricao": "LINDB — Lei de Introdução às Normas do Direito Brasileiro. Lei curta de referência da Feature 004; a ADR-009 a nomeia como caso de mesclagem entre fonte compilada e anotada.",
+  "sigla": "lindb",
+  "titulo": "Lei de Introdução às Normas do Direito Brasileiro",
+  "tipoNorma": "decreto-lei",
+  "numero": "4.657",
+  "ano": 1942,
+  "ramo": "civil",
+  "fonte": "https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657compilado.htm",
+  "dataPublicacao": "1942-09-09",
+  "dataAtualizacaoLegal": "2018-04-25",
+  "dataFormatacaoVinculex": "2026-08-05",
+  "dataVerificacaoIntegridade": "2026-08-05",
+  "versaoVinculex": "1.0.0",
+  "legalStatus": "vigente",
+  "publicationStatus": "draft",
+  "sourceType": "planalto_html",
+  "sourceRole": "primary_current",
+  "sourceVariant": "compiled",
+  "tags": ["civil", "fixture"],
+  "notasEditoriais": [
+    "Texto extraído do HTML compilado oficial por scripts/capturar-fixture.mjs."
+  ]
+}

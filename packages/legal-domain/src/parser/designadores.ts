@@ -124,10 +124,12 @@ export const REGRAS: readonly Regra[] = [
     extrair: (m) => ({ numero: m[1] ?? '', texto: (m[2] ?? '').trim() }),
   },
   {
-    // Item: cardinal arábico seguido de ponto. Vem depois do artigo, que já
-    // consumiu `Art. N.`, então não há ambiguidade.
+    // Item: cardinal arábico seguido de separador **e espaço**. O espaço não é
+    // detalhe: sem ele, "1.991, de 1953" — numeração de lei, que o texto
+    // oficial usa o tempo todo — seria lido como item 1. O número também é
+    // curto, porque item de alínea não passa de dois dígitos.
     tipo: 'item',
-    padrao: /^(\d+)\s*[.\-–—)]\s*(.*)$/u,
+    padrao: /^(\d{1,2})\s*[.\-–—)]\s+(\S.*)$/u,
     extrair: (m) => ({ numero: m[1] ?? '', texto: (m[2] ?? '').trim() }),
   },
 ];

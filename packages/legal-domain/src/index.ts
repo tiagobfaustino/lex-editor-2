@@ -118,9 +118,11 @@ export {
 // --- Pipeline (Feature 003) ---
 
 export { montarConjuntoDeFontes, referenciarFragmento } from './source/snapshot.js';
+export { extrairLinhas, juntarContinuacoes } from './source/planalto.js';
+export type { OpcoesDeExtracao } from './source/planalto.js';
 export type { ConjuntoDeFontes, SourceSnapshot } from './source/snapshot.js';
 
-export { analisar } from './parser/index.js';
+export { analisar, DIVISOES, reconhecer } from './parser/index.js';
 export type { EntradaDoParser, MetadadosDaNorma } from './parser/index.js';
 
 export { contarBlockIds, identificar } from './block-id/index.js';
