@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: draft
+- `implementation_status`: review
 - `priority`: P0
 - `owner`: não atribuído
 
@@ -73,11 +73,11 @@ Formatter e não grava saída final como sucesso.
 
 ## Critérios de aceite
 
-- [ ] Comando ponta a ponta funciona sem Electron ou rede.
-- [ ] Golden file é idêntico byte a byte em duas execuções.
-- [ ] Todos os nós referenciáveis da fixture recebem ID válido e único.
-- [ ] Frontmatter e corpo passam nas validações normativas aplicáveis.
-- [ ] Caso inválido demonstra falha segura e acionável.
+- [x] Comando ponta a ponta funciona sem Electron ou rede.
+- [x] Golden file é idêntico byte a byte em duas execuções.
+- [x] Todos os nós referenciáveis da fixture recebem ID válido e único.
+- [x] Frontmatter e corpo passam nas validações normativas aplicáveis.
+- [x] Caso inválido demonstra falha segura e acionável.
 
 ## Validação mínima
 
