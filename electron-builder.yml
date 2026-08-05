@@ -2,9 +2,13 @@ appId: br.com.vinculex.lex-editor
 productName: Lex Editor
 copyright: Vinculex
 
+# `buildResources` não usa o padrão `build` do electron-builder de propósito:
+# o `.gitignore` ignora `build/` como saída de compilação, e ícones,
+# entitlements e afins são fonte — sob aquele nome, entrariam no pacote local
+# e sumiriam do repositório sem aviso.
 directories:
   output: release
-  buildResources: build
+  buildResources: build-resources
 
 # Somente o bundle dos três processos e o manifesto. Fonte, testes, fixtures
 # jurídicas, documentação e specs não pertencem ao artefato distribuído.
