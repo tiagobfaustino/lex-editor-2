@@ -2,8 +2,8 @@
 
 ## Casos jurídicos
 
-- [ ] T004-01 Criar matriz rastreável entre seções normativas e fixtures
-  mínimas.
+- [x] T004-01 Criar matriz rastreável entre seções normativas e fixtures
+  mínimas. Ver `COBERTURA.md`.
 - [ ] T004-02 Implementar gramática completa de divisões e dispositivos com
   evidência/confiança.
 - [ ] T004-03 Implementar mesclagem compilada/anotada, estados, redações,
