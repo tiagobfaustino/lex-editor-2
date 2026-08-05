@@ -45,6 +45,18 @@ export const CODIGOS_PROBLEMA = [
   'total_artigos_divergente',
   /** `astPhase` da raiz não corresponde à fase validada. */
   'fase_incompativel',
+
+  // --- Pipeline (Feature 003) ---
+  /** Entrada vazia ou só com espaços. */
+  'entrada_vazia',
+  /** Linha que não corresponde a nenhum designador suportado. */
+  'designador_desconhecido',
+  /** Designador válido sem um pai que possa recebê-lo, ex.: inciso sem artigo. */
+  'dispositivo_orfao',
+  /** Metadados obrigatórios ausentes ou malformados no manifesto da fixture. */
+  'manifesto_invalido',
+  /** O Formatter recebeu algo que não é uma `IdentifiedNormaAST`. */
+  'formatter_exige_identified',
 ] as const;
 
 export type CodigoProblema = (typeof CODIGOS_PROBLEMA)[number];

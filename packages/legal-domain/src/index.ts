@@ -114,3 +114,26 @@ export {
   origemMinima,
   parsedMinima,
 } from './ast/fixtures/minimas.js';
+
+// --- Pipeline (Feature 003) ---
+
+export { montarConjuntoDeFontes, referenciarFragmento } from './source/snapshot.js';
+export type { ConjuntoDeFontes, SourceSnapshot } from './source/snapshot.js';
+
+export { analisar } from './parser/index.js';
+export type { EntradaDoParser, MetadadosDaNorma } from './parser/index.js';
+
+export { contarBlockIds, identificar } from './block-id/index.js';
+
+export { formatar } from './formatter/index.js';
+
+export { descreverRelatorio, ETAPAS, situarProblemas } from './pipeline/relatorio.js';
+export type {
+  Etapa,
+  MetricasDoPipeline,
+  ProblemaDeEtapa,
+  Relatorio,
+} from './pipeline/relatorio.js';
+
+export { processar } from './pipeline/processar.js';
+export type { ResultadoDoPipeline } from './pipeline/processar.js';
