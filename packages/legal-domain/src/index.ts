@@ -126,6 +126,7 @@ export type { EntradaDoParser, MetadadosDaNorma } from './parser/index.js';
 export { contarBlockIds, identificar } from './block-id/index.js';
 
 export { formatar } from './formatter/index.js';
+export { validarMarkdownCanonico } from './formatter/validar-canonico.js';
 
 export { descreverRelatorio, ETAPAS, situarProblemas } from './pipeline/relatorio.js';
 export type {

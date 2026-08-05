@@ -142,18 +142,18 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 |---|---|---|
 | 1 | Frontmatter completo e tipado | `003` |
 | 2 | Unicidade de Block ID | `003` |
-| 3 | Cobertura de Block ID, com a exceção do histórico | parcial — falta a exceção da ADR-006 |
+| 3 | Cobertura de Block ID, com a exceção do histórico | `validacao-canonica.test.ts` §9.3 |
 | 4 | Contagem de artigos bate com a AST | `003` (validador) |
-| 5 | Indentação consistente, sem saltos | parcial — falta o caso de salto |
+| 5 | Indentação consistente, sem saltos | `validacao-canonica.test.ts` §9.5 |
 | 6 | Sintaxe de Block ID conforme a gramática | `003` |
-| 7 | Consistência de `deviceStatus` | `[ ]` |
+| 7 | Consistência de `deviceStatus` | `estados-e-anexos.test.ts` estados |
 | 8 | Callouts obrigatórios presentes | `003` |
 | 9 | Nenhum callout fora do cabeçalho | `003` |
-| 10 | Headings não pulam nível | `[ ]` |
-| 11 | Referências cruzadas resolvem | `[ ]` |
-| 12 | Tabelas preservam retangularidade | parcial (schema) |
+| 10 | Headings não pulam nível | `validacao-canonica.test.ts` §9.10 |
+| 11 | Referências cruzadas resolvem | `validacao-canonica.test.ts` §9.11 |
+| 12 | Tabelas preservam retangularidade | `estados-e-anexos.test.ts` anexos |
 | 13 | Fase da NormaAST é `identified` | `003` |
-| 14 | Rastreabilidade e confiança coerentes | parcial |
+| 14 | Rastreabilidade e confiança coerentes | evidência validada no schema; baixa confiança bloqueia na identificação |
 
 ## 9. Projeção Postgres (T004-09)
 

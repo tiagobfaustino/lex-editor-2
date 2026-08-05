@@ -18,7 +18,7 @@
   ambiguidade.
 - [x] T004-05 Implementar namespace histórico, colisões tardias, aliases e
   renumerações sem reciclar IDs.
-- [ ] T004-06 Completar Formatter e validações canônicas para toda a gramática.
+- [x] T004-06 Completar Formatter e validações canônicas para toda a gramática.
 
 ## Referências reais
 

@@ -11,6 +11,7 @@
 
 import { contarBlockIds, identificar } from '../block-id/index.js';
 import { formatar } from '../formatter/index.js';
+import { validarMarkdownCanonico } from '../formatter/validar-canonico.js';
 import { analisar, type EntradaDoParser } from '../parser/index.js';
 import { percorrer, validarIdentifiedNormaAst } from '../ast/validate.js';
 import type { IdentifiedNormaAST } from '../ast/nodes.js';
@@ -127,6 +128,20 @@ export const processar = (entrada: EntradaDoParser): ResultadoDoPipeline => {
         ok: false,
         etapaFinal: 'formatacao',
         problemas: situarProblemas('formatacao', markdown.problemas),
+      },
+    };
+  }
+
+  // §9: as catorze verificações rodam sobre o Markdown serializado, como
+  // defesa em profundidade contra um bug do próprio Formatter.
+  const canonicas = validarMarkdownCanonico(markdown.valor, validada.valor);
+
+  if (canonicas.length > 0) {
+    return {
+      relatorio: {
+        ok: false,
+        etapaFinal: 'formatacao',
+        problemas: situarProblemas('formatacao', canonicas),
       },
     };
   }
