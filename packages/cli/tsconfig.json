@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    // Ao contrário do domínio, a CLI é justamente a camada que pode tocar
+    // filesystem e crypto. É por isso que ela existe como pacote separado: o
+    // domínio continua com `"types": []`.
+    "types": ["node"],
+    "rootDir": "src",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noEmit": false
+  },
+  // Referência de projeto em vez de `paths` para a fonte: o domínio tem
+  // `rootDir` próprio e não pode ser compilado dentro do programa da CLI.
+  // `tsc --build` constrói o domínio antes e resolve pelo `.d.ts` dele, que é
+  // exatamente o contrato que a CLI consumiria instalada.
+  "references": [{ "path": "../legal-domain" }],
+  "include": ["src/**/*.ts"]
+}

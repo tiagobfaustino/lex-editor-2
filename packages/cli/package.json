@@ -1,0 +1,28 @@
+{
+  "name": "@lex-editor/cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CLI do Lex Editor: processa uma fonte local em Markdown canônico.",
+  "type": "module",
+  "bin": {
+    "lex": "./dist/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.ts",
+      "import": "./dist/main.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build tsconfig.json",
+    "typecheck": "tsc --build tsconfig.json"
+  },
+  "dependencies": {
+    "@lex-editor/legal-domain": "0.1.0"
+  }
+}

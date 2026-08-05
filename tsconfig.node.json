@@ -13,7 +13,9 @@
     // como export inexistente. O artefato compilado continua verificado por
     // `typecheck:workspaces` e pelo build do próprio pacote.
     "paths": {
-      "@lex-editor/legal-domain": ["./packages/legal-domain/src/index.ts"]
+      "@lex-editor/legal-domain": ["./packages/legal-domain/src/index.ts"],
+      "@lex-editor/cli": ["./packages/cli/src/main.ts"],
+      "@lex-editor/cli/*": ["./packages/cli/src/*"]
     }
   },
   "include": [
@@ -29,6 +31,7 @@
     // ele compila com os tipos de Node disponíveis, mas `typecheck:workspaces`
     // roda o tsconfig do próprio pacote, que tem `"types": []`, e o teste de
     // pureza recusa qualquer import de infraestrutura.
-    "packages/legal-domain/src/**/*.ts"
+    "packages/legal-domain/src/**/*.ts",
+    "packages/cli/src/**/*.ts"
   ]
 }

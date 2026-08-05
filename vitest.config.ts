@@ -13,6 +13,9 @@ export default defineConfig({
       '@lex-editor/legal-domain': fileURLToPath(
         new URL('./packages/legal-domain/src/index.ts', import.meta.url),
       ),
+      '@lex-editor/cli/processar-arquivo.js': fileURLToPath(
+        new URL('./packages/cli/src/processar-arquivo.ts', import.meta.url),
+      ),
     },
   },
   test: {
