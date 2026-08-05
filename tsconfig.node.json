@@ -6,7 +6,15 @@
     "moduleResolution": "NodeNext",
     "types": ["node"],
     "composite": true,
-    "noEmit": true
+    "noEmit": true,
+    // Resolve o pacote de domínio pela fonte, como o alias do `vitest.config.ts`
+    // faz. Sem isso, typecheck e lint enxergariam o `dist/` do último build:
+    // um contrato velho passaria despercebido e um contrato novo apareceria
+    // como export inexistente. O artefato compilado continua verificado por
+    // `typecheck:workspaces` e pelo build do próprio pacote.
+    "paths": {
+      "@lex-editor/legal-domain": ["./packages/legal-domain/src/index.ts"]
+    }
   },
   "include": [
     "electron.vite.config.ts",
@@ -15,6 +23,12 @@
     "src/main/**/*.ts",
     "src/preload/**/*.ts",
     "src/shared/**/*.ts",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    // Consequência do `paths` acima: com `composite`, todo arquivo do programa
+    // precisa estar listado. Isto NÃO afrouxa o isolamento do domínio — aqui
+    // ele compila com os tipos de Node disponíveis, mas `typecheck:workspaces`
+    // roda o tsconfig do próprio pacote, que tem `"types": []`, e o teste de
+    // pureza recusa qualquer import de infraestrutura.
+    "packages/legal-domain/src/**/*.ts"
   ]
 }
