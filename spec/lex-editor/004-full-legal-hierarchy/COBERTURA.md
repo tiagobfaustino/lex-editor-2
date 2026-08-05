@@ -24,39 +24,42 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 
 | Regra | Fonte normativa | Fixture mínima | Estado |
 |---|---|---|---|
-| Livro vira `#` | MD §3.1 | `divisoes/livro.txt` | `[ ]` |
-| Título vira `##` | MD §3.1 | `divisoes/titulo.txt` | `[ ]` |
-| Capítulo vira `###` | MD §3.1 | `divisoes/capitulo.txt` | `[ ]` |
-| Seção vira `####` | MD §3.1 | `divisoes/secao.txt` | `[ ]` |
-| Subseção vira `#####` | MD §3.1 | `divisoes/subsecao.txt` | `[ ]` |
-| Divisão não recebe Block ID por padrão | MD §7.3 | `divisoes/sem-block-id.txt` | `[ ]` |
+| Livro vira `#` | MD §3.1 | `gramatica.test.ts` divisões | coberta |
+| Título vira `##` | MD §3.1 | `gramatica.test.ts` divisões | coberta |
+| Capítulo vira `###` | MD §3.1 | `gramatica.test.ts` divisões | coberta |
+| Seção vira `####` | MD §3.1 | `gramatica.test.ts` divisões | coberta |
+| Subseção vira `#####` | MD §3.1 | `gramatica.test.ts` divisões | coberta |
+| Divisão não recebe Block ID por padrão | MD §7.3 | `gramatica.test.ts` divisões | coberta |
 | Heading não pula nível | MD §9.10 | `divisoes/salto-de-nivel.txt` | `[ ]` |
-| Divisão entra no ID só para desambiguar | BID §2.4 | `identidade/colisao-por-divisao.txt` | `[ ]` |
-| Número da divisão é ordinal cardinal, não romano | BID §8.2 | idem | `[ ]` |
+| Divisão entra no ID só para desambiguar | BID §2.4 | `gramatica.test.ts` desambiguação | coberta |
+| Número da divisão é ordinal cardinal, não romano | BID §8.2 | `gramatica.test.ts` desambiguação | coberta |
 
 ## 2. Gramática de dispositivos (T004-02)
 
 | Regra | Fonte normativa | Fixture mínima | Estado |
 |---|---|---|---|
 | Artigo, caput e `art-{n}` | BID §2.3 | `fixtures/legal/cp-art-121/` | `003` |
-| Artigo com sufixo alfabético (`121-A`) | BID §2.3.6 | `dispositivos/artigo-sufixo.txt` | `[ ]` |
+| Artigo com sufixo alfabético (`121-A`) | BID §2.3.6 | `gramatica.test.ts` dispositivos | coberta |
 | Parágrafo numerado `par-{n}` | BID §2.3.5 | cp-art-121 | `003` |
-| Parágrafo único `par-unico` | BID §2.3.5 | `dispositivos/paragrafo-unico.txt` | `[ ]` |
+| Parágrafo único `par-unico` | BID §2.3.5 | `gramatica.test.ts` dispositivos | coberta |
 | Parágrafo único e numerado são exclusivos | BID §2.3.5 | `dispositivos/paragrafo-conflito.txt` | `[ ]` |
 | Inciso em romano minúsculo | BID §2.3.7 | cp-art-121 | `003` |
-| Inciso com sufixo (`inc-i-a`) | BID §2.1 | `dispositivos/inciso-sufixo.txt` | `[ ]` |
+| Inciso com sufixo (`inc-i-a`) | BID §2.1 | `gramatica.test.ts` dispositivos | coberta |
 | Alínea letra única | BID §2.3.8 | cp-art-121 | `003` |
-| Alínea letra dupla (`ali-aa`) | BID §7.2 | `dispositivos/alinea-dupla.txt` | `[ ]` |
-| Item em cardinal arábico | BID §2.3.9 | `dispositivos/item.txt` | `[ ]` |
+| Alínea letra dupla (`ali-aa`) | BID §7.2 | `gramatica.test.ts` dispositivos | coberta |
+| Item em cardinal arábico | BID §2.3.9 | `gramatica.test.ts` dispositivos | coberta |
 | Pena autônoma sem número | BID §2.3.12 | cp-art-121 | `003` |
 | Pena numerada (`pena-2`) | BID §2.3.12 | `dispositivos/pena-numerada.txt` | `[ ]` |
-| Pena ancorada em ancestral, não no anterior | BID §2.3.12 | `dispositivos/pena-de-paragrafo.txt` | `[ ]` |
+| Pena ancorada em ancestral, não no anterior | BID §2.3.12 | `gramatica.test.ts` ancoragem | coberta |
 | Pena na mesma frase não vira nó | BID §2.3.12 | `dispositivos/pena-embutida.txt` | `[ ]` |
 
-> A pena ancorada em ancestral é a dívida explícita da Feature 003: no art. 121
-> há linhas `Pena` que pertencem ao § 2º e ao inciso V, e o parser atual as
-> ancoraria no dispositivo anterior. Duas linhas do texto oficial ficaram fora
-> da fixture da 003 por isso. Resolver aqui reabilita esse trecho.
+> **Resolvido na T004-02.** O sinal disponível no texto plano é o dois-pontos:
+> um dispositivo que termina em `:` anuncia o que vem abaixo. Com um único
+> candidato aberto a decisão é firme; com mais de um — o § anuncia a lista e o
+> último inciso também —, o texto plano genuinamente não resolve, e a pena é
+> ancorada no mais próximo com confiança `low` e revisão obrigatória. A
+> invariante da feature então impede que ela avance para a AST identificada.
+> Fingir certeza aqui produziria Block ID permanente sobre palpite.
 
 ## 3. Estados do dispositivo (T004-03)
 
@@ -113,7 +116,7 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 | Conflito entre fontes exige revisão humana | ADR-009 §6 | `fontes/conflito.txt` | `[ ]` |
 | Ausência na compilada ≠ revogação | ADR-009 §7 | `identidade/ausente-na-candidata.txt` | `[ ]` |
 | Confiança `low` exige `requiresHumanReview` | DM §NormaAST | validado no schema | `002` |
-| Baixa confiança não avança para identificada | spec, invariante | `fontes/baixa-confianca.txt` | `[ ]` |
+| Baixa confiança não avança para identificada | spec, invariante | `gramatica.test.ts` baixa confiança | coberta |
 
 ## 7. Identidade e reconciliação (T004-04, T004-05)
 
@@ -121,8 +124,8 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 
 | Regra | Fonte normativa | Fixture mínima | Estado |
 |---|---|---|---|
-| Colisão na primeira publicação falha ou qualifica | BID §7.3 | `identidade/colisao-inedita.txt` | parcial (falha, 003) |
-| Qualificação usa a menor divisão que desambigua | BID §2.4 | `identidade/colisao-por-divisao.txt` | `[ ]` |
+| Colisão na primeira publicação falha ou qualifica | BID §7.3 | `gramatica.test.ts` desambiguação | coberta |
+| Qualificação usa a menor divisão que desambigua | BID §2.4 | `gramatica.test.ts` desambiguação | coberta |
 | ID publicado não é reciclado nem recalculado | ADR-001 | `identidade/id-publicado-estavel.txt` | `[ ]` |
 | Alteração textual não muda identidade | RF-004-03 | `identidade/mudanca-textual.txt` | `[ ]` |
 | Colisão tardia não renomeia dispositivo publicado | BID §2.4 | `identidade/colisao-tardia.txt` | `[ ]` |

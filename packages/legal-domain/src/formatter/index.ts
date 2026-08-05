@@ -33,6 +33,19 @@ const HEADING: Readonly<Record<string, string>> = {
   subsecao: '#####',
 };
 
+/**
+ * Rótulo do heading. Escrito à mão porque capitalizar o discriminante daria
+ * "Capitulo" e "Secao": o tipo do nó é um identificador sem acento, o texto
+ * publicado é português.
+ */
+const ROTULO_DA_DIVISAO: Readonly<Record<string, string>> = {
+  livro: 'Livro',
+  titulo: 'Título',
+  capitulo: 'Capítulo',
+  secao: 'Seção',
+  subsecao: 'Subseção',
+};
+
 const aspas = (valor: string): string => JSON.stringify(valor);
 
 const listaEmLinha = (valores: readonly string[]): string => `[${valores.map(aspas).join(', ')}]`;
@@ -121,8 +134,12 @@ const serializarNo = (no: Record<string, unknown>, nivelDoPai: number): string[]
   if (HEADING[tipo] !== undefined) {
     const numero = typeof no['numero'] === 'string' ? no['numero'] : '';
     const titulo = typeof no['titulo'] === 'string' ? no['titulo'] : '';
-    const rotulo = tipo.charAt(0).toUpperCase() + tipo.slice(1);
-    const cabecalho = `${HEADING[tipo] ?? ''} ${rotulo}${numero.length > 0 ? ` ${numero}` : ''} - ${titulo}`;
+    const rotulo = ROTULO_DA_DIVISAO[tipo] ?? tipo;
+    // §7.3: divisão não recebe Block ID por padrão. Quando ele existir — a
+    // extensão opcional da §7.4 —, vai ao final da linha como em qualquer
+    // outro nó referenciável.
+    const blockIdDaDivisao = typeof no['blockId'] === 'string' ? ` ^${no['blockId']}` : '';
+    const cabecalho = `${HEADING[tipo] ?? ''} ${rotulo}${numero.length > 0 ? ` ${numero}` : ''} - ${titulo}${blockIdDaDivisao}`;
 
     return [cabecalho, '', ...filhos.flatMap((filho) => serializarNo(filho, 0))];
   }

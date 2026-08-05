@@ -1,14 +1,12 @@
-// Parser mínimo do subconjunto da Feature 003.
+// Parser da gramática normativa (Feature 004, T004-02).
 //
-// Reconhece apenas os designadores presentes na fixture — o `plan.md` proíbe
-// generalizar padrões que ela não sustenta. Cada padrão suportado está na
-// tabela DESIGNADORES abaixo; uma linha que não casa com nenhum deles é erro,
-// nunca texto solto anexado ao dispositivo anterior. Anexar silenciosamente
-// alteraria conteúdo jurídico, que é o pior sucesso falso possível aqui.
+// A tabela de designadores mora em `designadores.ts`; aqui fica o percurso que
+// a aplica e monta a árvore. A hierarquia vem do tipo do designador, não de
+// indentação: o texto oficial é plano.
 //
-// A hierarquia vem do tipo do designador, não de indentação: o texto oficial é
-// plano. Cada designador declara quem pode ser seu pai; sem um pai aberto e
-// compatível, o dispositivo é órfão e o parsing falha.
+// Linha que não casa com designador algum é erro, nunca texto anexado ao
+// dispositivo anterior. Anexar seria conveniente e alteraria conteúdo jurídico
+// em silêncio — o pior sucesso falso deste pipeline.
 
 import {
   criarProblema,
@@ -17,91 +15,16 @@ import {
   type ResultadoValidacao,
   sucesso,
 } from '../ast/errors.js';
-import type {
-  ParsedNormaAST,
-  ParseEvidence,
-  SlotSemBlockId,
-  SourceReference,
-} from '../ast/nodes.js';
-
-/** Tipos que o parser desta feature sabe produzir. */
-type TipoSuportado = 'artigo' | 'paragrafo' | 'inciso' | 'alinea' | 'pena';
-
-interface Designador {
-  readonly tipo: TipoSuportado;
-  readonly padrao: RegExp;
-  /** Tipos que podem receber este dispositivo como filho, do mais próximo ao mais distante. */
-  readonly paisPossiveis: readonly TipoSuportado[];
-  /** Extrai o número/letra bruto e o texto do dispositivo. */
-  readonly extrair: (casamento: RegExpMatchArray) => { numero: string; texto: string };
-}
-
-/**
- * Ordem importa: `padrao` é testado de cima para baixo, e o primeiro que casa
- * vence. `Pena` vem antes de alínea porque "Pena - ..." casaria com nada, mas
- * manter a intenção explícita evita surpresa quando a tabela crescer.
- */
-const DESIGNADORES: readonly Designador[] = [
-  {
-    tipo: 'artigo',
-    // "Art. 121." e "Art. 121-A." — o sufixo alfabético é parte do número.
-    padrao: /^Art\.\s*(\d+(?:-[A-Za-z])?)\s*[.º°]?\s*(.*)$/u,
-    paisPossiveis: [],
-    extrair: (m) => ({ numero: m[1] ?? '', texto: m[2] ?? '' }),
-  },
-  {
-    tipo: 'pena',
-    padrao: /^Pena\s*[-–—]\s*(.*)$/u,
-    paisPossiveis: ['alinea', 'inciso', 'paragrafo', 'artigo'],
-    extrair: (m) => ({ numero: '', texto: `Pena - ${m[1] ?? ''}` }),
-  },
-  {
-    tipo: 'paragrafo',
-    padrao: /^Parágrafo\s+único\.\s*(.*)$/u,
-    paisPossiveis: ['artigo'],
-    extrair: (m) => ({ numero: 'unico', texto: m[1] ?? '' }),
-  },
-  {
-    tipo: 'paragrafo',
-    padrao: /^§\s*(\d+)\s*[º°]?\s*(.*)$/u,
-    paisPossiveis: ['artigo'],
-    extrair: (m) => ({ numero: m[1] ?? '', texto: m[2] ?? '' }),
-  },
-  {
-    tipo: 'inciso',
-    padrao: /^([IVXLCDM]+)\s*[-–—]\s*(.*)$/u,
-    paisPossiveis: ['paragrafo', 'artigo'],
-    extrair: (m) => ({ numero: m[1] ?? '', texto: m[2] ?? '' }),
-  },
-  {
-    tipo: 'alinea',
-    padrao: /^([a-z])\)\s*(.*)$/u,
-    paisPossiveis: ['inciso'],
-    extrair: (m) => ({ numero: m[1] ?? '', texto: m[2] ?? '' }),
-  },
-];
-
-/** Texto residual oficial de revogação, ex.: "(Revogado pela Lei nº 14.994, de 2024)". */
-const REVOGACAO = /^\(Revogad[oa][^)]*\)$/u;
-const VETO = /^\(Vetad[oa][^)]*\)$/u;
-
-interface NoEmConstrucao {
-  readonly tipo: TipoSuportado;
-  readonly numero: string;
-  readonly texto: string;
-  readonly linha: number;
-  readonly filhos: NoEmConstrucao[];
-  readonly revogado: boolean;
-  readonly vetado: boolean;
-}
-
-export interface EntradaDoParser {
-  readonly conteudo: string;
-  readonly referenciaBase: SourceReference;
-  /** Hash de cada linha, para que `fragmentSha256` aponte para o fragmento real. */
-  readonly hashDaLinha: (linha: string) => string;
-  readonly metadados: MetadadosDaNorma;
-}
+import type { ParsedNormaAST, ParseEvidence, SourceReference } from '../ast/nodes.js';
+import {
+  ehDivisao,
+  nivelDaDivisao,
+  PAIS_POSSIVEIS,
+  reconhecer,
+  type TipoDispositivo,
+  type TipoDivisao,
+  type TipoReconhecido,
+} from './designadores.js';
 
 export interface MetadadosDaNorma {
   readonly titulo: string;
@@ -122,39 +45,112 @@ export interface MetadadosDaNorma {
   readonly notasEditoriais?: readonly string[] | undefined;
 }
 
-const reconhecer = (
-  linha: string,
-): { designador: Designador; numero: string; texto: string } | undefined => {
-  for (const designador of DESIGNADORES) {
-    const casamento = designador.padrao.exec(linha);
+export interface EntradaDoParser {
+  readonly conteudo: string;
+  readonly referenciaBase: SourceReference;
+  /** Hash de cada linha, para que `fragmentSha256` aponte para o fragmento real. */
+  readonly hashDaLinha: (linha: string) => string;
+  readonly metadados: MetadadosDaNorma;
+}
 
-    if (casamento !== null) {
-      const { numero, texto } = designador.extrair(casamento);
+const REVOGACAO = /^\(Revogad[oa][^)]*\)$/u;
+const VETO = /^\(Vetad[oa][^)]*\)$/u;
 
-      return { designador, numero, texto };
+/** Um dispositivo que termina em dois-pontos anuncia o que vem abaixo. */
+const anunciaSubordinado = (texto: string): boolean => texto.trimEnd().endsWith(':');
+
+interface NoEmConstrucao {
+  readonly tipo: TipoReconhecido;
+  numero: string;
+  texto: string;
+  readonly linha: number;
+  readonly filhos: NoEmConstrucao[];
+  evidencia: ParseEvidence;
+  readonly revogado: boolean;
+  readonly vetado: boolean;
+}
+
+const EVIDENCIA_EXATA: ParseEvidence = {
+  confidence: 'high',
+  reasons: ['exact_legal_designator'],
+  requiresHumanReview: false,
+};
+
+const EVIDENCIA_CONTEXTO: ParseEvidence = {
+  confidence: 'medium',
+  reasons: ['exact_legal_designator', 'hierarchy_inferred_from_context'],
+  requiresHumanReview: false,
+};
+
+/**
+ * Ancoragem ambígua de pena. A `low` obriga revisão humana, e a invariante da
+ * Feature 004 impede que ela avance em silêncio para a AST identificada.
+ */
+const EVIDENCIA_AMBIGUA: ParseEvidence = {
+  confidence: 'low',
+  reasons: ['ambiguous_designator', 'hierarchy_inferred_from_context'],
+  requiresHumanReview: true,
+};
+
+/**
+ * Decide de quem é a pena.
+ *
+ * O sinal disponível no texto plano é o dois-pontos: um dispositivo que termina
+ * em `:` anuncia o que vem abaixo, e é o candidato natural a dono da pena. Com
+ * um único candidato aberto, a decisão é firme. Com mais de um — o § anuncia
+ * uma lista e o último inciso também anuncia —, o texto plano genuinamente não
+ * resolve: ancora no mais próximo e marca para revisão, em vez de fingir
+ * certeza.
+ *
+ * Isto é o que faltava na Feature 003, onde duas linhas `Pena` do art. 121
+ * tiveram de ficar fora da fixture.
+ */
+const ancorarPena = (
+  abertos: readonly NoEmConstrucao[],
+): { indice: number; evidencia: ParseEvidence } | undefined => {
+  const candidatos: number[] = [];
+
+  for (let i = abertos.length - 1; i >= 0; i -= 1) {
+    const candidato = abertos[i];
+
+    if (candidato === undefined || ehDivisao(candidato.tipo)) {
+      continue;
+    }
+
+    if (candidato.tipo === 'pena') {
+      continue;
+    }
+
+    if (anunciaSubordinado(candidato.texto)) {
+      candidatos.push(i);
+    }
+  }
+
+  if (candidatos.length === 1) {
+    const [indice] = candidatos;
+
+    return indice === undefined ? undefined : { indice, evidencia: EVIDENCIA_EXATA };
+  }
+
+  if (candidatos.length > 1) {
+    const [indice] = candidatos;
+
+    return indice === undefined ? undefined : { indice, evidencia: EVIDENCIA_AMBIGUA };
+  }
+
+  // Nenhum dispositivo anuncia subordinado: a pena pende do mais interno
+  // aberto, que é a leitura corrente do texto.
+  for (let i = abertos.length - 1; i >= 0; i -= 1) {
+    const candidato = abertos[i];
+
+    if (candidato !== undefined && !ehDivisao(candidato.tipo) && candidato.tipo !== 'pena') {
+      return { indice: i, evidencia: EVIDENCIA_CONTEXTO };
     }
   }
 
   return undefined;
 };
 
-/**
- * Evidência do reconhecimento. Um designador que casou exatamente é
- * `exact_legal_designator` com confiança alta; a pena, cuja ancoragem depende
- * do dispositivo anterior e não de marcação própria, é
- * `hierarchy_inferred_from_context`. Distinguir os dois é o que permite a um
- * revisor saber onde olhar primeiro.
- */
-const evidenciaDe = (tipo: TipoSuportado): ParseEvidence =>
-  tipo === 'pena'
-    ? {
-        confidence: 'medium',
-        reasons: ['exact_legal_designator', 'hierarchy_inferred_from_context'],
-        requiresHumanReview: false,
-      }
-    : { confidence: 'high', reasons: ['exact_legal_designator'], requiresHumanReview: false };
-
-/** Converte a árvore intermediária em nós da NormaAST na fase `parsed`. */
 const materializar = (
   no: NoEmConstrucao,
   indice: number,
@@ -173,13 +169,22 @@ const materializar = (
     id: `no-l${String(no.linha + 1)}`,
     ordem: indice,
     sourceRef,
-    parseEvidence: evidenciaDe(no.tipo),
+    parseEvidence: no.evidencia,
     children: no.filhos.map((filho, i) => materializar(filho, i, entrada, linhas)),
   };
 
+  if (ehDivisao(no.tipo)) {
+    return {
+      ...comum,
+      tipo: no.tipo,
+      deviceStatus: 'active',
+      ...(no.numero.length > 0 ? { numero: no.numero } : {}),
+      titulo: no.texto,
+    };
+  }
+
   // MARKDOWN_SPEC §5.3: sem texto anterior preservado, o texto residual oficial
-  // é reproduzido como está e a decisão editorial é `false`. O Formatter não
-  // pode inferir isso; aqui ela vem da forma do próprio texto oficial.
+  // é reproduzido como está e a decisão editorial é `false`.
   const estado = no.revogado
     ? { deviceStatus: 'revoked' as const, preservarTextoRevogado: false, notaStatus: no.texto }
     : no.vetado
@@ -195,25 +200,48 @@ const materializar = (
       return { ...comum, ...estado, tipo: 'inciso', numero: no.numero, texto: no.texto };
     case 'alinea':
       return { ...comum, ...estado, tipo: 'alinea', letra: no.numero, texto: no.texto };
-    case 'pena':
-      return { ...comum, ...estado, tipo: 'pena', texto: no.texto, children: [] };
+    case 'item':
+      return { ...comum, ...estado, tipo: 'item', numero: no.numero, texto: no.texto };
+    default:
+      return {
+        ...comum,
+        ...estado,
+        tipo: 'pena',
+        ...(no.numero.length > 0 ? { numero: no.numero } : {}),
+        texto: no.texto,
+        children: [],
+      };
   }
 };
 
-/**
- * Analisa o texto e devolve uma `ParsedNormaAST` — sem Block ID em nó algum,
- * por definição da fase.
- */
 export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNormaAST> => {
   const linhas = entrada.conteudo.split('\n');
   const problemas: ProblemaValidacao[] = [];
-  const artigos: NoEmConstrucao[] = [];
-  /** Pilha dos dispositivos abertos, do mais externo ao mais interno. */
+  const raizes: NoEmConstrucao[] = [];
+  /** Divisões abertas, da mais externa para a mais interna. */
+  let divisoes: NoEmConstrucao[] = [];
+  /** Dispositivos abertos dentro do artigo corrente. */
   let abertos: NoEmConstrucao[] = [];
+  /** Divisão cujo título vem na próxima linha. */
+  let aguardandoTitulo: NoEmConstrucao | undefined;
+  let artigos = 0;
 
   if (entrada.conteudo.trim().length === 0) {
     return falha([criarProblema('entrada_vazia', [], 'A entrada não tem conteúdo.')]);
   }
+
+  const registrar = (problema: ProblemaValidacao): void => {
+    if (problemas.length < 50) {
+      problemas.push(problema);
+    }
+  };
+
+  /** Onde um artigo ou divisão de topo entra. */
+  const destinoDeTopo = (): NoEmConstrucao[] => {
+    const interna = divisoes.at(-1);
+
+    return interna === undefined ? raizes : interna.filhos;
+  };
 
   linhas.forEach((linhaBruta, indice) => {
     const linha = linhaBruta.trim();
@@ -222,10 +250,16 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
       return;
     }
 
+    if (aguardandoTitulo !== undefined) {
+      aguardandoTitulo.texto = linha;
+      aguardandoTitulo = undefined;
+      return;
+    }
+
     const reconhecido = reconhecer(linha);
 
     if (reconhecido === undefined) {
-      problemas.push(
+      registrar(
         criarProblema(
           'designador_desconhecido',
           ['linhas', indice + 1],
@@ -235,65 +269,106 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
       return;
     }
 
-    const { designador, numero, texto } = reconhecido;
-
     const no: NoEmConstrucao = {
-      tipo: designador.tipo,
-      numero,
-      texto,
+      tipo: reconhecido.tipo,
+      numero: reconhecido.numero,
+      texto: reconhecido.texto,
       linha: indice,
       filhos: [],
-      revogado: REVOGACAO.test(texto),
-      vetado: VETO.test(texto),
+      evidencia: EVIDENCIA_EXATA,
+      revogado: REVOGACAO.test(reconhecido.texto),
+      vetado: VETO.test(reconhecido.texto),
     };
 
-    if (designador.tipo === 'artigo') {
-      artigos.push(no);
-      abertos = [no];
+    if (ehDivisao(reconhecido.tipo)) {
+      // Fecha as divisões de nível igual ou mais interno e abre esta.
+      const nivel = nivelDaDivisao(reconhecido.tipo);
+
+      divisoes = divisoes.filter((aberta) => nivelDaDivisao(aberta.tipo as TipoDivisao) < nivel);
+      destinoDeTopo().push(no);
+      divisoes.push(no);
+      abertos = [];
+
+      if (reconhecido.tituloPendente === true) {
+        aguardandoTitulo = no;
+      }
+
       return;
     }
 
-    // Desempilha até encontrar um pai que aceite este tipo. É aqui que o
-    // inciso órfão é recusado: sem artigo aberto, não há a quem pertencer.
-    // `findLastIndex` exigiria lib ES2023; o pacote está em ES2022 e a
-    // baseline não muda por conveniência de um laço.
+    if (reconhecido.tipo === 'artigo') {
+      destinoDeTopo().push(no);
+      abertos = [no];
+      artigos += 1;
+      return;
+    }
+
+    if (reconhecido.tipo === 'pena') {
+      const ancora = ancorarPena(abertos);
+
+      if (ancora === undefined) {
+        registrar(
+          criarProblema(
+            'dispositivo_orfao',
+            ['linhas', indice + 1],
+            `"pena" na linha ${String(indice + 1)} não tem dispositivo a que pertencer.`,
+          ),
+        );
+        return;
+      }
+
+      no.evidencia = ancora.evidencia;
+      abertos[ancora.indice]?.filhos.push(no);
+      abertos = [...abertos.slice(0, ancora.indice + 1), no];
+      return;
+    }
+
+    const paisPossiveis = PAIS_POSSIVEIS[reconhecido.tipo as TipoDispositivo];
     let profundidade = -1;
 
     for (let i = abertos.length - 1; i >= 0; i -= 1) {
       const candidato = abertos[i];
 
-      if (candidato !== undefined && designador.paisPossiveis.includes(candidato.tipo)) {
+      if (
+        candidato !== undefined &&
+        !ehDivisao(candidato.tipo) &&
+        (paisPossiveis as readonly string[]).includes(candidato.tipo)
+      ) {
         profundidade = i;
         break;
       }
     }
 
     if (profundidade === -1) {
-      problemas.push(
+      registrar(
         criarProblema(
           'dispositivo_orfao',
           ['linhas', indice + 1],
-          `"${designador.tipo}" na linha ${String(indice + 1)} não tem dispositivo pai; esperado um de: ${designador.paisPossiveis.join(', ')}.`,
+          `"${reconhecido.tipo}" na linha ${String(indice + 1)} não tem dispositivo pai; esperado um de: ${paisPossiveis.join(', ')}.`,
         ),
       );
       return;
     }
 
-    const pai = abertos[profundidade];
-
-    if (pai === undefined) {
-      return;
-    }
-
-    pai.filhos.push(no);
+    abertos[profundidade]?.filhos.push(no);
     abertos = [...abertos.slice(0, profundidade + 1), no];
   });
+
+  if (aguardandoTitulo !== undefined) {
+    registrar(
+      criarProblema(
+        'designador_desconhecido',
+        ['linhas', aguardandoTitulo.linha + 1],
+        `A divisão da linha ${String(aguardandoTitulo.linha + 1)} ficou sem ementa.`,
+      ),
+    );
+  }
 
   if (problemas.length > 0) {
     return falha(problemas);
   }
 
-  if (artigos.length === 0) {
+  if (artigos === 0) {
     return falha([criarProblema('dispositivo_orfao', [], 'A entrada não contém nenhum artigo.')]);
   }
 
@@ -319,18 +394,18 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
     dataPublicacao: m.dataPublicacao,
     dataAtualizacaoLegal: m.dataAtualizacaoLegal,
     dataFormatacaoVinculex: m.dataFormatacaoVinculex,
-    totalArtigos: artigos.length,
+    totalArtigos: artigos,
     versaoVinculex: m.versaoVinculex,
     legalStatus: m.legalStatus,
     publicationStatus: m.publicationStatus,
     dataVerificacaoIntegridade: m.dataVerificacaoIntegridade,
     ...(m.tags === undefined ? {} : { tags: [...m.tags] }),
     ...(m.notasEditoriais === undefined ? {} : { notasEditoriais: [...m.notasEditoriais] }),
-    children: artigos.map((artigo, i) => materializar(artigo, i, entrada, linhas)),
+    children: raizes.map((no, i) => materializar(no, i, entrada, linhas)),
   };
 
   return sucesso(raiz as unknown as ParsedNormaAST);
 };
 
-/** Slot vazio de Block ID, para deixar explícito o que a fase `parsed` produz. */
-export type SemIdentificacao = SlotSemBlockId;
+export { DIVISOES, reconhecer } from './designadores.js';
+export type { TipoDispositivo, TipoDivisao } from './designadores.js';
