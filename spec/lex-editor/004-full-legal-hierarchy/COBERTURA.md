@@ -220,8 +220,36 @@ elemento de bloco quebra. Corrigido em `extrairLinhas`.
 
 ## Estado das leis de referência
 
-| Lei | Estado |
+| Lei | Snapshot | Pipeline |
+|---|---|---|
+| LINDB (lei curta) | capturado | **passa**: 30 artigos, 88 dispositivos, 88 Block IDs |
+| Código Penal | capturado (660 KB) | 2 linhas não reconhecidas |
+| Constituição Federal de 1988 | capturado (1,8 MB) | 15 linhas não reconhecidas |
+
+Os três snapshots estão versionados. A LINDB fecha; CP e CF/88 esbarram em dois
+padrões, ambos identificados e ambos trabalho da T004-08:
+
+**Nomen juris.** O CP intercala o nome do crime como linha própria — `Falsa
+atribuição de privilégio`, antes do art. 188. Não é dispositivo: é rótulo
+editorial da fonte. Precisa ser reconhecido e descartado, ou virar metadado do
+artigo seguinte; hoje é linha sem designador. Duas ocorrências sobraram no CP.
+
+**Ementa de divisão separada do designador.** Na CF/88, `DOS SERVIDORES
+PÚBLICOS (Redação dada pela Emenda Constitucional nº 18, de 1998)` chega sem o
+`SEÇÃO II` que a precede, porque o riscado quebrou o par. Também aparece
+inciso com o separador perdido (`IV as ilhas fluviais`, sem o hífen) quando o
+`<strike>` fragmentava o designador.
+
+### O que a captura das três leis já corrigiu no extrator
+
+| Sintoma | Causa |
 |---|---|
-| LINDB (lei curta) | **integral**: 30 artigos, 88 dispositivos, 88 Block IDs, zero linhas sem designador |
-| Código Penal | pendente |
-| Constituição Federal de 1988 | pendente |
+| Texto corrompido (`disposição` virando mojibake) | encoding adivinhado pelo cabeçalho; agora tenta utf-8 estrito e cai para windows-1252 |
+| `1.991, de 1953` lido como item `1.` | separador de item não exigia espaço depois |
+| Arts. 20+ da LINDB sem o prefixo `Art.` | quebra de linha crua do arquivo tratada como quebra de parágrafo; em HTML ela é espaço |
+| Art. 6º da CF/88 aparecendo quatro vezes | `<strike>` removido junto com as demais tags, apagando a distinção entre redação anterior e vigente (ADR-006) |
+| Dispositivo revogado engolindo o texto do seguinte | o riscado não era fronteira ao juntar continuações |
+
+Nenhum deles apareceria em fixture sintética. É o argumento concreto para a
+ordem do `plan.md`: casos mínimos primeiro, leis inteiras depois — mas leis
+inteiras **antes** de declarar a gramática pronta.

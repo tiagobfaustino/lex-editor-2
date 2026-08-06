@@ -1,0 +1,24 @@
+{
+  "sourceType": "planalto_html",
+  "sourceRole": "primary_current",
+  "sourceVariant": "compiled",
+  "dataFormatacaoVinculex": "2026-08-05",
+  "dataVerificacaoIntegridade": "2026-08-05",
+  "versaoVinculex": "1.0.0",
+  "legalStatus": "vigente",
+  "publicationStatus": "draft",
+  "descricao": "Constituição Federal de 1988, texto compilado oficial.",
+  "sigla": "cf1988",
+  "titulo": "Constituição da República Federativa do Brasil de 1988",
+  "tipoNorma": "constituição",
+  "numero": "1988",
+  "ano": 1988,
+  "ramo": "constitucional",
+  "fonte": "https://www.planalto.gov.br/ccivil_03/constituicao/constituicao.htm",
+  "dataPublicacao": "1988-10-05",
+  "dataAtualizacaoLegal": "2025-01-01",
+  "tags": [
+    "constitucional",
+    "fixture"
+  ]
+}
