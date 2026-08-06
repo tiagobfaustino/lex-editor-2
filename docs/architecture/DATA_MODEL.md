@@ -303,14 +303,14 @@ interface ArtigoNode extends DispositivoNodeBase {
   tipo: 'artigo';
   numero: string;                 // ex.: "121", "121-A" (artigos com sufixo)
   caput: string;                  // texto do caput, sem os incisos/parágrafos
-  children: (ParagrafoNode | IncisoNode | PenaNode)[];
+  children: (ParagrafoNode | IncisoNode | AlineaNode | PenaNode)[];
 }
 
 interface ParagrafoNode extends DispositivoNodeBase {
   tipo: 'paragrafo';
   numero: string | 'unico';       // "1", "2", ... ou "unico"
   texto: string;
-  children: (IncisoNode | PenaNode)[];
+  children: (IncisoNode | AlineaNode | PenaNode)[];
 }
 
 interface IncisoNode extends DispositivoNodeBase {
@@ -344,6 +344,10 @@ interface PenaNode extends DispositivoNodeBase {
 
 Notas de modelagem:
 
+- **Alínea pende de artigo, parágrafo ou inciso** (ver
+  `./ADR-010-alinea-sob-artigo-e-paragrafo.md`). O uso legislativo brasileiro
+  desdobra o caput diretamente em alíneas com frequência — a LINDB, art. 15, é
+  um caso. `ItemNode` continua exclusivamente sob `AlineaNode`.
 - `deviceStatus: 'revoked' | 'vetoed'` se aplica a qualquer nível (artigo inteiro, um único inciso, uma alínea), refletindo a granularidade real da legislação brasileira.
 - Em `ParsedNormaAST`, `blockId` está ausente. Em `IdentifiedNormaAST`, ele é
   obrigatório em artigo, parágrafo, inciso, alínea, item, pena, anexo e tabela. Em

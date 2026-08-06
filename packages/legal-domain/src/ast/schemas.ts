@@ -369,7 +369,7 @@ const construirFamilias = <Disp extends z.ZodType, Div extends z.ZodType, Fase e
       numero: textoObrigatorio('O número do parágrafo'),
       texto: textoObrigatorio('O texto do parágrafo'),
       get children() {
-        return z.array(z.discriminatedUnion('tipo', [incisoSchema, penaSchema]));
+        return z.array(z.discriminatedUnion('tipo', [incisoSchema, alineaSchema, penaSchema]));
       },
     }),
   );
@@ -381,7 +381,9 @@ const construirFamilias = <Disp extends z.ZodType, Div extends z.ZodType, Fase e
       numero: textoObrigatorio('O número do artigo'),
       caput: textoObrigatorio('O caput do artigo'),
       get children() {
-        return z.array(z.discriminatedUnion('tipo', [paragrafoSchema, incisoSchema, penaSchema]));
+        return z.array(
+          z.discriminatedUnion('tipo', [paragrafoSchema, incisoSchema, alineaSchema, penaSchema]),
+        );
       },
     }),
   );

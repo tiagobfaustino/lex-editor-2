@@ -152,7 +152,8 @@ export const PAIS_POSSIVEIS: Readonly<Record<TipoDispositivo, readonly TipoDispo
     artigo: [],
     paragrafo: ['artigo'],
     inciso: ['paragrafo', 'artigo'],
-    alinea: ['inciso'],
+    // ADR-010: a alínea desdobra inciso, parágrafo ou o próprio caput.
+    alinea: ['inciso', 'paragrafo', 'artigo'],
     item: ['alinea'],
     // A pena pode pender de qualquer dispositivo textual; qual deles é o certo
     // é decidido pela regra de ancoragem, não por esta lista.

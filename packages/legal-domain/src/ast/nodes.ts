@@ -150,14 +150,14 @@ export type ParagrafoNode<B> = DispositivoNodeBase<B> & {
   tipo: 'paragrafo';
   numero: string;
   texto: string;
-  children: (IncisoNode<B> | PenaNode<B>)[];
+  children: (IncisoNode<B> | AlineaNode<B> | PenaNode<B>)[];
 };
 
 export type ArtigoNode<B> = DispositivoNodeBase<B> & {
   tipo: 'artigo';
   numero: string;
   caput: string;
-  children: (ParagrafoNode<B> | IncisoNode<B> | PenaNode<B>)[];
+  children: (ParagrafoNode<B> | IncisoNode<B> | AlineaNode<B> | PenaNode<B>)[];
 };
 
 export type AnexoNode<B> = DispositivoNodeBase<B> & {

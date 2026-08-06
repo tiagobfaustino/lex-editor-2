@@ -67,7 +67,8 @@ divisao-intermediaria
 
 dispositivo-artigo
                 = "art" , "-" , numero-artigo ,
-                  [ "-" , ( dispositivo-paragrafo | dispositivo-inciso | dispositivo-pena ) ] ;
+                  [ "-" , ( dispositivo-paragrafo | dispositivo-inciso
+                          | dispositivo-alinea | dispositivo-pena ) ] ;
 
 numero-artigo   = digito-sequencia , [ "-" , letra-aditiva ] ;
                   (* ex.: "121", "121-a", "5" *)
@@ -77,7 +78,8 @@ letra-aditiva   = letra-minuscula , { letra-minuscula } ;
 
 dispositivo-paragrafo
                 = "par" , "-" , ( "unico" | numero-cardinal ) ,
-                  [ "-" , ( dispositivo-inciso | dispositivo-pena ) ] ;
+                  [ "-" , ( dispositivo-inciso | dispositivo-alinea
+                          | dispositivo-pena ) ] ;
 
 dispositivo-inciso
                 = "inc" , "-" , numero-inciso ,
@@ -135,6 +137,11 @@ No Markdown, e somente nele, o Formatter serializa esses valores como
    - Um artigo nunca tem simultaneamente `par-unico` e `par-{n}` — são mutuamente exclusivos por definição legislativa.
 6. **Numeração composta de artigo (art. 121-A, 121-B):** o sufixo alfabético faz parte do `numero-artigo`, unido por hífen e em minúsculas: `art-121-a`, `art-121-b`. Isso é o único caso em que uma letra aparece imediatamente após o segmento `art` sem um rótulo (`par`/`inc`/`ali`) precedendo-a — o parser deve tratar `art-{digitos}-{letra-única}` como uma unidade atômica de numeração de artigo, não como um sub-dispositivo.
 7. **Incisos usam numeral romano em minúsculas**, nunca numeral arábico: `inc-i`, `inc-iv`, `inc-lvii`, `inc-xlii`. Isso segue a convenção legislativa brasileira, que numera incisos em algarismos romanos.
+7-A. **Alínea pode pender de artigo, parágrafo ou inciso** (ver
+    `./ADR-010-alinea-sob-artigo-e-paragrafo.md`). A cadeia continua cumulativa:
+    a alínea carrega os segmentos dos ancestrais que existirem, e apenas eles —
+    `lindb-art-15-ali-a` quando desdobra o caput, `cp-art-61-inc-ii-ali-h`
+    quando desdobra um inciso.
 8. **Alíneas usam letra minúscula única (ou dupla — ver §7.2):** `ali-a`, `ali-b`, ..., `ali-z`, e após esgotar o alfabeto, `ali-aa`, `ali-bb`.
 9. **Itens usam numeral cardinal arábico**, conforme a convenção legislativa (itens de alínea são normalmente numerados em arábico: "1.", "2."): `item-1`, `item-2`.
 10. **Anexos suportados usam `anx-{numero}`.** O número é normalizado sem acento e em minúsculas (`ANEXO I` → `anx-i`). Dispositivos textuais dentro de anexo carregam esse segmento antes de `art`.
