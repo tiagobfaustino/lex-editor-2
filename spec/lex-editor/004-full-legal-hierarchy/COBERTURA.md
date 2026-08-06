@@ -161,10 +161,31 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 
 | Regra | Fixture mínima | Estado |
 |---|---|---|
-| AST → linhas sem perda semântica | `projecao/ida.test` | `[ ]` |
-| Linhas → AST reconstrói a árvore | `projecao/volta.test` | `[ ]` |
-| `camelCase` ↔ `snake_case` na fronteira | ADR-005 | `[ ]` |
-| CHECKs do schema respeitados | `projecao/checks.test` | `[ ]` |
+| AST → linhas sem perda semântica | `projecao-postgres.test.ts` ida e volta | coberta |
+| Linhas → AST reconstrói a árvore | idem, inclusive com linhas embaralhadas | coberta |
+| `camelCase` ↔ `snake_case` na fronteira | `projecao-postgres.test.ts` forma das linhas | coberta |
+| CHECKs do schema respeitados | idem — block_id, revogação e tabela | coberta |
+
+### Lacuna encontrada: a raiz não tem onde morar
+
+`LeiNode` estende `NormaNodeBase`, então a raiz carrega `id`, `ordem`,
+`sourceRef`, `supportingSourceRefs` e `parseEvidence`. **Nenhuma tabela tem
+coluna para eles**: `leis` e `versoes_lei` não os preveem, e `dispositivos` não
+aceita `tipo = 'lei'` — o CHECK enumera os catorze tipos e a raiz não está
+entre eles.
+
+Sem tratamento, a ida e volta perderia a rastreabilidade da própria norma: de
+que artefato ela veio e com que confiança foi interpretada. O adaptador carrega
+os campos em `LinhaDaRaiz`, explicitamente, para que a perda não seja
+silenciosa. **Onde eles vão morar no banco é decisão da Feature 007**, que é
+quem escreve o SQL de verdade.
+
+### Nota sobre `revogada_por`
+
+A coluna é sempre presente e anulável, então a volta sempre emite o campo. Uma
+árvore que vinha sem ele volta com `null`. Os dois dizem "não revogada", e
+normalizar uma vez é melhor que carregar a distinção entre ausente e nulo por
+todo o pipeline — o teste de ponto fixo garante que a normalização é estável.
 
 ## 10. Leis de referência (T004-07, T004-08, T004-10)
 

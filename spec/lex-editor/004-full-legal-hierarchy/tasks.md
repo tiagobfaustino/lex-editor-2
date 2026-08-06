@@ -27,5 +27,5 @@
   apenas como referência editorial comparativa.
 - [ ] T004-08 Executar contagem/auditoria amostral e corrigir regras gerais,
   sem exceções por nome de lei.
-- [ ] T004-09 Implementar/testar projeção AST ↔ Postgres sem perda semântica.
+- [x] T004-09 Implementar/testar projeção AST ↔ Postgres sem perda semântica.
 - [ ] T004-10 Validar goldens no Obsidian e fechar matriz de cobertura.

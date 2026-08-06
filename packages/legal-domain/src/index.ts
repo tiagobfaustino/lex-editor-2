@@ -146,5 +146,13 @@ export {
 } from './reconciliation/index.js';
 export type { RegistroPublicado, ResultadoDaReconciliacao } from './reconciliation/index.js';
 
+export { projetar, reconstruir } from './postgres-projection/index.js';
+export type {
+  LinhaDeDispositivo,
+  LinhaDeLei,
+  LinhaDeVersao,
+  Projecao,
+} from './postgres-projection/index.js';
+
 export { processar } from './pipeline/processar.js';
 export type { ResultadoDoPipeline } from './pipeline/processar.js';
