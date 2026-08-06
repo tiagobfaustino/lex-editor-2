@@ -302,7 +302,13 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
       return;
     }
 
-    const reconhecido = reconhecer(linha);
+    // Desembrulha o riscado antes de reconhecer: `~~SEÇÃO II~~` é uma divisão
+    // riscada, não uma linha desconhecida. O estado vem depois, da nota.
+    const envolvida = /^~~(.*?)~~\s*(\(.*\))?\s*$/u.exec(linha);
+    const linhaLimpa =
+      envolvida === null ? linha : `${envolvida[1] ?? ''} ${envolvida[2] ?? ''}`.trim();
+    const veioRiscada = envolvida !== null;
+    const reconhecido = reconhecer(linhaLimpa);
 
     if (reconhecido === undefined) {
       registrar(
@@ -318,11 +324,10 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
     // O riscado costuma envolver só o texto, depois do designador:
     // `§ 1º ~~texto antigo~~ (Revogado pela Lei ...)`. Desembrulha antes de
     // interpretar, para que a nota seja lida da mesma forma nos dois casos.
-    const semRiscado = /^~~(.*)~~\s*(\(.*\))?\s*$/u.exec(reconhecido.texto);
-    const riscado = semRiscado !== null;
-    const textoParaNota = riscado
-      ? `${semRiscado[1] ?? ''} ${semRiscado[2] ?? ''}`.trim()
-      : reconhecido.texto;
+    const interno = /^~~(.*)~~\s*(\(.*\))?\s*$/u.exec(reconhecido.texto);
+    const riscado = veioRiscada || interno !== null;
+    const textoParaNota =
+      interno === null ? reconhecido.texto : `${interno[1] ?? ''} ${interno[2] ?? ''}`.trim();
 
     const estado = ehDivisao(reconhecido.tipo)
       ? { texto: reconhecido.texto, deviceStatus: 'active' as const }

@@ -231,8 +231,18 @@ padrões, ambos identificados e ambos trabalho da T004-08:
 
 **Nomen juris.** O CP intercala o nome do crime como linha própria — `Falsa
 atribuição de privilégio`, antes do art. 188. Não é dispositivo: é rótulo
-editorial da fonte. Precisa ser reconhecido e descartado, ou virar metadado do
-artigo seguinte; hoje é linha sem designador. Duas ocorrências sobraram no CP.
+editorial da fonte, marcado com `<b>` no HTML.
+
+Tentei descartá-lo pela regra "linha tocada por negrito, não designador e
+seguida de designador". O lookahead é necessário porque o `<b>` do Planalto
+fecha **depois** do `<br>`, deixando abertura e fechamento em linhas
+diferentes. A tentativa **derrubou um artigo junto** e deixou os parágrafos
+dele órfãos.
+
+Revertida. Perder conteúdo normativo em silêncio é pior do que falhar no
+parsing — a falha bloqueia e é visível; a perda não. Hoje o CP para em duas
+linhas, o que é o comportamento seguro. A regra certa provavelmente precisa
+olhar a estrutura do HTML (o `<p>` que contém a rubrica), não só o negrito.
 
 **Ementa de divisão separada do designador.** Na CF/88, `DOS SERVIDORES
 PÚBLICOS (Redação dada pela Emenda Constitucional nº 18, de 1998)` chega sem o
