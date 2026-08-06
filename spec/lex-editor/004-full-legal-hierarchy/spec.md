@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: in_progress
+- `implementation_status`: blocked
 - `priority`: P0
 - `owner`: não atribuído
 

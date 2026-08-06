@@ -254,16 +254,23 @@ padrões, ambos identificados e ambos trabalho da T004-08:
 atribuição de privilégio`, antes do art. 188. Não é dispositivo: é rótulo
 editorial da fonte, marcado com `<b>` no HTML.
 
-Tentei descartá-lo pela regra "linha tocada por negrito, não designador e
-seguida de designador". O lookahead é necessário porque o `<b>` do Planalto
-fecha **depois** do `<br>`, deixando abertura e fechamento em linhas
-diferentes. A tentativa **derrubou um artigo junto** e deixou os parágrafos
-dele órfãos.
+**Duas tentativas, duas reversões.** A rubrica hoje **gruda na ementa da
+divisão anterior** — `CAPÍTULO I DOS CRIMES CONTRA A VIDA Homicídio simples` —,
+o que é corrupção real em centenas de lugares.
 
-Revertida. Perder conteúdo normativo em silêncio é pior do que falhar no
-parsing — a falha bloqueia e é visível; a perda não. Hoje o CP para em duas
-linhas, o que é o comportamento seguro. A regra certa provavelmente precisa
-olhar a estrutura do HTML (o `<p>` que contém a rubrica), não só o negrito.
+1. "linha em negrito, não designador, seguida de designador": derrubou um
+   artigo, deixando os parágrafos órfãos.
+2. "linha tocada por negrito que não é designador", checando o texto já sem
+   marcador: derrubou **cinco** artigos (434 → 429).
+
+As duas revertidas. Perder conteúdo normativo em silêncio é pior do que falhar
+no parsing: a falha bloqueia e aparece, a perda não.
+
+Hipótese para a terceira: o `<b>` abre e fecha atravessando `<br>`, então o
+marcador de fechamento cai no início da linha **seguinte** — a do artigo. Uma
+regra que olhe "a linha contém marcador" condena o artigo junto. A regra
+provavelmente precisa operar sobre o `<p>` que contém a rubrica, antes de o
+HTML virar linhas. Isso muda o desenho do extrator, não um predicado.
 
 **Ementa de divisão separada do designador.** Na CF/88, `DOS SERVIDORES
 PÚBLICOS (Redação dada pela Emenda Constitucional nº 18, de 1998)` chega sem o
