@@ -24,9 +24,6 @@ tags: ["penal", "fixture"]
 > [!note] Nota Editorial
 > Recorte do art. 121 para fins de teste do pipeline; não é o artigo íntegro.
 
-> [!note] Nota Editorial
-> Texto ainda não conferido contra a fonte oficial — ver README.md desta pasta.
-
 - Art. 121. Matar alguem: ^cp-art-121
   - Pena - reclusão, de seis a vinte anos. ^cp-art-121-pena
   - § 1º Se o agente comete o crime impelido por motivo de relevante valor social ou moral, ou sob o domínio de violenta emoção, logo em seguida a injusta provocação da vítima, o juiz pode reduzir a pena de um sexto a um terço. ^cp-art-121-par-1

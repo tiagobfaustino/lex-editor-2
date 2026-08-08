@@ -27,6 +27,26 @@ A fixture foi corrigida, o golden regenerado e a fidelidade fixada em teste — 
 alguém "corrigir" `alguem` para `alguém`, a suíte quebra. A invariante da
 feature é literal: texto jurídico não é alterado para facilitar nada.
 
+### A nota editorial sobreviveu à correção
+
+A conferência corrigiu o texto, mas não o metadado que a descrevia. O
+`manifesto.json` seguiu com `"Texto ainda não conferido contra a fonte oficial
+— ver README.md desta pasta."` em `notasEditoriais`, e o Formatter projeta cada
+nota como callout: o aviso falso saía **dentro do Markdown publicado**,
+contradito pela seção de proveniência do `README.md` da própria fixture e pelos
+testes de fidelidade desta feature.
+
+A nota foi removida em 2026-08-08 e o golden regenerado — três linhas a menos.
+Não foi reescrita para "conferido em 2026-08-05" porque essa data já é
+publicada pelo callout `[!info] Fonte Oficial`, derivado de
+`dataVerificacaoIntegridade`, e porque nota de documento jurídico publicado não
+deve apontar para um `README.md` que só existe no repositório.
+
+O padrão fica registrado: **corrigir o artefato e esquecer o metadado que o
+descreve** não é pego por teste algum — nenhuma asserção tocava essa string. O
+erro só apareceu quando o golden foi lido fora do repositório, projetado num
+vault do Obsidian por `npm run test:vault`.
+
 ### O erro de premissa que quase deixou isso passar
 
 A primeira versão deste `review.md` afirmava que a conferência "não podia ser
@@ -111,7 +131,9 @@ mais as execuções manuais da CLI acima.
 
 ## Dívidas
 
-- **Golden não conferido contra a fonte oficial** — a divergência acima.
+- **Golden não conferido contra a fonte oficial** — *resolvida* em 2026-08-05
+  pela conferência acima; a dívida já nascia contraditória com o corpo deste
+  documento. A nota editorial que ainda a afirmava saiu em 2026-08-08.
 - **Ancoragem de pena a um dispositivo ancestral** — Feature 004.
 - **Sem `item` e sem divisões na fixture.** O Formatter e o gerador tratam os
   dois, mas nenhum teste os exercita ponta a ponta, porque o art. 121 não os
