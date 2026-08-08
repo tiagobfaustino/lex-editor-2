@@ -25,7 +25,10 @@
 - [ ] T004-07 Preparar fixtures integrais versionadas de CP, CF/88 e lei curta;
   para o CP, capturar o texto compilado oficial e usar o Markdown existente
   apenas como referência editorial comparativa.
-- [ ] T004-08 Executar contagem/auditoria amostral e corrigir regras gerais,
-  sem exceções por nome de lei.
+- [~] T004-08 Executar contagem/auditoria amostral e corrigir regras gerais,
+  sem exceções por nome de lei. **Parcial**: rubrica resolvida e CP passa o
+  parsing inteiro (434 artigos); CF/88 ainda para em 12 linhas, e o CP para na
+  identificação por ancoragem ambígua de pena — que é a invariante, não
+  defeito. Ver `COBERTURA.md`.
 - [x] T004-09 Implementar/testar projeção AST ↔ Postgres sem perda semântica.
 - [ ] T004-10 Validar goldens no Obsidian e fechar matriz de cobertura.

@@ -244,71 +244,36 @@ elemento de bloco quebra. Corrigido em `extrairLinhas`.
 | Lei | Snapshot | Pipeline |
 |---|---|---|
 | LINDB (lei curta) | capturado | **passa**: 30 artigos, 88 dispositivos, 88 Block IDs |
-| Código Penal | capturado (660 KB) | 2 linhas não reconhecidas |
-| Constituição Federal de 1988 | capturado (1,8 MB) | 15 linhas não reconhecidas |
+| Código Penal | capturado (660 KB) | **parsing completo**; para na identificação, por baixa confiança na ancoragem de pena |
+| Constituição Federal de 1988 | capturado (1,8 MB) | 12 linhas não reconhecidas |
 
 Os três snapshots estão versionados. A LINDB fecha; CP e CF/88 esbarram em dois
 padrões, ambos identificados e ambos trabalho da T004-08:
 
-**Nomen juris.** O CP intercala o nome do crime como linha própria — `Falsa
-atribuição de privilégio`, antes do art. 188. Não é dispositivo: é rótulo
-editorial da fonte, marcado com `<b>` no HTML.
+**Nomen juris — resolvido na quarta tentativa.** O negrito do Planalto serve a
+**dois usos opostos**, e é isso que derrubou as três primeiras regras:
 
-**Duas tentativas, duas reversões.** A rubrica hoje **gruda na ementa da
-divisão anterior** — `CAPÍTULO I DOS CRIMES CONTRA A VIDA Homicídio simples` —,
-o que é corrupção real em centenas de lugares.
-
-1. "linha em negrito, não designador, seguida de designador": derrubou um
-   artigo, deixando os parágrafos órfãos.
-2. "linha tocada por negrito que não é designador", checando o texto já sem
-   marcador: derrubou **cinco** artigos (434 → 429).
-
-As duas revertidas. Perder conteúdo normativo em silêncio é pior do que falhar
-no parsing: a falha bloqueia e aparece, a perda não.
-
-**Terceira tentativa e a causa real.** A hipótese estava certa quanto ao
-mecanismo e errada quanto à conclusão. Reescrevi o extrator com um varredor que
-rastreia a profundidade de `<b>` e decide por pedaço de bloco — a ênfase vira
-atributo do pedaço, não marca dentro do texto. Isso resolveu o que as duas
-primeiras quebraram: **434 artigos preservados** (o baseline) e rubrica não
-grudando mais em ementa alguma.
-
-Mas quebrou outra coisa, e é a descoberta que importa:
-
-```
-TÍTULO III
-DA IMPUTABILIDADE PENAL        <- negrito, e é a EMENTA do título
-Art. 26 - É isento de pena ...
-```
-
-**A ementa da divisão também vem em negrito.** Removê-la deixou `TÍTULO III` sem
-ementa, e o parser — que consome a próxima linha como título quando a divisão
-vem sozinha — engoliu o art. 26. Daí 50 dispositivos órfãos.
-
-Ou seja: o negrito **não** distingue rubrica de conteúdo. A mesma marcação
-serve para nomen juris descartável e para ementa de divisão obrigatória. A
-diferença é contextual — o que vem antes:
-
-| Contexto anterior | Significado do pedaço em negrito |
+| Pedaço anterior | O pedaço em negrito é |
 |---|---|
-| designador de divisão sem ementa na mesma linha | ementa da divisão, obrigatória |
-| dispositivo completo | rubrica (nomen juris), descartável |
+| divisão sem ementa na mesma linha | a ementa dela, **obrigatória** |
+| dispositivo completo | rubrica (nomen juris), **descartável** |
 
-Uma regra puramente no extrator não tem esse contexto: quem sabe se uma divisão
-está esperando ementa é o parser, que já mantém esse estado (`aguardandoTitulo`).
-**A decisão precisa migrar para o parser**, com o extrator apenas marcando o
-pedaço como enfatizado — o que exige `extrairLinhas` devolver pedaços com
-atributos em vez de strings.
+Descartar todo negrito faz `TÍTULO III` engolir o art. 26; manter tudo faz
+`Homicídio simples` grudar em `CAPÍTULO I DOS CRIMES CONTRA A VIDA`.
 
-Revertida a terceira também. As três reversões custaram menos do que teria
-custado publicar texto jurídico corrompido, que era o resultado alternativo em
-todas elas.
+A solução tem duas partes. `varrerPedacos` transforma a ênfase em **atributo do
+pedaço**, decidido durante a varredura — marca embutida no texto não serve,
+porque sobrevive à quebra de bloco e cai no pedaço do artigo, que foi como as
+três primeiras derrubaram artigo. E `extrairLinhas` recebe a gramática por
+parâmetro, para saber se o pedaço anterior era divisão esperando ementa. O
+extrator não implementa a regra jurídica; ele pergunta.
 
-**Ementa de divisão separada do designador.** Na CF/88, `DOS SERVIDORES
-PÚBLICOS (Redação dada pela Emenda Constitucional nº 18, de 1998)` chega sem o
-`SEÇÃO II` que a precede, porque o riscado quebrou o par. Também aparece
-inciso com o separador perdido (`IV as ilhas fluviais`, sem o hífen) quando o
-`<strike>` fragmentava o designador.
+Coberto por `extrator-planalto.test.ts`, que prende as duas leituras lado a
+lado — inclusive o caso `<b>rubrica <br></b> Art. 188`, em que a tag de
+fechamento cai no pedaço do artigo.
+
+**Ementa de divisão separada do designador** na CF/88 segue aberta: quando o
+riscado quebra o par, o par não se reconstitui.
 
 ### O que a captura das três leis já corrigiu no extrator
 

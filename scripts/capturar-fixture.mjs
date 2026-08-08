@@ -48,9 +48,12 @@ const pasta = dirname(destino);
 mkdirSync(pasta, { recursive: true });
 writeFileSync(join(pasta, 'snapshot.html'), bytes);
 
+const semRisco = (linha) => linha.replace(/^~~|~~$/gu, '').trim();
+const gramatica = (linha) => reconhecer(semRisco(linha));
+
 const linhas = juntarContinuacoes(
-  extrairLinhas(html, { comecarEm: /^Art\.?\s*1[.º°o]/u }),
-  (linha) => reconhecer(linha) !== undefined,
+  extrairLinhas(html, { comecarEm: /^~?~?Art\.?\s*1[.º°o]/u, reconhecer: gramatica }),
+  (linha) => gramatica(linha) !== undefined,
 );
 
 writeFileSync(destino, `${linhas.join('\n')}\n`, 'utf8');
@@ -62,10 +65,11 @@ console.log(`SHA-256 do HTML: ${sha}`);
 console.log(`snapshot:       ${join(pasta, 'snapshot.html')} (${String(bytes.length)} bytes)`);
 console.log(`entrada:        ${destino} (${String(linhas.length)} linhas)`);
 
-const naoReconhecidas = linhas.filter((linha) => reconhecer(linha) === undefined);
+// Contar linhas sem designador **depois** de juntar seria vácuo: a junção
+// absorve toda linha não reconhecida na anterior, então o número seria sempre
+// zero. O sinal honesto é quantos artigos saíram — comparável com a norma real
+// — e rodar o pipeline em seguida.
+const artigos = linhas.filter((linha) => /^~?~?Art\.?\s*\d/u.test(linha)).length;
 
-console.log(`linhas sem designador: ${String(naoReconhecidas.length)}`);
-
-for (const linha of naoReconhecidas.slice(0, 15)) {
-  console.log(`  ? ${linha.slice(0, 110)}`);
-}
+console.log(`artigos reconhecidos: ${String(artigos)}`);
+console.log('Rode `lex process` sobre a entrada: é ele que revela o que sobrou.');

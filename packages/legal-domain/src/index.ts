@@ -120,6 +120,8 @@ export {
 export { montarConjuntoDeFontes, referenciarFragmento } from './source/snapshot.js';
 export { extrairLinhas, juntarContinuacoes } from './source/planalto.js';
 export type { OpcoesDeExtracao } from './source/planalto.js';
+export { varrerPedacos } from './source/pedacos.js';
+export type { Pedaco } from './source/pedacos.js';
 export type { ConjuntoDeFontes, SourceSnapshot } from './source/snapshot.js';
 
 export { analisar, DIVISOES, reconhecer } from './parser/index.js';
