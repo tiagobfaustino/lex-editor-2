@@ -29,6 +29,7 @@
     "test:boundaries": "node tests/config/eslint-boundaries.test.mjs",
     "check:data-model": "node scripts/audit-data-model.mjs",
     "test:unit": "vitest run",
+    "test:vault": "node scripts/testar-no-vault.mjs",
     "typecheck": "npm run typecheck:workspaces && npm run typecheck:node && npm run typecheck:renderer",
     "typecheck:workspaces": "npm run typecheck --workspaces --if-present",
     "typecheck:node": "tsc --project tsconfig.node.json --noEmit",
