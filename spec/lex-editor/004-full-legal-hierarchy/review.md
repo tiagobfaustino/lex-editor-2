@@ -61,12 +61,34 @@ Revertidas as duas. A razão de reverter em vez de ajustar: perder conteúdo
 normativo em silêncio é pior do que falhar no parsing. A falha bloqueia e
 aparece; a perda não.
 
-**Hipótese para a terceira tentativa:** o `<b>` do Planalto abre e fecha
-atravessando `<br>`, então o marcador de fechamento cai no início da linha
-*seguinte* — a do artigo. Uma regra que olhe apenas "a linha contém marcador"
-condena o artigo junto. A regra provavelmente precisa operar sobre o elemento
-`<p>` que contém a rubrica, antes de o HTML virar linhas, e não sobre a linha
-já achatada. Isso muda o desenho do extrator, não um predicado.
+3. varredor que rastreia a profundidade de `<b>` e decide por pedaço de bloco,
+   com a ênfase virando atributo em vez de marca no texto — **preservou os 434
+   artigos** e acabou com a rubrica grudada, mas engoliu o art. 26 e produziu
+   50 órfãos.
+
+A terceira revelou a causa real, que invalida a premissa das três: **a ementa
+da divisão também vem em negrito**.
+
+```
+TÍTULO III
+DA IMPUTABILIDADE PENAL        <- negrito, e é a EMENTA do título
+Art. 26 - É isento de pena ...
+```
+
+Descartar o negrito deixou `TÍTULO III` sem ementa, e o parser consumiu o art.
+26 como título dela. O negrito não distingue rubrica de conteúdo: a mesma
+marcação serve para nomen juris descartável e para ementa obrigatória. A
+diferença é contextual.
+
+| Contexto anterior | Pedaço em negrito é |
+|---|---|
+| divisão sem ementa na mesma linha | ementa da divisão, obrigatória |
+| dispositivo completo | rubrica, descartável |
+
+**A decisão precisa migrar para o parser**, que já mantém `aguardandoTitulo` e
+portanto sabe se uma divisão espera ementa. O extrator deve apenas marcar o
+pedaço como enfatizado — o que exige `extrairLinhas` devolver pedaços com
+atributos, não strings. É o desenho para a quarta tentativa.
 
 Enquanto isso não existir, o comportamento atual é o seguro: CP para em 2
 linhas de 1641 e CF/88 em 15 de 4139, com erro visível.

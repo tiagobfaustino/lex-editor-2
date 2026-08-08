@@ -266,11 +266,43 @@ o que é corrupção real em centenas de lugares.
 As duas revertidas. Perder conteúdo normativo em silêncio é pior do que falhar
 no parsing: a falha bloqueia e aparece, a perda não.
 
-Hipótese para a terceira: o `<b>` abre e fecha atravessando `<br>`, então o
-marcador de fechamento cai no início da linha **seguinte** — a do artigo. Uma
-regra que olhe "a linha contém marcador" condena o artigo junto. A regra
-provavelmente precisa operar sobre o `<p>` que contém a rubrica, antes de o
-HTML virar linhas. Isso muda o desenho do extrator, não um predicado.
+**Terceira tentativa e a causa real.** A hipótese estava certa quanto ao
+mecanismo e errada quanto à conclusão. Reescrevi o extrator com um varredor que
+rastreia a profundidade de `<b>` e decide por pedaço de bloco — a ênfase vira
+atributo do pedaço, não marca dentro do texto. Isso resolveu o que as duas
+primeiras quebraram: **434 artigos preservados** (o baseline) e rubrica não
+grudando mais em ementa alguma.
+
+Mas quebrou outra coisa, e é a descoberta que importa:
+
+```
+TÍTULO III
+DA IMPUTABILIDADE PENAL        <- negrito, e é a EMENTA do título
+Art. 26 - É isento de pena ...
+```
+
+**A ementa da divisão também vem em negrito.** Removê-la deixou `TÍTULO III` sem
+ementa, e o parser — que consome a próxima linha como título quando a divisão
+vem sozinha — engoliu o art. 26. Daí 50 dispositivos órfãos.
+
+Ou seja: o negrito **não** distingue rubrica de conteúdo. A mesma marcação
+serve para nomen juris descartável e para ementa de divisão obrigatória. A
+diferença é contextual — o que vem antes:
+
+| Contexto anterior | Significado do pedaço em negrito |
+|---|---|
+| designador de divisão sem ementa na mesma linha | ementa da divisão, obrigatória |
+| dispositivo completo | rubrica (nomen juris), descartável |
+
+Uma regra puramente no extrator não tem esse contexto: quem sabe se uma divisão
+está esperando ementa é o parser, que já mantém esse estado (`aguardandoTitulo`).
+**A decisão precisa migrar para o parser**, com o extrator apenas marcando o
+pedaço como enfatizado — o que exige `extrairLinhas` devolver pedaços com
+atributos em vez de strings.
+
+Revertida a terceira também. As três reversões custaram menos do que teria
+custado publicar texto jurídico corrompido, que era o resultado alternativo em
+todas elas.
 
 **Ementa de divisão separada do designador.** Na CF/88, `DOS SERVIDORES
 PÚBLICOS (Redação dada pela Emenda Constitucional nº 18, de 1998)` chega sem o
