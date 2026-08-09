@@ -97,4 +97,28 @@ describe('regras estruturais do HTML', () => {
 
     expect(linhas[0]).toBe('~~Art. 51 - Revogado.~~');
   });
+
+  it('a nota não conta na ênfase, então a rubrica curta continua rubrica', () => {
+    // `Feminicídio` tem 11 caracteres em negrito contra 30 da nota, que vem
+    // fora do `<b>`. Contando a nota, a rubrica perdia a maioria, escapava do
+    // descarte e era colada no fim da pena do art. 121.
+    const linhas = extrair(
+      '<p>Pena - reclusão, de doze a trinta anos.</p>' +
+        '<p><b>Feminicídio </b><a href="#">(Incluído pela Lei nº 13.104, de 2015)</a></p>',
+    );
+
+    expect(linhas).toEqual(['Pena - reclusão, de doze a trinta anos.']);
+  });
+
+  it('parêntese sem fechamento não contamina o pedaço seguinte', () => {
+    // A profundidade de parênteses zera a cada bloco. Deixá-la atravessar a
+    // quebra fazia um `(` órfão zerar a contagem de todo o resto do documento,
+    // e sete redações riscadas do art. 100 da CF/88 perdiam o ~~.
+    const linhas = extrair(
+      '<p>Art. 1. Texto com parêntese aberto (e nunca fechado</p>' +
+        '<p><strike>Art. 2. Revogado.</strike></p>',
+    );
+
+    expect(linhas[1]).toBe('~~Art. 2. Revogado.~~');
+  });
 });

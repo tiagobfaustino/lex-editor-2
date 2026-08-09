@@ -71,6 +71,12 @@ export const varrerPedacos = (html: string): readonly Pedaco[] => {
   let negrito = 0;
   let riscado = 0;
   let texto = '';
+  // Zerado a cada pedaço, em `fechar()`. Deixá-lo atravessar a quebra de bloco
+  // parece razoável — a nota às vezes abre num `<p>` e fecha noutro — mas basta
+  // um `(` sem fechamento no HTML para a profundidade nunca mais voltar a zero,
+  // e daí em diante todo pedaço conta zero caractere visível e perde a ênfase.
+  // Foi o que aconteceu com sete redações riscadas do art. 100 da CF/88.
+  let parenteses = 0;
   let visiveis = 0;
   let emNegrito = 0;
   let emRiscado = 0;
@@ -87,6 +93,7 @@ export const varrerPedacos = (html: string): readonly Pedaco[] => {
     }
 
     texto = '';
+    parenteses = 0;
     visiveis = 0;
     emNegrito = 0;
     emRiscado = 0;
@@ -106,7 +113,40 @@ export const varrerPedacos = (html: string): readonly Pedaco[] => {
     //
     // Contar aquele `;` fazia a linha inteira deixar de ser riscada por causa
     // de um caractere, e os incisos históricos do art. 201 viravam órfãos.
-    const contagem = (conteudo.match(/[\p{L}\p{N}]/gu) ?? []).length;
+    //
+    // O que está entre parênteses também não conta, e por motivo mais forte: a
+    // nota legislativa não é conteúdo do dispositivo, é procedência dele, e
+    // vem sempre fora da ênfase.
+    //
+    // ```html
+    // <b>Feminicídio</b><a href="...">(Incluído pela Lei nº 13.104, de 2015)</a>
+    // ```
+    //
+    // São 11 caracteres em negrito contra 30 da nota. Pela maioria bruta a
+    // rubrica deixava de ser rubrica, escapava do descarte e — por não ter
+    // designador — era colada pela `juntarContinuacoes` no fim da pena do
+    // art. 121: `Pena - reclusão, de doze a trinta anos. Feminicídio`.
+    //
+    // A exclusão vale para numerador e denominador ao mesmo tempo, então um
+    // parêntese legítimo do texto ("menor de 14 (quatorze) anos") não desloca
+    // a proporção para lado nenhum.
+    let contagem = 0;
+
+    for (const caractere of conteudo) {
+      if (caractere === '(') {
+        parenteses += 1;
+        continue;
+      }
+
+      if (caractere === ')') {
+        parenteses = Math.max(0, parenteses - 1);
+        continue;
+      }
+
+      if (parenteses === 0 && /[\p{L}\p{N}]/u.test(caractere)) {
+        contagem += 1;
+      }
+    }
 
     visiveis += contagem;
 

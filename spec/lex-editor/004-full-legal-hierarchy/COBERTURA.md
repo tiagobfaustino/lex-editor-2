@@ -338,9 +338,19 @@ contrato e precisa de regra jurídica aprovada com teste, não de ajuste local.
 
 ### 4. Fidelidade da extração, antes da identificação
 
-Parsing completo não é parsing correto. Há linhas contaminadas a investigar —
-rubrica concatenada a pena, incisos concatenados — e isso precede qualquer
-trabalho de identificação. **Ainda não medido caso a caso.**
+Parsing completo não é parsing correto. **Medido e corrigido em parte.**
+
+A contaminação vinha de rubrica que escapava do descarte: a nota legislativa
+entrava na conta da ênfase, e `Feminicídio` — 11 caracteres em negrito contra
+30 da nota — perdia a maioria. Sem designador, a `juntarContinuacoes` a colava
+no fim do dispositivo anterior:
+
+    Pena - reclusão, de doze a trinta anos. Feminicídio (Incluído pela Lei…)
+
+Excluindo o parênteses da conta, **75 linhas do CP** foram descontaminadas, e
+o riscado da CF/88 subiu de 753 para 755. Continua aberto: incisos
+concatenados entre si (`VI - (Revogado…) VII contra:`), que vêm num único
+elemento do HTML e não têm fronteira de bloco para separar.
 
 ## Correção de um relato anterior
 
