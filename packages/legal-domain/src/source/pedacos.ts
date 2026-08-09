@@ -38,9 +38,23 @@ const decodificar = (texto: string): string =>
 export interface Pedaco {
   /** Texto visível, com espaços colapsados. */
   readonly texto: string;
-  /** Todo caractere visível saiu dentro de `<b>`/`<strong>`. */
+  /**
+   * A maior parte do conteúdo saiu dentro de `<b>`/`<strong>`.
+   *
+   * Maioria, e não totalidade, porque o Planalto deixa pedaços de fora sem
+   * critério: ora um `;` depois do fechamento, ora o próprio designador.
+   *
+   * ```html
+   * I -                                  <!-- fora -->
+   * <strike>impostos sobre:</strike>     <!-- dentro -->
+   * ```
+   *
+   * Exigir totalidade fazia um único caractere solto desqualificar a linha
+   * inteira, e os dispositivos históricos do art. 155 e do art. 201 da CF/88
+   * viravam órfãos.
+   */
   readonly todoEmNegrito: boolean;
-  /** Todo caractere visível saiu dentro de `<strike>`/`<s>`/`<del>`. */
+  /** A maior parte do conteúdo saiu dentro de `<strike>`/`<s>`/`<del>`. */
   readonly todoRiscado: boolean;
 }
 
@@ -67,8 +81,8 @@ export const varrerPedacos = (html: string): readonly Pedaco[] => {
     if (conteudo.length > 0) {
       pedacos.push({
         texto: conteudo,
-        todoEmNegrito: visiveis > 0 && emNegrito === visiveis,
-        todoRiscado: visiveis > 0 && emRiscado === visiveis,
+        todoEmNegrito: visiveis > 0 && emNegrito * 2 > visiveis,
+        todoRiscado: visiveis > 0 && emRiscado * 2 > visiveis,
       });
     }
 
@@ -83,9 +97,16 @@ export const varrerPedacos = (html: string): readonly Pedaco[] => {
 
     texto += conteudo;
 
-    // Espaço não conta: uma rubrica seguida de espaço fora do `<b>` continua
-    // inteiramente em negrito para efeito da decisão.
-    const contagem = conteudo.replace(/\s/gu, '').length;
+    // Só letra e dígito contam. Pontuação e espaço soltos fora da tag são
+    // resíduo de tipografia, não conteúdo — e o Planalto os deixa fora o tempo
+    // todo:
+    //
+    //   <strike>II - ajuda à manutenção dos dependentes...</strike>
+    //   ;
+    //
+    // Contar aquele `;` fazia a linha inteira deixar de ser riscada por causa
+    // de um caractere, e os incisos históricos do art. 201 viravam órfãos.
+    const contagem = (conteudo.match(/[\p{L}\p{N}]/gu) ?? []).length;
 
     visiveis += contagem;
 
