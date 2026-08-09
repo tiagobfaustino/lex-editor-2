@@ -288,3 +288,65 @@ riscado quebra o par, o par não se reconstitui.
 Nenhum deles apareceria em fixture sintética. É o argumento concreto para a
 ordem do `plan.md`: casos mínimos primeiro, leis inteiras depois — mas leis
 inteiras **antes** de declarar a gramática pronta.
+
+---
+
+## Bloqueios que exigem decisão normativa
+
+Levantados em 2026-08-09, a partir de revisão externa e **conferidos aqui** —
+os números abaixo são os medidos, não os relatados.
+
+### 1. ADCT não existe no modelo
+
+O extrator descarta `ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS` como
+rubrica: no HTML ele vem em `<b>`, e nada antes dele espera ementa. Sem esse
+nó, os artigos do ADCT ficam no topo e colidem com os da Constituição, que
+reinicia a numeração.
+
+Nem o `DATA_MODEL.md` nem a `BLOCK_ID_SPEC.md` definem nó ou segmento para o
+ADCT. Modelá-lo como anexo seria decidir por conta própria que o ADCT é um
+anexo da Constituição, o que é afirmação jurídica, não de implementação.
+
+**Medido:** com o gerador corrigido, a CF/88 para na identificação com 4
+colisões `block_id_duplicado` — comportamento correto da §7.3.
+
+**Sugestão a decidir:** namespace explícito, `cf1988-adct-art-1`. Exige ADR e
+emenda à `BLOCK_ID_SPEC.md` §2.1, no mesmo rito da ADR-010.
+
+### 2. Redação anterior sem nota
+
+A ADR-006 §4 modela `redacoesAnteriores` como par `{ texto, nota }`, e o schema
+exige nota não vazia. O Planalto nem sempre fornece uma: a redação originária
+aparece riscada e sem parentético algum.
+
+**Medido:** a CF/88 tem 753 linhas riscadas; **743** produzem redação anterior
+sem nota. É a maioria, não a exceção.
+
+Inventar `"Redação original"` seria escrever conteúdo jurídico que a fonte não
+tem. **A decidir:** tornar `nota` opcional na ADR-006 e no schema, ou definir
+outra representação para a redação originária.
+
+### 3. Ancoragem de pena no CP
+
+O CP tem penas em que mais de um ancestral termina em dois-pontos. O contrato
+atual marca confiança `low`, e a invariante da feature impede que isso avance
+para a AST identificada — por desenho.
+
+**Medido:** a CLI reporta 50 problemas, que é o teto de `LIMITE_PROBLEMAS`; o
+total real é maior. Escolher o ancestral mais próximo automaticamente mudaria o
+contrato e precisa de regra jurídica aprovada com teste, não de ajuste local.
+
+### 4. Fidelidade da extração, antes da identificação
+
+Parsing completo não é parsing correto. Há linhas contaminadas a investigar —
+rubrica concatenada a pena, incisos concatenados — e isso precede qualquer
+trabalho de identificação. **Ainda não medido caso a caso.**
+
+## Correção de um relato anterior
+
+Registrei antes que a CF/88 tinha "25 nós sem texto". **Estava errado**: o
+relatório da CLI corta em 50 problemas, e eu li 25 + 25 como se fosse a lista
+inteira. A varredura da árvore identificada mostra **zero** nós sem texto. Os
+25 eram Block IDs com segmento vazio, hoje corrigidos.
+
+A lição é de método: não concluir a partir de relatório truncado.

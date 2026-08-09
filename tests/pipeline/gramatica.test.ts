@@ -160,6 +160,21 @@ describe('desambiguação por divisão (BID §2.4 e §8.3)', () => {
     expect(ids).toContain('ldem-art-9');
   });
 
+  it('não qualifica com segmento vazio quando um dos conflitantes é de topo', () => {
+    // Artigo de topo colidindo com artigo dentro de divisão. A assinatura vazia
+    // do de topo distinguiria o grupo, mas produziria `ldem--art-1`, com
+    // segmento oco. Isso não é qualificação: é colisão irredutível.
+    const resultado = rodar(
+      ['Art. 1. De topo.', 'CAPÍTULO I', 'PRIMEIRO', 'Art. 1. Dentro do capítulo.'].join('\n'),
+    );
+
+    if (resultado.relatorio.ok) {
+      throw new Error('Esperava colisão irredutível.');
+    }
+
+    expect(resultado.relatorio.problemas.map((p) => p.codigo)).toContain('block_id_duplicado');
+  });
+
   it('falha quando nenhuma divisão separa os conflitantes', () => {
     const resultado = rodar('Art. 1. Um.\nArt. 1. Um de novo.');
 

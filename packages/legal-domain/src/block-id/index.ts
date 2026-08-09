@@ -235,6 +235,16 @@ const qualificacoes = (candidatos: readonly Candidato[]): ReadonlyMap<Candidato,
         return divisao === undefined ? '' : segmentoDaDivisao(divisao);
       });
 
+      // Um candidato sem divisão neste nível não tem com que se qualificar. A
+      // assinatura vazia dele até distingue o grupo, mas produziria um ID com
+      // segmento oco — `cf1988--art-1`, que não é canônico e viola a §2.1. É o
+      // que acontece quando um artigo de topo colide com outro dentro de
+      // divisão: não é caso de qualificação, é colisão irredutível, e a §7.3
+      // manda bloquear.
+      if (assinaturas.some((assinatura) => assinatura.length === 0)) {
+        continue;
+      }
+
       if (new Set(assinaturas).size === grupo.length) {
         grupo.forEach((candidato, i) => {
           // A qualificação pertence ao candidato conflitante, não à divisão:
