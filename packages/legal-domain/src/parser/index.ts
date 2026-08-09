@@ -287,6 +287,19 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
     }
 
     if (aguardandoTitulo !== undefined) {
+      // Uma divisão esperando ementa pode encontrar primeiro a ementa
+      // **anterior**, riscada, e só depois a vigente:
+      //
+      //   Seção II
+      //   ~~DOS SERVIDORES PÚBLICOS CIVIS~~
+      //   DOS SERVIDORES PÚBLICOS (Redação dada pela EC nº 18, de 1998)
+      //
+      // Tomar a primeira daria à seção o título que ela deixou de ter. Pular a
+      // riscada é a leitura da ADR-006: o riscado é redação anterior.
+      if (lerLinhaRiscada(linha) !== undefined) {
+        return;
+      }
+
       aguardandoTitulo.texto = linha;
       aguardandoTitulo = undefined;
       return;

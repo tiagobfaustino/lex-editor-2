@@ -113,9 +113,16 @@ export const REGRAS: readonly Regra[] = [
   },
   {
     // Inciso em romano, com sufixo opcional (`VII-A`).
+    //
+    // O separador é opcional porque o texto vigente da CF/88 o omite — o
+    // art. 20, IV é `IV as ilhas fluviais...`, enquanto a redação anterior,
+    // riscada logo acima, traz `IV - as ilhas fluviais...`. Sem separador,
+    // exige-se que o texto comece em minúscula, que é a convenção do inciso
+    // brasileiro; é o que impede uma palavra composta só de letras romanas de
+    // ser lida como designador.
     tipo: 'inciso',
-    padrao: /^([IVXLCDM]+(?:-[A-Za-z]+)?)\s*[-–—]\s*(.*)$/u,
-    extrair: (m) => ({ numero: m[1] ?? '', texto: (m[2] ?? '').trim() }),
+    padrao: /^([IVXLCDM]+(?:-[A-Za-z]+)?)\s*(?:[-–—]\s*(.*)|\s+([a-zà-ú].*))$/u,
+    extrair: (m) => ({ numero: m[1] ?? '', texto: (m[2] ?? m[3] ?? '').trim() }),
   },
   {
     // Alínea: letra única ou dupla (BLOCK_ID_SPEC §7.2).
