@@ -116,6 +116,41 @@ describe('divisões estruturais', () => {
     expect(md.indexOf('### Capítulo II')).toBeGreaterThan(md.indexOf('- Art. 1.'));
     expect(idsDe(md)).toEqual(['ldem-art-1', 'ldem-art-2']);
   });
+
+  it('isola o ADCT em namespace intrínseco, mesmo sem colisão (ADR-011)', () => {
+    const md = markdownDe(
+      [
+        'Art. 1. Corpo permanente.',
+        'ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS',
+        'Art. 1. Regra transitória.',
+        'Art. 2. Outra regra transitória.',
+      ].join('\n'),
+      'cf1988',
+    );
+
+    expect(md).toContain('# Ato das Disposições Constitucionais Transitórias');
+    expect(idsDe(md)).toEqual(['cf1988-art-1', 'cf1988-adct-art-1', 'cf1988-adct-art-2']);
+  });
+});
+
+describe('casos-limite de dispositivos', () => {
+  it('gera segmento para pena com numeração jurídica explícita', () => {
+    const md = markdownDe(['Art. 1. Sanções:', 'Pena 2 - multa.'].join('\n'));
+    expect(idsDe(md)).toEqual(['ldem-art-1', 'ldem-art-1-pena-2']);
+  });
+
+  it('não transforma a palavra pena no meio do caput em nó autônomo', () => {
+    const md = markdownDe('Art. 1. A pena será aplicada conforme a lei.');
+    expect(idsDe(md)).toEqual(['ldem-art-1']);
+    expect(md).not.toContain('ldem-art-1-pena');
+  });
+
+  it('não confunde parágrafo único com numerado quando ambos constam na fonte', () => {
+    const md = markdownDe(
+      ['Art. 1. Caput.', 'Parágrafo único. Regra original.', '§ 2º Regra posterior.'].join('\n'),
+    );
+    expect(idsDe(md)).toEqual(['ldem-art-1', 'ldem-art-1-par-unico', 'ldem-art-1-par-2']);
+  });
 });
 
 describe('desambiguação por divisão (BID §2.4 e §8.3)', () => {

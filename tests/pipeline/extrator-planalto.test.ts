@@ -8,7 +8,12 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { extrairLinhas, reconhecer, varrerPedacos } from '@lex-editor/legal-domain';
+import {
+  extrairLinhas,
+  juntarContinuacoes,
+  reconhecer,
+  varrerPedacos,
+} from '@lex-editor/legal-domain';
 
 const gramatica = (linha: string) => reconhecer(linha.replace(/^~~|~~$/gu, '').trim());
 
@@ -47,6 +52,61 @@ describe('os dois usos do negrito', () => {
 
     expect(linhas).not.toContain('Rubrica qualquer');
     expect(linhas.some((l) => l.startsWith('Art. 188.'))).toBe(true);
+  });
+});
+
+describe('designadores concatenados pelo HTML do Word', () => {
+  it('separa somente em fronteira editorial confirmada pela gramática', () => {
+    const linhas = juntarContinuacoes(
+      [
+        'Art. 121-A. Conduta. (Incluído pela Lei nº 1) Pena – reclusão.',
+        '§ 1º Hipóteses. (Incluído pela Lei nº 1) I – primeira; (Incluído pela Lei nº 1) II – segunda.',
+      ],
+      (linha) => gramatica(linha) !== undefined,
+    );
+
+    expect(linhas).toEqual([
+      'Art. 121-A. Conduta. (Incluído pela Lei nº 1)',
+      'Pena – reclusão.',
+      '§ 1º Hipóteses. (Incluído pela Lei nº 1)',
+      'I – primeira; (Incluído pela Lei nº 1)',
+      'II – segunda.',
+    ]);
+  });
+
+  it('não corta referência ou texto comum sem a fronteira editorial', () => {
+    const linha = 'Art. 1. Aplica-se o art. 2 e a Pena - em sentido doutrinário.';
+    expect(juntarContinuacoes([linha], (item) => gramatica(item) !== undefined)).toEqual([linha]);
+  });
+});
+
+describe('rodapé institucional concatenado ao último artigo', () => {
+  it('remove assinaturas somente quando a certificação oficial confirma o rodapé', () => {
+    const linhas = extrair(
+      '<p>Art. 250. Texto vigente. Brasília, 5 de outubro de 1988. Nome dos signatários. Este texto não substitui o publicado no D.O.U.</p>',
+    );
+    expect(linhas).toEqual(['Art. 250. Texto vigente.']);
+  });
+
+  it('ignora blocos de assinaturas até o próximo designador estrutural', () => {
+    const linhas = extrair(
+      '<p>Art. 250. Texto vigente.</p>' +
+        '<p>Brasília, 5 de outubro de 1988.</p>' +
+        '<p>Nome dos signatários.</p>' +
+        '<p>Este texto não substitui o publicado no D.O.U.</p>' +
+        '<p>ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS</p>' +
+        '<p>Art. 1. Regra transitória.</p>',
+    );
+    expect(linhas).toEqual([
+      'Art. 250. Texto vigente.',
+      'ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS',
+      'Art. 1. Regra transitória.',
+    ]);
+  });
+
+  it('preserva Brasília quando faz parte do texto sem certificação de rodapé', () => {
+    const linhas = extrair('<p>Art. 1. A sede fica em Brasília, 5 de outubro de 1988.</p>');
+    expect(linhas).toEqual(['Art. 1. A sede fica em Brasília, 5 de outubro de 1988.']);
   });
 });
 
@@ -110,10 +170,19 @@ describe('regras estruturais do HTML', () => {
     expect(linhas).toEqual(['Pena - reclusão, de doze a trinta anos.']);
   });
 
+  it('parentético desconhecido continua contando como conteúdo', () => {
+    // O extrator só conhece notas editoriais com prefixo explícito. Tratar
+    // qualquer parêntese como nota apagaria conteúdo que deve chegar intacto
+    // ao parser.
+    const linhas = extrair('<p><b>Observação</b> (conteúdo normativo sem nota oficial)</p>');
+
+    expect(linhas).toEqual(['Observação (conteúdo normativo sem nota oficial)']);
+  });
+
   it('parêntese sem fechamento não contamina o pedaço seguinte', () => {
-    // A profundidade de parênteses zera a cada bloco. Deixá-la atravessar a
-    // quebra fazia um `(` órfão zerar a contagem de todo o resto do documento,
-    // e sete redações riscadas do art. 100 da CF/88 perdiam o ~~.
+    // A decisão é feita sobre notas completas encontradas no próprio pedaço.
+    // Um `(` órfão não cria estado que atravesse a quebra e contamine o resto
+    // do documento.
     const linhas = extrair(
       '<p>Art. 1. Texto com parêntese aberto (e nunca fechado</p>' +
         '<p><strike>Art. 2. Revogado.</strike></p>',

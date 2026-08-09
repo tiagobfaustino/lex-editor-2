@@ -41,7 +41,7 @@ export interface LinhaDeDispositivo {
   readonly nota_status: string | null;
   readonly preservar_texto_revogado: boolean | null;
   readonly redacao_atual_dada_por: string | null;
-  readonly redacoes_anteriores: readonly { texto: string; nota: string }[];
+  readonly redacoes_anteriores: readonly { texto: string; nota?: string }[];
   readonly renumerado_para_block_id: string | null;
   readonly source_ref: unknown;
   readonly supporting_source_refs: readonly unknown[];
@@ -84,7 +84,7 @@ export interface LinhaDeVersao {
  * **Lacuna do DATA_MODEL.** `LeiNode` estende `NormaNodeBase`, então a raiz
  * carrega `id`, `ordem`, `sourceRef`, `supportingSourceRefs` e
  * `parseEvidence`. Nem `leis` nem `versoes_lei` têm coluna para nenhum deles, e
- * `dispositivos` não aceita `tipo = 'lei'` — o CHECK enumera os catorze tipos e
+ * `dispositivos` não aceita `tipo = 'lei'` — o CHECK enumera os quinze tipos e
  * a raiz não está entre eles.
  *
  * Sem isto, a ida e volta perderia a rastreabilidade da própria norma: de que
@@ -107,7 +107,7 @@ export interface Projecao {
   readonly dispositivos: readonly LinhaDeDispositivo[];
 }
 
-const DIVISOES = new Set(['livro', 'titulo', 'capitulo', 'secao', 'subsecao']);
+const DIVISOES = new Set(['ato_transitorio', 'livro', 'titulo', 'capitulo', 'secao', 'subsecao']);
 
 const texto = (valor: unknown): string | null => (typeof valor === 'string' ? valor : null);
 
@@ -147,7 +147,7 @@ export const projetar = (arvore: IdentifiedNormaAST): Projecao => {
         typeof no['preservarTextoRevogado'] === 'boolean' ? no['preservarTextoRevogado'] : null,
       redacao_atual_dada_por: texto(no['redacaoAtualDadaPor']),
       redacoes_anteriores: Array.isArray(no['redacoesAnteriores'])
-        ? (no['redacoesAnteriores'] as { texto: string; nota: string }[])
+        ? (no['redacoesAnteriores'] as { texto: string; nota?: string }[])
         : [],
       renumerado_para_block_id: texto(no['renumeradoPara']),
       source_ref: no['sourceRef'],

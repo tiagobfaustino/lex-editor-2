@@ -50,6 +50,7 @@ export type {
   AlineaNode,
   AnexoNode,
   ArtigoNode,
+  AtoTransitorioNode,
   BlockIdDepreciado,
   CapituloNode,
   DispositivoNodeBase,
@@ -83,12 +84,14 @@ export type {
 export {
   blockIdDepreciadoSchema,
   identifiedAnexoSchema,
+  identifiedAtoTransitorioSchema,
   identifiedArtigoSchema,
   identifiedNormaAstSchema,
   identifiedTabelaSchema,
   normaAstSchema,
   parseEvidenceSchema,
   parsedAnexoSchema,
+  parsedAtoTransitorioSchema,
   parsedArtigoSchema,
   parsedNormaAstSchema,
   parsedTabelaSchema,
@@ -118,6 +121,7 @@ export {
 // --- Pipeline (Feature 003) ---
 
 export { montarConjuntoDeFontes, referenciarFragmento } from './source/snapshot.js';
+export { mesclarFontes } from './source/mesclar.js';
 export { extrairLinhas, juntarContinuacoes } from './source/planalto.js';
 export type { OpcoesDeExtracao } from './source/planalto.js';
 export { varrerPedacos } from './source/pedacos.js';
@@ -126,6 +130,8 @@ export type { ConjuntoDeFontes, SourceSnapshot } from './source/snapshot.js';
 
 export { analisar, DIVISOES, reconhecer } from './parser/index.js';
 export type { EntradaDoParser, MetadadosDaNorma } from './parser/index.js';
+export { aplicarDecisoesEditoriais } from './parser/decisoes-editoriais.js';
+export type { DecisaoEditorial } from './parser/decisoes-editoriais.js';
 
 export { contarBlockIds, identificar } from './block-id/index.js';
 

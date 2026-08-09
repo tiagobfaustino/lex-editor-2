@@ -100,7 +100,7 @@ describe('as verificações realmente reprovam', () => {
 
   it('§9.5 — indentação que não é múltiplo de dois', () => {
     const { markdown, arvore } = pipeline(BASE);
-    const corrompido = markdown.replace('    - I -', '     - I -');
+    const corrompido = markdown.replace('  - I -', '   - I -');
 
     expect(codigos(corrompido, arvore)).toContain('filho_incompativel');
   });

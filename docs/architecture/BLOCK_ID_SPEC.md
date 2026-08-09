@@ -6,6 +6,11 @@ Escopo: geração, reconciliação, validação e ciclo de vida de identificador
 canônicos de dispositivos legais (`block-id`), renderizados como `^block-id`
 no Markdown produzido pelo Lex Editor.
 
+O ADCT usa namespace estrutural intrínseco: todo dispositivo descendente de
+`ato_transitorio` recebe `adct` imediatamente depois da sigla, por exemplo
+`cf1988-adct-art-1`. Essa qualificação é obrigatória mesmo sem colisão
+(ADR-011).
+
 ## Sumário
 
 - [1. Propósito e motivação](#1-propósito-e-motivação)
@@ -330,7 +335,7 @@ dispositivo quando o outro ID já integra o namespace histórico.
 
 ```typescript
 type NormaNodeType =
-  | "livro" | "titulo" | "capitulo" | "secao" | "subsecao"
+  | "ato_transitorio" | "livro" | "titulo" | "capitulo" | "secao" | "subsecao"
   | "artigo" | "paragrafo" | "inciso" | "alinea" | "item" | "pena"
   | "anexo" | "tabela";
 
@@ -418,7 +423,7 @@ function generateBlockId(
 }
 
 function isDivisaoEstrutural(n: NormaASTNode): boolean {
-  return ["livro", "titulo", "capitulo", "secao", "subsecao"].includes(n.type);
+  return ["ato_transitorio", "livro", "titulo", "capitulo", "secao", "subsecao"].includes(n.type);
 }
 
 function isDispositivo(n: NormaASTNode): boolean {

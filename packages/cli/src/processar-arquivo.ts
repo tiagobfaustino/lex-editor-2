@@ -9,6 +9,7 @@ import { readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 import {
+  type DecisaoEditorial,
   type MetadadosDaNorma,
   montarConjuntoDeFontes,
   processar,
@@ -58,6 +59,8 @@ export interface OpcoesDoComando {
   readonly entrada: string;
   readonly manifesto: string;
   readonly saida: string;
+  /** Artefato versionado de decisões editoriais da ADR-011. */
+  readonly decisoes?: string | undefined;
   /** Injetável para teste; por padrão grava mesmo. */
   readonly escrever?: (caminho: string, conteudo: string) => void;
 }
@@ -84,6 +87,7 @@ export const escreverAtomicamente = (caminho: string, conteudo: string): void =>
 export const executarProcess = (opcoes: OpcoesDoComando): ResultadoDoComando => {
   let conteudo: string;
   let manifesto: Manifesto;
+  let decisoes: readonly DecisaoEditorial[] = [];
 
   try {
     conteudo = readFileSync(resolve(opcoes.entrada), 'utf8');
@@ -111,6 +115,25 @@ export const executarProcess = (opcoes: OpcoesDoComando): ResultadoDoComando => 
         ],
       },
     };
+  }
+
+  if (opcoes.decisoes !== undefined) {
+    try {
+      const lidas: unknown = JSON.parse(readFileSync(resolve(opcoes.decisoes), 'utf8'));
+      if (!Array.isArray(lidas)) throw new Error('esperado array JSON');
+      decisoes = lidas as DecisaoEditorial[];
+    } catch {
+      return {
+        codigo: CODIGO_DE_SAIDA.entrada,
+        relatorio: {
+          ok: false,
+          etapaFinal: 'entrada',
+          problemas: [
+            problemaDeEntrada(`Decisões editoriais ausentes ou inválidas: ${opcoes.decisoes}`),
+          ],
+        },
+      };
+    }
   }
 
   const hashDoArtefato = sha256(conteudo);
@@ -149,6 +172,7 @@ export const executarProcess = (opcoes: OpcoesDoComando): ResultadoDoComando => 
     referenciaBase: conjunto.valor.primaria.referencia,
     hashDaLinha: sha256,
     metadados: manifesto,
+    decisoesEditoriais: decisoes,
   });
 
   if (!resultado.relatorio.ok || resultado.markdown === undefined) {

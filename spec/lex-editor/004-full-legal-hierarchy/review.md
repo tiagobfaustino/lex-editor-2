@@ -1,137 +1,76 @@
 # Revisão de Encerramento — Feature 004
 
-A feature **não fechou**. T004-01 a T004-06 e T004-09 estão entregues; T004-07
-está parcial e T004-08 e T004-10 seguem abertas. Este documento registra o que
-ficou, por que ficou, e o que não se deduz do código.
+A feature 004 foi concluída em 2026-08-09. As dez tarefas e os seis critérios
+de aceite estão atendidos; o índice de features registra o estado `done`.
 
-## Estado por tarefa
+## Resultado
 
-| Tarefa | Estado |
-|---|---|
-| T004-01 matriz de cobertura | entregue |
-| T004-02 gramática de divisões e dispositivos | entregue |
-| T004-03 estados, redações, tabelas, anexos | **parcial** — falta mesclagem compilada/anotada e referências cruzadas |
-| T004-04 reconciliação de identidade | entregue |
-| T004-05 namespace, aliases, colisão tardia | entregue |
-| T004-06 catorze verificações canônicas | entregue |
-| T004-07 fixtures integrais | **parcial** — LINDB passa; CP e CF/88 não |
-| T004-08 auditoria e correção de regras gerais | **aberta** |
-| T004-09 projeção Postgres | entregue |
-| T004-10 validação no Obsidian | **aberta** — depende de revisor humano |
+O pipeline processa integralmente as três normas de referência a partir de
+snapshots oficiais versionados:
 
-## A decisão que exigiu ADR
+| Norma | Artigos | Dispositivos | Block IDs |
+|---|---:|---:|---:|
+| LINDB | 30 | 89 | 89 |
+| Código Penal | 434 | 1.769 | 1.684 |
+| Constituição Federal e ADCT | 411 | 3.428 | 3.328 |
 
-A LINDB contradisse o `DATA_MODEL` no art. 15: cinco alíneas pendem do caput,
-sem inciso. Resolvido pela
-[ADR-010](../../../docs/architecture/ADR-010-alinea-sob-artigo-e-paragrafo.md),
-com `DATA_MODEL.md` §NormaAST e `BLOCK_ID_SPEC.md` §2.1 emendados **antes** do
-código. Nenhum ID publicado mudou: a gramática passou a aceitar uma cadeia que
-antes não era produzível, sem reinterpretar nenhuma existente.
+As projeções extraídas dos snapshots reproduzem `entrada.txt` byte a byte, e
+os resultados da CLI reproduzem os goldens. As 84 penas de ancoragem ambígua
+do CP permanecem bloqueantes sem decisão; a fixture integral fornece decisões
+editoriais versionadas e vinculadas aos hashes do artefato e de cada fragmento.
 
-## O que rodar lei real ensinou
+## Contratos fechados
 
-Cinco defeitos do extrator, nenhum dos quais apareceria em fixture sintética:
+- A ADR-010 admite alínea diretamente sob artigo ou parágrafo, sem inventar
+  ancestral no Block ID.
+- A ADR-011 define ADCT como divisão estrutural com namespace próprio, histórico
+  sem nota inventada e decisões editoriais rastreáveis.
+- A fonte `primary_current` é soberana; fontes auxiliares enriquecem histórico
+  e rastreabilidade, e divergências bloqueiam.
+- Reconciliação preserva IDs após mudança textual, cria aliases para
+  renumeração, não recicla identificadores e bloqueia colisão ambígua.
+- A projeção AST ↔ Postgres mantém a semântica e alcança ponto fixo.
+- O Formatter usa a profundidade real da AST, inclusive nos níveis jurídicos
+  omitidos pela fonte, e aplica as validações canônicas antes da publicação.
 
-| Sintoma | Causa |
-|---|---|
-| Texto corrompido | encoding adivinhado pelo cabeçalho; agora utf-8 estrito com queda para windows-1252 |
-| `1.991, de 1953` lido como item | separador de item não exigia espaço depois |
-| Arts. 20+ da LINDB sem `Art.` | quebra crua do arquivo tratada como quebra de parágrafo; em HTML é espaço |
-| Art. 6º da CF/88 quatro vezes | `<strike>` removido junto com as tags, apagando a distinção da ADR-006 |
-| Revogado engolindo o texto do seguinte | o riscado não era fronteira ao juntar continuações |
+## Evidência nas leis reais
 
-A ordem do `plan.md` — casos mínimos antes das leis — continua certa. Falta
-nela o recíproco: **leis inteiras antes de declarar a gramática pronta**.
+A execução integral levou a correções gerais, sem exceções por nome de lei:
+decodificação UTF-8/Windows-1252 estrita, separação de dispositivos
+concatenados somente após parentético editorial confirmado, distinção entre
+rubrica e ementa por contexto, preservação de redações riscadas, cabeçalho e
+namespace do ADCT, e remoção conservadora do rodapé de assinaturas da CF/88.
 
-## A rubrica: duas tentativas, duas reversões
+Os snapshots completos, projeções e goldens de LINDB, CP e CF/88 estão
+versionados. Casos mínimos continuam cobrindo cada ramificação da matriz para
+que uma falha em arquivo grande tenha diagnóstico localizado.
 
-O CP intercala o nomen juris como linha própria (`Homicídio simples`), marcado
-com `<b>`. Hoje ela **gruda na ementa da divisão anterior**, produzindo
-`CAPÍTULO I DOS CRIMES CONTRA A VIDA Homicídio simples`. É corrupção real, em
-centenas de lugares.
+## Validação no Obsidian
 
-Tentei duas regras para descartá-la, ambas baseadas no negrito:
+Os quatro goldens foram regenerados em vault temporário e comparados byte a
+byte. No Obsidian Desktop 1.13.4 foram conferidos propriedades, callouts,
+listas recolhíveis e navegação por Block ID nas três leis, incluindo:
 
-1. "linha em negrito, não designador, **seguida** de designador" — derrubou um
-   artigo e deixou os parágrafos dele órfãos;
-2. "linha tocada por negrito que não é designador", com a checagem feita no
-   texto já sem marcador — derrubou **cinco** artigos (434 → 429).
+- inciso revogado e alíneas do art. 121 do CP;
+- transição limpa do art. 250 da CF/88 para o ADCT;
+- alíneas diretamente sob o art. 15 da LINDB, cada uma indexada e navegável.
 
-Revertidas as duas. A razão de reverter em vez de ajustar: perder conteúdo
-normativo em silêncio é pior do que falhar no parsing. A falha bloqueia e
-aparece; a perda não.
+Essa inspeção revelou a indentação semântica fixa das alíneas da LINDB: seis
+espaços representavam ancestrais inexistentes e faziam o Obsidian indexar só o
+último item da sequência. A correção usa a hierarquia efetiva da AST e tem
+teste de regressão.
 
-3. varredor que rastreia a profundidade de `<b>` e decide por pedaço de bloco,
-   com a ênfase virando atributo em vez de marca no texto — **preservou os 434
-   artigos** e acabou com a rubrica grudada, mas engoliu o art. 26 e produziu
-   50 órfãos.
+## Verificações de encerramento
 
-A terceira revelou a causa real, que invalida a premissa das três: **a ementa
-da divisão também vem em negrito**.
+- `npm test`: 219 testes, 15 arquivos;
+- `npm run typecheck`;
+- `npm run lint`;
+- `npm run format:check`;
+- `npm run check:data-model`;
+- `npm run test:boundaries`;
+- `npm run build:workspaces`;
+- `git diff --check`;
+- `npm run test:vault -- <vault-temporario>`: quatro fixtures idênticas aos
+  goldens.
 
-```
-TÍTULO III
-DA IMPUTABILIDADE PENAL        <- negrito, e é a EMENTA do título
-Art. 26 - É isento de pena ...
-```
-
-Descartar o negrito deixou `TÍTULO III` sem ementa, e o parser consumiu o art.
-26 como título dela. O negrito não distingue rubrica de conteúdo: a mesma
-marcação serve para nomen juris descartável e para ementa obrigatória. A
-diferença é contextual.
-
-| Contexto anterior | Pedaço em negrito é |
-|---|---|
-| divisão sem ementa na mesma linha | ementa da divisão, obrigatória |
-| dispositivo completo | rubrica, descartável |
-
-**A decisão precisa migrar para o parser**, que já mantém `aguardandoTitulo` e
-portanto sabe se uma divisão espera ementa. O extrator deve apenas marcar o
-pedaço como enfatizado — o que exige `extrairLinhas` devolver pedaços com
-atributos, não strings. É o desenho para a quarta tentativa.
-
-Enquanto isso não existir, o comportamento atual é o seguro: CP para em 2
-linhas de 1641 e CF/88 em 15 de 4139, com erro visível.
-
-## A lacuna que a projeção Postgres revelou
-
-`LeiNode` estende `NormaNodeBase`, então a raiz carrega `id`, `ordem`,
-`sourceRef`, `supportingSourceRefs` e `parseEvidence`. **Nenhuma tabela tem
-coluna para eles** — `dispositivos` não aceita `tipo = 'lei'`. Sem tratamento,
-a ida e volta perderia a rastreabilidade da própria norma.
-
-O adaptador os carrega em `LinhaDaRaiz`, explicitamente, para que a perda não
-seja silenciosa. Onde moram no banco é decisão da Feature 007.
-
-## Dívidas
-
-- **Rubrica (nomen juris)** corrompendo ementa de divisão — a mais séria.
-- **Mesclagem compilada/anotada** (ADR-009 §2 e §3) e **referências cruzadas**
-  ponta a ponta, ambas do T004-03.
-- **Ementa de divisão separada do designador** na CF/88, quando o riscado
-  quebra o par.
-- **`scripts/capturar-fixture.mjs` reporta "linhas sem designador: 0" sempre.**
-  A métrica é vácua: `juntarContinuacoes` absorve toda linha não reconhecida na
-  anterior, então o número nunca é outro. O sinal honesto é rodar o pipeline.
-
-## Evidência
-
-`lint`, `format:check`, `typecheck`, `test:unit` (176 testes, 10 arquivos),
-`test:boundaries`, `check:data-model` — todos passam em 2026-08-05.
-
-Pipeline sobre as três leis: LINDB **ok** (30 artigos, 88 dispositivos, 88
-Block IDs); CP falha em 2 linhas; CF/88 falha em 15.
-
-## Para a validação no Obsidian (T004-10)
-
-Dois goldens estão prontos para abrir:
-
-- `fixtures/legal/lindb/esperado.md` — LINDB integral, 30 artigos. É o caso
-  principal: exercita alínea sob caput (ADR-010), parágrafo único e a norma
-  inteira.
-- `fixtures/legal/cp-art-121/esperado.md` — recorte do art. 121 do CP.
-  Exercita pena, inciso revogado com texto residual e alínea sob inciso.
-
-O que conferir: se as âncoras `^bloco` são reconhecidas como block reference,
-se a lista indentada recolhe e expande, se os callouts renderizam, e se o
-frontmatter é lido sem erro de YAML.
+A matriz detalhada e a rastreabilidade por regra permanecem em `COBERTURA.md`.

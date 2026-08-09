@@ -107,6 +107,7 @@ const EVIDENCIA_AMBIGUA: ParseEvidence = {
 const ancorarPena = (
   abertos: readonly NoEmConstrucao[],
 ): { indice: number; evidencia: ParseEvidence } | undefined => {
+  let maisProximo: number | undefined;
   const candidatos: number[] = [];
 
   for (let i = abertos.length - 1; i >= 0; i -= 1) {
@@ -120,9 +121,21 @@ const ancorarPena = (
       continue;
     }
 
+    maisProximo ??= i;
+
     if (anunciaSubordinado(candidato.texto)) {
       candidatos.push(i);
     }
+  }
+
+  if (maisProximo === undefined) {
+    return undefined;
+  }
+
+  // A posição estrutural imediata prevalece. Dois-pontos em ancestral distante
+  // não podem fazer a pena saltar o parágrafo/inciso que a precede.
+  if (!candidatos.includes(maisProximo)) {
+    return { indice: maisProximo, evidencia: EVIDENCIA_CONTEXTO };
   }
 
   if (candidatos.length === 1) {
@@ -137,17 +150,7 @@ const ancorarPena = (
     return indice === undefined ? undefined : { indice, evidencia: EVIDENCIA_AMBIGUA };
   }
 
-  // Nenhum dispositivo anuncia subordinado: a pena pende do mais interno
-  // aberto, que é a leitura corrente do texto.
-  for (let i = abertos.length - 1; i >= 0; i -= 1) {
-    const candidato = abertos[i];
-
-    if (candidato !== undefined && !ehDivisao(candidato.tipo) && candidato.tipo !== 'pena') {
-      return { indice: i, evidencia: EVIDENCIA_CONTEXTO };
-    }
-  }
-
-  return undefined;
+  return { indice: maisProximo, evidencia: EVIDENCIA_CONTEXTO };
 };
 
 const materializar = (

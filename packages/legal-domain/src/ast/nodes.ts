@@ -48,7 +48,7 @@ export interface ParseEvidence {
 /** Redação anterior como bloco de apresentação (ADR-006 §4). */
 export interface RedacaoAnterior {
   texto: string;
-  nota: string;
+  nota?: string | undefined;
 }
 
 export interface ReferenciaRedacao {
@@ -192,6 +192,12 @@ export type LivroNode<B, D> = DivisaoNodeBase<D> & {
   children: (TituloNode<B, D> | CapituloNode<B, D> | ArtigoNode<B>)[];
 };
 
+/** Contêiner estrutural do ADCT (ADR-011), com namespace próprio. */
+export type AtoTransitorioNode<B, D> = DivisaoNodeBase<D> & {
+  tipo: 'ato_transitorio';
+  children: (LivroNode<B, D> | TituloNode<B, D> | CapituloNode<B, D> | ArtigoNode<B>)[];
+};
+
 /**
  * Raiz. Estende `NormaNodeBase`, não `DispositivoNodeBase`: a lei não tem Block
  * ID nem `deviceStatus`. Seus estados são `legalStatus` e `publicationStatus`,
@@ -223,6 +229,7 @@ export interface LeiNode<Fase, B, D> extends NormaNodeBase {
   avisosAtualizacao?: string[] | undefined;
   notasEditoriais?: string[] | undefined;
   children: (
+    | AtoTransitorioNode<B, D>
     | LivroNode<B, D>
     | TituloNode<B, D>
     | CapituloNode<B, D>
@@ -237,6 +244,7 @@ export type IdentifiedNormaAST = LeiNode<'identified', SlotComBlockId, SlotBlock
 
 /** Qualquer nó filho da árvore em uma fase — tudo menos a raiz. */
 export type NormaChildNode<B, D> =
+  | AtoTransitorioNode<B, D>
   | LivroNode<B, D>
   | TituloNode<B, D>
   | CapituloNode<B, D>

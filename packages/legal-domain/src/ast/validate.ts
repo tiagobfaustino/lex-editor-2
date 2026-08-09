@@ -31,7 +31,8 @@ import { identifiedNormaAstSchema, parsedNormaAstSchema } from './schemas.js';
  * hierarquia fique legível em um lugar só.
  */
 const FILHOS_PERMITIDOS: Readonly<Record<string, readonly string[]>> = Object.freeze({
-  lei: ['livro', 'titulo', 'capitulo', 'artigo', 'anexo', 'tabela'],
+  lei: ['ato_transitorio', 'livro', 'titulo', 'capitulo', 'artigo', 'anexo', 'tabela'],
+  ato_transitorio: ['livro', 'titulo', 'capitulo', 'artigo'],
   livro: ['titulo', 'capitulo', 'artigo'],
   titulo: ['capitulo', 'artigo', 'anexo', 'tabela'],
   capitulo: ['secao', 'artigo'],
@@ -50,6 +51,7 @@ const FILHOS_PERMITIDOS: Readonly<Record<string, readonly string[]>> = Object.fr
 /** Campos de texto normativo obrigatório por tipo de nó. */
 const TEXTO_OBRIGATORIO_POR_TIPO: Readonly<Record<string, readonly string[]>> = Object.freeze({
   lei: ['titulo', 'sigla', 'numero', 'ramo'],
+  ato_transitorio: ['titulo'],
   livro: ['titulo'],
   titulo: ['titulo'],
   capitulo: ['titulo'],
@@ -148,6 +150,11 @@ export const validarEstrutura = (raiz: unknown, fase: AstPhase): readonly Proble
   const problemas: ProblemaValidacao[] = [];
   const idsVistos = new Map<string, readonly SegmentoCaminho[]>();
   const blockIdsVistos = new Map<string, readonly SegmentoCaminho[]>();
+  const referenciasCruzadas: {
+    readonly blockId: string;
+    readonly caminho: readonly SegmentoCaminho[];
+    readonly noId?: string;
+  }[] = [];
   let artigosContados = 0;
 
   const registrar = (problema: ProblemaValidacao): void => {
@@ -275,6 +282,25 @@ export const validarEstrutura = (raiz: unknown, fase: AstPhase): readonly Proble
         }
       }
 
+      if (fase === 'identified' && typeof no['renumeradoPara'] === 'string') {
+        referenciasCruzadas.push({
+          blockId: no['renumeradoPara'],
+          caminho: [...caminho, 'renumeradoPara'],
+          ...(id === undefined ? {} : { noId: id }),
+        });
+      }
+
+      if (fase === 'identified' && tipo === 'lei' && Array.isArray(no['redacoesDadasPor'])) {
+        no['redacoesDadasPor'].forEach((referencia: unknown, indice: number) => {
+          if (ehObjeto(referencia) && typeof referencia['blockId'] === 'string') {
+            referenciasCruzadas.push({
+              blockId: referencia['blockId'],
+              caminho: [...caminho, 'redacoesDadasPor', indice, 'blockId'],
+            });
+          }
+        });
+      }
+
       // --- Texto normativo obrigatório ---
       for (const campo of TEXTO_OBRIGATORIO_POR_TIPO[tipo] ?? []) {
         if (textoVazio(no[campo])) {
@@ -311,6 +337,24 @@ export const validarEstrutura = (raiz: unknown, fase: AstPhase): readonly Proble
               'preservacao_sem_revogacao',
               [...caminho, 'preservarTextoRevogado'],
               'preservarTextoRevogado só existe quando deviceStatus é "revoked".',
+              id,
+            ),
+          );
+        }
+
+        const notaStatus = typeof no['notaStatus'] === 'string' ? no['notaStatus'] : '';
+        const notaRevogacao = /\bRevogad[oa]s?\b/iu.test(notaStatus);
+        const notaVeto = /\bVetad[oa]s?\b/iu.test(notaStatus);
+
+        if (
+          (notaRevogacao && no['deviceStatus'] !== 'revoked') ||
+          (notaVeto && no['deviceStatus'] !== 'vetoed')
+        ) {
+          registrar(
+            criarProblema(
+              'estado_incompativel',
+              [...caminho, 'notaStatus'],
+              'A nota de revogação/veto contradiz o deviceStatus estruturado.',
               id,
             ),
           );
@@ -378,6 +422,21 @@ export const validarEstrutura = (raiz: unknown, fase: AstPhase): readonly Proble
       );
     },
   );
+
+  if (fase === 'identified') {
+    for (const referencia of referenciasCruzadas) {
+      if (!blockIdsVistos.has(referencia.blockId)) {
+        registrar(
+          criarProblema(
+            'block_id_ausente',
+            referencia.caminho,
+            `A referência cruzada aponta para o Block ID inexistente "${referencia.blockId}".`,
+            referencia.noId,
+          ),
+        );
+      }
+    }
+  }
 
   // --- Contagem derivada ---
   // `totalArtigos` é derivado dos children e validado antes do Formatter

@@ -24,11 +24,13 @@ import type { CodigoProblema } from './errors.js';
 import type {
   AnexoNode,
   ArtigoNode,
+  AtoTransitorioNode,
   SlotComBlockId,
   IdentifiedNormaAST,
   ParseEvidence,
   ParsedNormaAST,
   RedacaoAnterior,
+  SlotBlockIdOpcional,
   SlotSemBlockId,
   SourceReference,
   TabelaNode,
@@ -168,7 +170,7 @@ export const parseEvidenceSchema = z
  */
 export const redacaoAnteriorSchema = z.strictObject({
   texto: textoObrigatorio('O texto da redação anterior'),
-  nota: textoObrigatorio('A nota da redação anterior'),
+  nota: textoObrigatorio('A nota da redação anterior').optional(),
 });
 
 export const referenciaRedacaoSchema = z.strictObject({
@@ -442,6 +444,16 @@ const construirFamilias = <Disp extends z.ZodType, Div extends z.ZodType, Fase e
     },
   });
 
+  const atoTransitorioSchema = z.strictObject({
+    ...camposDivisao,
+    tipo: z.literal('ato_transitorio'),
+    get children() {
+      return z.array(
+        z.discriminatedUnion('tipo', [livroSchema, tituloSchema, capituloSchema, artigoSchema]),
+      );
+    },
+  });
+
   /**
    * `LeiNode` estende `NormaNodeBase`, não `DispositivoNodeBase`: a raiz não
    * tem Block ID nem `deviceStatus`. O `strictObject` faz disso uma recusa
@@ -476,6 +488,7 @@ const construirFamilias = <Disp extends z.ZodType, Div extends z.ZodType, Fase e
     get children() {
       return z.array(
         z.discriminatedUnion('tipo', [
+          atoTransitorioSchema,
           livroSchema,
           tituloSchema,
           capituloSchema,
@@ -489,6 +502,7 @@ const construirFamilias = <Disp extends z.ZodType, Div extends z.ZodType, Fase e
 
   return {
     leiSchema,
+    atoTransitorioSchema,
     livroSchema,
     tituloSchema,
     capituloSchema,
@@ -564,6 +578,12 @@ export const identifiedTabelaSchema: z.ZodType<TabelaNode<SlotComBlockId>> =
   identified.tabelaSchema;
 export const parsedAnexoSchema: z.ZodType<AnexoNode<SlotSemBlockId>> = parsed.anexoSchema;
 export const identifiedAnexoSchema: z.ZodType<AnexoNode<SlotComBlockId>> = identified.anexoSchema;
+export const parsedAtoTransitorioSchema: z.ZodType<
+  AtoTransitorioNode<SlotSemBlockId, SlotSemBlockId>
+> = parsed.atoTransitorioSchema;
+export const identifiedAtoTransitorioSchema: z.ZodType<
+  AtoTransitorioNode<SlotComBlockId, SlotBlockIdOpcional>
+> = identified.atoTransitorioSchema;
 
 /**
  * Aceita qualquer uma das duas fases. Útil a quem apenas percorre a árvore;

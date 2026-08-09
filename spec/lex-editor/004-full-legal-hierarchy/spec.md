@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: blocked
+- `implementation_status`: done
 - `priority`: P0
 - `owner`: não atribuído
 
@@ -78,12 +78,12 @@ corretos são produzidos.
 
 ## Critérios de aceite
 
-- [ ] Três leis de referência atendem aos critérios do roadmap.
-- [ ] Todos os tipos de composição de Block ID têm cobertura.
-- [ ] Alteração textual não altera identidade.
-- [ ] Colisão tardia não renomeia dispositivo publicado.
-- [ ] Round-trip Postgres não perde semântica.
-- [ ] Goldens abrem corretamente no Obsidian por revisão manual.
+- [x] Três leis de referência atendem aos critérios do roadmap.
+- [x] Todos os tipos de composição de Block ID têm cobertura.
+- [x] Alteração textual não altera identidade.
+- [x] Colisão tardia não renomeia dispositivo publicado.
+- [x] Round-trip Postgres não perde semântica.
+- [x] Goldens abrem corretamente no Obsidian por revisão manual.
 
 ## Validação mínima
 

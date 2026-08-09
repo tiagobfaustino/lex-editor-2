@@ -178,7 +178,7 @@ const REFERENCIAVEIS = new Set([
   'tabela',
 ]);
 
-const DIVISOES = new Set(['livro', 'titulo', 'capitulo', 'secao', 'subsecao']);
+const DIVISOES = new Set(['ato_transitorio', 'livro', 'titulo', 'capitulo', 'secao', 'subsecao']);
 
 type No = Record<string, unknown>;
 
@@ -192,6 +192,8 @@ interface Candidato {
   readonly pai: Candidato | undefined;
   /** Cadeia de segmentos de dispositivo, sem divisões. */
   readonly cadeia: readonly string[];
+  /** Namespace estrutural intrínseco, como `adct` (ADR-011). */
+  readonly namespace: readonly string[];
   /** Divisões ancestrais, da mais externa para a mais interna. */
   readonly divisoes: readonly No[];
   readonly caminho: readonly (string | number)[];
@@ -210,7 +212,7 @@ const qualificacoes = (candidatos: readonly Candidato[]): ReadonlyMap<Candidato,
   const porId = new Map<string, Candidato[]>();
 
   for (const candidato of candidatos) {
-    const chave = candidato.cadeia.join('-');
+    const chave = [...candidato.namespace, ...candidato.cadeia].join('-');
     const grupo = porId.get(chave);
 
     if (grupo === undefined) {
@@ -339,21 +341,30 @@ export const identificar = (
     no: No,
     pai: Candidato | undefined,
     cadeia: readonly string[],
+    namespace: readonly string[],
     divisoes: readonly No[],
     caminho: readonly (string | number)[],
   ): void => {
     const tipo = typeof no['tipo'] === 'string' ? no['tipo'] : '';
 
     if (DIVISOES.has(tipo)) {
+      const proximoNamespace = tipo === 'ato_transitorio' ? [...namespace, 'adct'] : namespace;
       filhosDe(no).forEach((filho, i) => {
-        coletar(filho, pai, cadeia, [...divisoes, no], [...caminho, 'children', i]);
+        coletar(
+          filho,
+          pai,
+          cadeia,
+          proximoNamespace,
+          [...divisoes, no],
+          [...caminho, 'children', i],
+        );
       });
       return;
     }
 
     if (!REFERENCIAVEIS.has(tipo)) {
       filhosDe(no).forEach((filho, i) => {
-        coletar(filho, pai, cadeia, divisoes, [...caminho, 'children', i]);
+        coletar(filho, pai, cadeia, namespace, divisoes, [...caminho, 'children', i]);
       });
       return;
     }
@@ -378,6 +389,7 @@ export const identificar = (
       segmento: segmento.valor,
       pai,
       cadeia: proxima,
+      namespace,
       divisoes,
       caminho,
     };
@@ -385,12 +397,12 @@ export const identificar = (
     candidatos.push(candidato);
 
     filhosDe(no).forEach((filho, i) => {
-      coletar(filho, candidato, proxima, divisoes, [...caminho, 'children', i]);
+      coletar(filho, candidato, proxima, namespace, divisoes, [...caminho, 'children', i]);
     });
   };
 
   filhosDe(raizComoRegistro).forEach((filho, i) => {
-    coletar(filho, undefined, [], [], ['children', i]);
+    coletar(filho, undefined, [], [], [], ['children', i]);
   });
 
   if (problemas.length > 0) {
@@ -410,7 +422,7 @@ export const identificar = (
   for (const candidato of candidatos) {
     const idDoPai =
       candidato.pai === undefined
-        ? siglaNormalizada
+        ? [siglaNormalizada, ...candidato.namespace].join('-')
         : (idPorCandidato.get(candidato.pai) ?? siglaNormalizada);
     const divisao = qualificacao.get(candidato);
     const blockId = [idDoPai, ...(divisao === undefined ? [] : [divisao]), candidato.segmento].join(

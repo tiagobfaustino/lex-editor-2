@@ -1,0 +1,674 @@
+[
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "8dc30cf2f9e65d4935cb28bd02da95b569767f585d9997ac4049cce947e098e0",
+    "rawStartLine": 422,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso V."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "8dc30cf2f9e65d4935cb28bd02da95b569767f585d9997ac4049cce947e098e0",
+    "rawStartLine": 430,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso X."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "0ec8c7cf3fa8d986a47a8623620a00290aadb590719ed748dc17b8a27b141a1c",
+    "rawStartLine": 468,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "24444a70e211447e946868077278e20c70f697ba3dca4c9ae048536ecaaf4c30",
+    "rawStartLine": 470,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "7399e5c1192264fbf1639729032db799088856f39d45f0c559d18f57d57a95a7",
+    "rawStartLine": 499,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso IV."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "dd090719259f98c27dfa79baa04e61df2336652e8b640a968e09b9175b61ec18",
+    "rawStartLine": 506,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso V."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "3d01289f9a2e64e1d60663d1139936b8917f5d009688d500be6c15b6b030b4e5",
+    "rawStartLine": 508,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 3."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "b040f6d258744d7f99d247c1244728cac82f45c2a04cf8d6dc2fd95ac945618d",
+    "rawStartLine": 510,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 3-A."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "610bc860ec13f79e3427e30686ebc6defe43b7def404f8c202e57c22ca6bfb05",
+    "rawStartLine": 521,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 9."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "610bc860ec13f79e3427e30686ebc6defe43b7def404f8c202e57c22ca6bfb05",
+    "rawStartLine": 533,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 13."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "665f1da9c8cf66296be2c1dbac41b21f07f5933922779ff71a7e4e53a502d6d5",
+    "rawStartLine": 538,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "4048405a4c4728387a311e6ea2f774cbd809587ecf99ed9fe28a2be451f0a408",
+    "rawStartLine": 548,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "d72fef58ebe49501c540bc4aba1511ea8a1addcd15cb80f37e9efa42da87477b",
+    "rawStartLine": 550,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "648ed54465eafa4f70a4b56e065e29e0409124168b44673b5bc11d5d256e3a99",
+    "rawStartLine": 558,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "98e14c139f30c09599d56350e5677e152d6913a9cd87507470c25dd678ede730",
+    "rawStartLine": 560,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "4048405a4c4728387a311e6ea2f774cbd809587ecf99ed9fe28a2be451f0a408",
+    "rawStartLine": 570,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "d72fef58ebe49501c540bc4aba1511ea8a1addcd15cb80f37e9efa42da87477b",
+    "rawStartLine": 572,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "abba4207b27104bbee2ee75821b980613b5f267c55b80587ae5e6d9ab51a575a",
+    "rawStartLine": 596,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "b85e337aa9a652d5c73bcbee194e5fbd6bd749fdc94720b13ebc1d611b4d82a8",
+    "rawStartLine": 598,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 3."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "3e57dfa6e07663431a75cdbaf19f262d90148660c4b56884147896339a3e6050",
+    "rawStartLine": 629,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo unico."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "33b5edf9d1e1489a3a17e96f40994de9913c7fe609c00a72b7b4e74a7dc40257",
+    "rawStartLine": 684,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "648ed54465eafa4f70a4b56e065e29e0409124168b44673b5bc11d5d256e3a99",
+    "rawStartLine": 706,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 3-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "305b92cbd780e1f55867d29319a6c21ca4f3558717f0cb5d0c4e6647b1d4dbf7",
+    "rawStartLine": 716,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-A."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "ad2d778f460d963ae6b6d6eb94db6185530f297f425abcde4584cf9470e08e20",
+    "rawStartLine": 790,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 5."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "212a5da51b7f1cb2481035d2d2da990a494e0d30e927fea0bb33638fa78d155f",
+    "rawStartLine": 827,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso IV."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "76804b6ba4418399ae81d3b629eb6d60d18b982f919e8c434af2087632680094",
+    "rawStartLine": 894,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso II."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "8b7d9d27196fa897f7fcb29d519cc7bfe37ff3bacf7a35d575619b9e05497cab",
+    "rawStartLine": 896,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Alterar."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "b15662cecf14699bb625867eaf5993b0029b9698fb1ae450bf65ccb8abd6f793",
+    "rawStartLine": 923,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Adquirir."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "c50f78d570d3ca81fb120cb6f59879336d80a731e4f6b1b1985a2bc8e7a9230c",
+    "rawStartLine": 926,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 3-Adquirir."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "78ef53f1c9b8b290fe9438f01cf9fb02b481f57a4fafb1421462a928441c3bdb",
+    "rawStartLine": 952,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "5d1eb9180d095601dfb010980f81c1895576d9af664afdedc66cc7b6d2b8c82b",
+    "rawStartLine": 955,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 3."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "5fc961b7c467d9f5f37f395964d5cebb7e5e0956e7507305258dbc99ebd583b0",
+    "rawStartLine": 979,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso I."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "abba4207b27104bbee2ee75821b980613b5f267c55b80587ae5e6d9ab51a575a",
+    "rawStartLine": 981,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso II."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "ff05e8d592535500ead7ae6bffa79e5dbce9aa632821ccc2d0501f39260a4651",
+    "rawStartLine": 1029,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "66ec6593445f90d697076b4f40b8eb43b866d9d261748ea20f2c54a691025dda",
+    "rawStartLine": 1031,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "fd9102f03a307ef33b83760f32b49c7750d630d15439a3c7ba76e97df07d423f",
+    "rawStartLine": 1054,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 3."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "4a9a6881a1150dc59587ef00f073ae19a2fc0293707c60a7faa676e7ca62c89f",
+    "rawStartLine": 1056,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 4."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "1ff95ba5e839260cd9c47b3051f953202ef9f6acbfa5facf25ffb34b463b95b3",
+    "rawStartLine": 1096,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "7b3cebb1665735870c17b6255b4431053c635e922f33435c3bf3d2626033dc58",
+    "rawStartLine": 1098,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "507a86e047a7d0144060040b28ffd752c0c143f3ae9ca1f3dcc4e9952c4c85f2",
+    "rawStartLine": 1103,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "8aef9d0326c8af60b63b04a0e2ff80034a2296e39b83a6a3d78ac41d5ad34cc8",
+    "rawStartLine": 1105,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "1f20887cfa0bb23fcc7ad5787e61f167248ae854a8e0ac57100c133f8775243e",
+    "rawStartLine": 1112,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "a7b3e79482b65ea82a10aa2dcb1a30adca280b97d6de8fcaa93dee6fab10031c",
+    "rawStartLine": 1114,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "d97a989135937d0b96a0ef1f2e9d6f022e4e729a59beec2321fe7b928f0b7798",
+    "rawStartLine": 1167,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo unico."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "a41c47d5c2bc8b4dff20490dd72b5e897802d8def163a068057025838da82ca5",
+    "rawStartLine": 1185,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso IV."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "665f1da9c8cf66296be2c1dbac41b21f07f5933922779ff71a7e4e53a502d6d5",
+    "rawStartLine": 1212,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "fdfb46505d7ea55fe8f0431743f9cedc4a512eb35c18818bbe435a8efd56c5da",
+    "rawStartLine": 1218,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo unico."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "699ea5dcc756262301dc4bc6ba95af6b65d5f50f8281c28492ab30611a5e7761",
+    "rawStartLine": 1228,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo unico."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "a02d11dd3806cc91d152291d78be13d0effc4d4ff0b12f0a7e938b85cea20d9c",
+    "rawStartLine": 1241,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso IV."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "06a287a68a95ff0466f054df8574dbfae02054eaf7830a0cb223bbb098fbc2da",
+    "rawStartLine": 1243,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "a245aacc359f8e6109253474d356217dfd242e8215c65e99f6538f64879d55cb",
+    "rawStartLine": 1245,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-No."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "3d01289f9a2e64e1d60663d1139936b8917f5d009688d500be6c15b6b030b4e5",
+    "rawStartLine": 1250,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "a245aacc359f8e6109253474d356217dfd242e8215c65e99f6538f64879d55cb",
+    "rawStartLine": 1253,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 3-No."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "fdfb46505d7ea55fe8f0431743f9cedc4a512eb35c18818bbe435a8efd56c5da",
+    "rawStartLine": 1258,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-No."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "a245aacc359f8e6109253474d356217dfd242e8215c65e99f6538f64879d55cb",
+    "rawStartLine": 1286,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "89e1141bed3746fb5982324bc269ca72453929334b03f237c420a1ab0dff2050",
+    "rawStartLine": 1290,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo unico."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "5b75ed82bdc9a9c38929f8a0362cbdd41750b354d7de005e82657372d283fe73",
+    "rawStartLine": 1296,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "6fc6b7d51af81287eb78b50bac7f9dbfc9ef367e3788f61b86848a0e80a5acd0",
+    "rawStartLine": 1309,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "89e1141bed3746fb5982324bc269ca72453929334b03f237c420a1ab0dff2050",
+    "rawStartLine": 1321,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo unico."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "89e1141bed3746fb5982324bc269ca72453929334b03f237c420a1ab0dff2050",
+    "rawStartLine": 1326,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo unico."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "a245aacc359f8e6109253474d356217dfd242e8215c65e99f6538f64879d55cb",
+    "rawStartLine": 1341,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso III."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "2fa227d3b9e3e936f54364dfc02f032802875c0443122663926de0c7025eddf3",
+    "rawStartLine": 1382,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso VI."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "665f1da9c8cf66296be2c1dbac41b21f07f5933922779ff71a7e4e53a502d6d5",
+    "rawStartLine": 1390,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Suprimir."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "c01e1783199c5dad2ab3b19d72444c8a9eeb8afc908402f207f2996509ef5fbd",
+    "rawStartLine": 1401,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso II."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "4bee774a93bdc75d4c375e050ceaed29665842c46e535fb0f607949e59319882",
+    "rawStartLine": 1427,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Falsificar."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "8022e34f9c05e9f9e7850350472c9206393e49e2c1f882b07551f6765f55f815",
+    "rawStartLine": 1443,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo unico."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "92f15d92fec4e819f1a6cca7158cd61103645c1c047e09b3ef1086cabf322a03",
+    "rawStartLine": 1451,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo unico."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "a0bfc445c2b9f8c2cd9e22777cbe5854daa7204becc4397d4fe540cb51981d98",
+    "rawStartLine": 1462,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 3."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "51cd81ebc2c069775aefd9b30a9aaebd46d8b24e59934afebc9cc5bab18bcbda",
+    "rawStartLine": 1470,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso IV."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "6fdd64447a6f04784d398d6c95d72e9a9766b0591a74c5095369ffef24352663",
+    "rawStartLine": 1473,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "fdfb46505d7ea55fe8f0431743f9cedc4a512eb35c18818bbe435a8efd56c5da",
+    "rawStartLine": 1481,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "81d8b77d648914f8b2075924dbca916a98833a6b601f2563eff512ef7b402f3d",
+    "rawStartLine": 1497,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "4524dd6d7512b89099f17223b95ea6a839411f2952db1faa94d6ae3f2fe27825",
+    "rawStartLine": 1499,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "fd8746e5f621c765e3b8fa8201262235a3cfbe3c5106875137195a3f1dc92b68",
+    "rawStartLine": 1504,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "25d3142f64c3cf4d904a24df5c050b58b0906dc2af03b978edfcdcdfc8682578",
+    "rawStartLine": 1516,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo unico."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "7ce04fa3e150d46e5cde663a4a9c1692f9d1a827160a831948fdc97a306c49ce",
+    "rawStartLine": 1522,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "5acbc438698ee2bd87f9974ef1ec3b940b3aaeef2a75da094049618aeef42f1d",
+    "rawStartLine": 1524,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "35c66b8ea5abc559f360704359c130ceffcec0e3559205817f56dd1dc4bf9d8a",
+    "rawStartLine": 1533,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 2."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "a02d11dd3806cc91d152291d78be13d0effc4d4ff0b12f0a7e938b85cea20d9c",
+    "rawStartLine": 1543,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo unico."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "0c75f5896b67d357df1fdcd3b443365747cb4486ba5115a5b40f2c20eb38e77f",
+    "rawStartLine": 1547,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "04ede74d89131ba9ca64eede5d189e0e887356a8cf1d07c7d5df6a95bd0e2e63",
+    "rawStartLine": 1589,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso III."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "9edfb716f1e40822cc42119694b7a10b4c82a34ef135d99a1ddef23ae0c22b7d",
+    "rawStartLine": 1629,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de inciso V."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "d7c4ac690a1dd7bad84e52dfbd69ee8f49c40d0a40befa41b3195737958330ec",
+    "rawStartLine": 1633,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1."
+  },
+  {
+    "versao": 1,
+    "acao": "confirmar_ancoragem",
+    "sourceArtifactSha256": "3e0fcba2939ada7a05b24b15b7f647f863456a48c4ddd7378f81a18b667b55f4",
+    "fragmentSha256": "c92c254d573f75dbcfde86a2b8d181bb2e41fd57b0f9a8b774817ccfb35208fd",
+    "rawStartLine": 1679,
+    "justificativa": "Revisão editorial da sequência oficial confirmou a pena como filha de paragrafo 1-Se."
+  }
+]

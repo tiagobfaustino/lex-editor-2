@@ -343,5 +343,15 @@ export const identifiedCompleta: IdentifiedNormaAST = {
         },
       ],
     },
+    {
+      tipo: 'ato_transitorio',
+      id: 'no-adct',
+      ordem: 2,
+      sourceRef: origemMinima,
+      parseEvidence: evidenciaAlta,
+      deviceStatus: 'active',
+      titulo: 'Ato das Disposições Constitucionais Transitórias',
+      children: [],
+    },
   ],
 };

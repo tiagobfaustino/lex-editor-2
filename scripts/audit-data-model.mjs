@@ -22,6 +22,7 @@ writeFileSync(
 import type * as N from '${process.cwd()}/packages/legal-domain/src/ast/nodes.ts';
 type B = N.SlotComBlockId; type D = N.SlotBlockIdOpcional;
 export type LeiNode = N.LeiNode<'identified', B, D>;
+export type AtoTransitorioNode = N.AtoTransitorioNode<B, D>;
 export type LivroNode = N.LivroNode<B, D>;
 export type TituloNode = N.TituloNode<B, D>;
 export type CapituloNode = N.CapituloNode<B, D>;

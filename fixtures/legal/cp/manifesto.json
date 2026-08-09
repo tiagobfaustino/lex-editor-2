@@ -2,8 +2,8 @@
   "sourceType": "planalto_html",
   "sourceRole": "primary_current",
   "sourceVariant": "compiled",
-  "dataFormatacaoVinculex": "2026-08-05",
-  "dataVerificacaoIntegridade": "2026-08-05",
+  "dataFormatacaoVinculex": "2026-08-09",
+  "dataVerificacaoIntegridade": "2026-08-09",
   "versaoVinculex": "1.0.0",
   "legalStatus": "vigente",
   "publicationStatus": "draft",
@@ -16,7 +16,7 @@
   "ramo": "penal",
   "fonte": "https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm",
   "dataPublicacao": "1940-12-07",
-  "dataAtualizacaoLegal": "2025-01-01",
+  "dataAtualizacaoLegal": "2026-08-09",
   "tags": [
     "penal",
     "fixture"

@@ -121,6 +121,7 @@ describe('pureza do pacote de domínio', () => {
 describe('cobertura do DATA_MODEL', () => {
   const TIPOS_DO_DATA_MODEL = [
     'lei',
+    'ato_transitorio',
     'livro',
     'titulo',
     'capitulo',
@@ -136,7 +137,7 @@ describe('cobertura do DATA_MODEL', () => {
     'tabela',
   ] as const;
 
-  it('declara exatamente os catorze tipos de nó do modelo', () => {
+  it('declara exatamente os quinze tipos de nó do modelo', () => {
     expect([...tipoNoSchema.options].sort()).toEqual([...TIPOS_DO_DATA_MODEL].sort());
   });
 

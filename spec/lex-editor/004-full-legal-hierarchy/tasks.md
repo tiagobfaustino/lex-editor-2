@@ -6,11 +6,10 @@
   mínimas. Ver `COBERTURA.md`.
 - [x] T004-02 Implementar gramática completa de divisões e dispositivos com
   evidência/confiança.
-- [~] T004-03 Implementar mesclagem compilada/anotada, estados, redações,
-  tabelas, anexos e referências cruzadas com testes específicos. **Parcial**:
-  estados, redações, tabelas e anexos entregues; a mesclagem entre fonte
-  compilada e anotada e as referências cruzadas seguem abertas — ver
-  `COBERTURA.md` §6 e §8.11.
+- [x] T004-03 Implementar mesclagem compilada/anotada, estados, redações,
+  tabelas, anexos e referências cruzadas com testes específicos. A fonte
+  `primary_current` permanece soberana; auxiliares enriquecem histórico e
+  rastreabilidade, divergências bloqueiam e destinos cruzados são validados.
 
 ## Identidade
 
@@ -22,13 +21,14 @@
 
 ## Referências reais
 
-- [ ] T004-07 Preparar fixtures integrais versionadas de CP, CF/88 e lei curta;
+- [x] T004-07 Preparar fixtures integrais versionadas de CP, CF/88 e lei curta;
   para o CP, capturar o texto compilado oficial e usar o Markdown existente
   apenas como referência editorial comparativa.
-- [~] T004-08 Executar contagem/auditoria amostral e corrigir regras gerais,
-  sem exceções por nome de lei. **Parcial**: rubrica resolvida e CP passa o
-  parsing inteiro (434 artigos); CF/88 ainda para em 12 linhas, e o CP para na
-  identificação por ancoragem ambígua de pena — que é a invariante, não
-  defeito. Ver `COBERTURA.md`.
+- [x] T004-08 Executar contagem/auditoria amostral e corrigir regras gerais,
+  sem exceções por nome de lei. CF/88 e CP atravessam o pipeline integral; o
+  ADCT tem namespace próprio e as 84 ancoragens ambíguas do CP possuem decisões
+  editoriais versionadas e vinculadas aos hashes dos fragmentos.
 - [x] T004-09 Implementar/testar projeção AST ↔ Postgres sem perda semântica.
-- [ ] T004-10 Validar goldens no Obsidian e fechar matriz de cobertura.
+- [x] T004-10 Validar goldens no Obsidian e fechar matriz de cobertura. LINDB,
+  CP e CF/88 foram abertas no Obsidian 1.13.4; propriedades, callouts,
+  hierarquia e navegação por Block ID foram conferidos.

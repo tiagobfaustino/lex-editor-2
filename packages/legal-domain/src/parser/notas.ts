@@ -113,7 +113,7 @@ const LINHA_RISCADA = /^~~(.+?)~~\s*(?:\*\(([^)]*)\)\*|\(([^)]*)\))?\s*$/u;
 
 export interface RedacaoAnteriorBruta {
   readonly texto: string;
-  readonly nota: string;
+  readonly nota?: string | undefined;
 }
 
 /**
@@ -121,17 +121,16 @@ export interface RedacaoAnteriorBruta {
  * Block ID e anexá-las ao próximo dispositivo — elas são apresentação, não
  * posição referenciável.
  */
-export const lerLinhaRiscada = (
-  linha: string,
-): { readonly texto: string; readonly nota: string } | undefined => {
+export const lerLinhaRiscada = (linha: string): RedacaoAnteriorBruta | undefined => {
   const casamento = LINHA_RISCADA.exec(linha.trim());
 
   if (casamento === null) {
     return undefined;
   }
 
+  const nota = (casamento[2] ?? casamento[3] ?? '').trim();
   return {
     texto: (casamento[1] ?? '').trim(),
-    nota: (casamento[2] ?? casamento[3] ?? '').trim(),
+    ...(nota.length > 0 ? { nota } : {}),
   };
 };

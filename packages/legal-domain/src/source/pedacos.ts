@@ -18,6 +18,15 @@ const QUEBRA_DE_BLOCO = /^(br|p|div|tr|h[1-6]|li)$/iu;
 const ENFASE_FORTE = /^(b|strong)$/iu;
 const RISCADO = /^(strike|s|del)$/iu;
 
+/**
+ * Anotações editoriais da fonte que não participam da decisão de ênfase.
+ *
+ * O texto continua no pedaço: isto só impede que uma nota longa, posta fora
+ * do `<b>`, faça uma rubrica curta parecer texto comum. Parentético jurídico
+ * desconhecido não casa aqui e continua contando normalmente.
+ */
+const NOTA_EDITORIAL = /\((?:Revogad|Vetad|Inclu[ií]d|Reda[çc][aã]o|Renumerad|Suspens)[^)]*\)/giu;
+
 const ENTIDADES: Readonly<Record<string, string>> = {
   '&nbsp;': ' ',
   '&amp;': '&',
@@ -58,6 +67,13 @@ export interface Pedaco {
   readonly todoRiscado: boolean;
 }
 
+interface CaractereVisivel {
+  /** Posição UTF-16 no texto bruto acumulado do pedaço. */
+  readonly indice: number;
+  readonly emNegrito: boolean;
+  readonly emRiscado: boolean;
+}
+
 /**
  * Varre o HTML e devolve um pedaço por bloco, com a ênfase como atributo.
  *
@@ -71,36 +87,39 @@ export const varrerPedacos = (html: string): readonly Pedaco[] => {
   let negrito = 0;
   let riscado = 0;
   let texto = '';
-  // Zerado a cada pedaço, em `fechar()`. Deixá-lo atravessar a quebra de bloco
-  // parece razoável — a nota às vezes abre num `<p>` e fecha noutro — mas basta
-  // um `(` sem fechamento no HTML para a profundidade nunca mais voltar a zero,
-  // e daí em diante todo pedaço conta zero caractere visível e perde a ênfase.
-  // Foi o que aconteceu com sete redações riscadas do art. 100 da CF/88.
-  let parenteses = 0;
-  let visiveis = 0;
-  let emNegrito = 0;
-  let emRiscado = 0;
+  let caracteres: CaractereVisivel[] = [];
 
   const fechar = (): void => {
     const conteudo = texto.replace(/\s+/gu, ' ').trim();
 
     if (conteudo.length > 0) {
+      const intervalosDescartados = [...texto.matchAll(NOTA_EDITORIAL)].map((nota) => ({
+        inicio: nota.index,
+        fim: nota.index + nota[0].length,
+      }));
+      const contaveis = caracteres.filter(
+        (caractere) =>
+          !intervalosDescartados.some(
+            (intervalo) => caractere.indice >= intervalo.inicio && caractere.indice < intervalo.fim,
+          ),
+      );
+      const emNegrito = contaveis.filter((caractere) => caractere.emNegrito).length;
+      const emRiscado = contaveis.filter((caractere) => caractere.emRiscado).length;
+
       pedacos.push({
         texto: conteudo,
-        todoEmNegrito: visiveis > 0 && emNegrito * 2 > visiveis,
-        todoRiscado: visiveis > 0 && emRiscado * 2 > visiveis,
+        todoEmNegrito: contaveis.length > 0 && emNegrito * 2 > contaveis.length,
+        todoRiscado: contaveis.length > 0 && emRiscado * 2 > contaveis.length,
       });
     }
 
     texto = '';
-    parenteses = 0;
-    visiveis = 0;
-    emNegrito = 0;
-    emRiscado = 0;
+    caracteres = [];
   };
 
   const emitir = (bruto: string): void => {
     const conteudo = decodificar(bruto);
+    const inicio = texto.length;
 
     texto += conteudo;
 
@@ -114,9 +133,10 @@ export const varrerPedacos = (html: string): readonly Pedaco[] => {
     // Contar aquele `;` fazia a linha inteira deixar de ser riscada por causa
     // de um caractere, e os incisos históricos do art. 201 viravam órfãos.
     //
-    // O que está entre parênteses também não conta, e por motivo mais forte: a
-    // nota legislativa não é conteúdo do dispositivo, é procedência dele, e
-    // vem sempre fora da ênfase.
+    // Notas editoriais conhecidas também não contam. Elas só podem ser
+    // reconhecidas depois que o pedaço inteiro foi acumulado, por isso cada
+    // caractere guarda aqui a posição e o estado de ênfase; `fechar()` exclui
+    // somente os intervalos que casam com NOTA_EDITORIAL.
     //
     // ```html
     // <b>Feminicídio</b><a href="...">(Incluído pela Lei nº 13.104, de 2015)</a>
@@ -127,35 +147,16 @@ export const varrerPedacos = (html: string): readonly Pedaco[] => {
     // designador — era colada pela `juntarContinuacoes` no fim da pena do
     // art. 121: `Pena - reclusão, de doze a trinta anos. Feminicídio`.
     //
-    // A exclusão vale para numerador e denominador ao mesmo tempo, então um
-    // parêntese legítimo do texto ("menor de 14 (quatorze) anos") não desloca
-    // a proporção para lado nenhum.
-    let contagem = 0;
+    for (let indice = 0; indice < conteudo.length; indice += 1) {
+      const caractere = conteudo[indice] ?? '';
 
-    for (const caractere of conteudo) {
-      if (caractere === '(') {
-        parenteses += 1;
-        continue;
+      if (/[\p{L}\p{N}]/u.test(caractere)) {
+        caracteres.push({
+          indice: inicio + indice,
+          emNegrito: negrito > 0,
+          emRiscado: riscado > 0,
+        });
       }
-
-      if (caractere === ')') {
-        parenteses = Math.max(0, parenteses - 1);
-        continue;
-      }
-
-      if (parenteses === 0 && /[\p{L}\p{N}]/u.test(caractere)) {
-        contagem += 1;
-      }
-    }
-
-    visiveis += contagem;
-
-    if (negrito > 0) {
-      emNegrito += contagem;
-    }
-
-    if (riscado > 0) {
-      emRiscado += contagem;
     }
   };
 

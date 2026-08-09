@@ -123,7 +123,7 @@ interface DispositivoNodeBase extends NormaNodeBase {
    * (bloco riscado), não gera nó próprio nem Block ID. O texto/caput do nó
    * permanece a redação vigente.
    */
-  redacoesAnteriores?: { texto: string; nota: string }[];
+  redacoesAnteriores?: { texto: string; nota?: string }[];
   /** Norma que conferiu a redação atualmente vigente, quando aplicável. */
   redacaoAtualDadaPor?: string;
   /** Destino canônico quando este nó representa uma posição renumerada. */
@@ -133,6 +133,7 @@ interface DispositivoNodeBase extends NormaNodeBase {
 /** União de todos os tipos de nó reconhecidos pela NormaAST */
 type NormaNode =
   | LeiNode
+  | AtoTransitorioNode
   | LivroNode
   | TituloNode
   | CapituloNode
@@ -184,7 +185,7 @@ interface LeiNode extends NormaNodeBase {
   /** Conteúdo semântico dos callouts opcionais; o formatter controla a sintaxe */
   avisosAtualizacao?: string[];
   notasEditoriais?: string[];
-  children: (LivroNode | TituloNode | CapituloNode | ArtigoNode | AnexoNode | TabelaNode)[];
+  children: (AtoTransitorioNode | LivroNode | TituloNode | CapituloNode | ArtigoNode | AnexoNode | TabelaNode)[];
 }
 
 interface ReferenciaRedacao {
@@ -268,6 +269,12 @@ interface DivisaoNodeBase extends NormaNodeBase {
   notaStatus?: string;
   numero?: string;   // ex.: "I", "II" — nem toda divisão é numerada
   titulo: string;    // ex.: "Dos Crimes Contra a Pessoa"
+}
+
+/** ADCT com namespace intrínseco `adct` nos Block IDs (ADR-011). */
+interface AtoTransitorioNode extends DivisaoNodeBase {
+  tipo: 'ato_transitorio';
+  children: (LivroNode | TituloNode | CapituloNode | ArtigoNode)[];
 }
 
 interface LivroNode extends DivisaoNodeBase {
@@ -540,7 +547,7 @@ CREATE TABLE dispositivos (
     parent_id                   uuid,
     tipo                        text NOT NULL
         CHECK (tipo IN (
-            'livro','titulo','capitulo','secao','subsecao',
+            'ato_transitorio','livro','titulo','capitulo','secao','subsecao',
             'artigo','paragrafo','inciso','alinea','item','pena','anexo','tabela'
         )),
     block_id                    text, -- NULL para divisões sem âncora
@@ -577,7 +584,7 @@ CREATE TABLE dispositivos (
         REFERENCES block_ids(lei_id, block_id),
 
     CHECK (
-        tipo IN ('livro','titulo','capitulo','secao','subsecao')
+        tipo IN ('ato_transitorio','livro','titulo','capitulo','secao','subsecao')
         OR block_id IS NOT NULL
     ),
     CHECK (

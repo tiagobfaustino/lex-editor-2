@@ -57,6 +57,12 @@ export const CODIGOS_PROBLEMA = [
   'manifesto_invalido',
   /** O Formatter recebeu algo que não é uma `IdentifiedNormaAST`. */
   'formatter_exige_identified',
+  /** Fontes oficiais divergem sobre texto vigente do mesmo dispositivo. */
+  'conflito_de_fontes',
+  /** Decisão editorial não corresponde exatamente ao fragmento revisado. */
+  'decisao_editorial_invalida',
+  /** Nota de estado contradiz o `deviceStatus` estruturado. */
+  'estado_incompativel',
 ] as const;
 
 export type CodigoProblema = (typeof CODIGOS_PROBLEMA)[number];

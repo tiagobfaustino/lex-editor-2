@@ -49,9 +49,10 @@ nota `(Revogado pela Lei ...)`.
    - `*(Revogado pela Lei nº X, de Y)*` → **revogação**; o dispositivo está
      revogado e seu texto permanece riscado (ADR-005, `preservarTextoRevogado`).
 4. **Representação na NormaAST.** Cada nó de dispositivo ganha um campo opcional
-   `redacoesAnteriores: { texto, nota }[]` (ordenado, mais antiga → mais nova),
+   `redacoesAnteriores: { texto, nota? }[]` (ordenado, mais antiga → mais nova),
    onde `texto` é o conteúdo riscado exato (designador + texto antigo, tratado
-   como bloco de apresentação) e `nota` é a nota de redação correspondente. O
+   como bloco de apresentação) e `nota`, quando fornecida pela fonte, é a nota
+   de redação correspondente. O pipeline não inventa nota ausente (ADR-011). O
    `texto`/`caput` do nó continua sendo a redação vigente. O histórico não gera
    nós próprios nem Block IDs.
 

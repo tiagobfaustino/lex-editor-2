@@ -16,16 +16,8 @@ import { identifiedNormaAstSchema } from '../ast/schemas.js';
 /** Dois espaços por nível, conforme §3.1. */
 const INDENTACAO = '  ';
 
-/** Profundidade de lista por tipo (§3.1). Pena fica um nível abaixo do pai. */
-const NIVEL: Readonly<Record<string, number>> = {
-  artigo: 0,
-  paragrafo: 1,
-  inciso: 2,
-  alinea: 3,
-  item: 4,
-};
-
 const HEADING: Readonly<Record<string, string>> = {
+  ato_transitorio: '#',
   livro: '#',
   titulo: '##',
   capitulo: '###',
@@ -39,6 +31,7 @@ const HEADING: Readonly<Record<string, string>> = {
  * publicado é português.
  */
 const ROTULO_DA_DIVISAO: Readonly<Record<string, string>> = {
+  ato_transitorio: 'Ato das Disposições Constitucionais Transitórias',
   livro: 'Livro',
   titulo: 'Título',
   capitulo: 'Capítulo',
@@ -145,7 +138,7 @@ const historico = (no: Record<string, unknown>, recuo: string): string[] => {
     const texto = typeof entrada.texto === 'string' ? entrada.texto : '';
     const nota = typeof entrada.nota === 'string' ? entrada.nota : '';
 
-    return `${recuo}- ~~${texto}~~ *${nota}*`;
+    return `${recuo}- ~~${texto}~~${nota.length > 0 ? ` *${nota}*` : ''}`;
   });
 };
 
@@ -175,13 +168,21 @@ const serializarNo = (no: Record<string, unknown>, nivelDoPai: number): string[]
     // extensão opcional da §7.4 —, vai ao final da linha como em qualquer
     // outro nó referenciável.
     const blockIdDaDivisao = typeof no['blockId'] === 'string' ? ` ^${no['blockId']}` : '';
-    const cabecalho = `${HEADING[tipo] ?? ''} ${rotulo}${numero.length > 0 ? ` ${numero}` : ''} - ${titulo}${blockIdDaDivisao}`;
+    const cabecalho =
+      tipo === 'ato_transitorio'
+        ? `${HEADING[tipo] ?? ''} ${titulo}${blockIdDaDivisao}`
+        : `${HEADING[tipo] ?? ''} ${rotulo}${numero.length > 0 ? ` ${numero}` : ''} - ${titulo}${blockIdDaDivisao}`;
 
-    return [cabecalho, '', ...filhos.flatMap((filho) => serializarNo(filho, 0))];
+    // Headings não ocupam nível na lista. O primeiro dispositivo abaixo de
+    // qualquer cadeia de divisões sempre reinicia no nível zero (§3.1).
+    return [cabecalho, '', ...filhos.flatMap((filho) => serializarNo(filho, -1))];
   }
 
-  // Pena fica exatamente um nível abaixo do dispositivo a que pertence (§3.1).
-  const nivel = tipo === 'pena' ? nivelDoPai + 1 : (NIVEL[tipo] ?? Math.max(0, nivelDoPai + 1));
+  // A indentação representa a árvore efetiva, não uma profundidade presumida
+  // pelo tipo. Assim, um inciso ou uma alínea diretamente sob artigo ocupa o
+  // nível 1, sem inventar níveis intermediários ausentes na NormaAST (§3.1 e
+  // §9.5). Pena segue a mesma regra: um nível abaixo do pai real.
+  const nivel = Math.max(0, nivelDoPai + 1);
   const recuo = INDENTACAO.repeat(nivel);
   const blockId = typeof no['blockId'] === 'string' ? no['blockId'] : '';
   const corpo = comSinalizacao(no, designador(no));
@@ -316,7 +317,7 @@ export const formatar = (arvore: unknown): ResultadoValidacao<string> => {
       corpo.push('');
     }
 
-    corpo.push(...serializarNo(filho, 0));
+    corpo.push(...serializarNo(filho, -1));
   });
 
   const linhas = [...frontmatter(raiz), '', ...callouts(raiz), ...corpo];

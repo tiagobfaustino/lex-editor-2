@@ -70,6 +70,9 @@ for (const nome of casos) {
     entrada: join(FIXTURES, nome, 'entrada.txt'),
     manifesto: join(FIXTURES, nome, 'manifesto.json'),
     saida,
+    ...(existsSync(join(FIXTURES, nome, 'decisoes-editoriais.json'))
+      ? { decisoes: join(FIXTURES, nome, 'decisoes-editoriais.json') }
+      : {}),
   });
 
   if (resultado.codigo !== CODIGO_DE_SAIDA.ok) {

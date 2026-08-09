@@ -1,5 +1,9 @@
 # Plano de Implementação — Feature 004
 
+> Decisão normativa complementar: a ADR-011 define o nó estrutural do ADCT, a
+> nota histórica opcional e o artefato versionado de revisão editorial usados
+> para concluir T004-03 e T004-08.
+
 ## Abordagem
 
 Generalizar por casos jurídicos mínimos antes de executar leis completas.

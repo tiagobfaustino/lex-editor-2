@@ -129,26 +129,29 @@ byte a byte; um fluxo canônico estrito deve rejeitar outra representação.
 
 | Nível hierárquico (NormaAST) | Representação Markdown |
 |---|---|
+| Ato das Disposições Constitucionais Transitórias | `#` (heading nível 1) |
 | Livro | `#` (heading nível 1) |
 | Título | `##` (heading nível 2) |
 | Capítulo | `###` (heading nível 3) |
 | Seção | `#### ` (heading nível 4) |
 | Subseção | `#####` (heading nível 5) |
 | Artigo | item de lista, nível de indentação 0 (`- `) |
-| Parágrafo | item de lista, nível de indentação 1 (2 espaços) |
-| Inciso | item de lista, nível de indentação 2 (4 espaços) |
-| Alínea | item de lista, nível de indentação 3 (6 espaços) |
-| Item | item de lista, nível de indentação 4 (8 espaços) |
+| Parágrafo | item de lista, um nível abaixo do pai (tipicamente 2 espaços) |
+| Inciso | item de lista, um nível abaixo do pai (tipicamente 4 espaços) |
+| Alínea | item de lista, um nível abaixo do pai (tipicamente 6 espaços) |
+| Item | item de lista, um nível abaixo do pai (tipicamente 8 espaços) |
 | Pena autônoma | item de lista um nível abaixo do dispositivo ao qual pertence |
 | Anexo suportado | `## Anexo {numero} - {titulo} {blockId}` |
 | Tabela simples suportada | item de lista, nível de indentação 0 (`- Tabela ... {blockId}`) |
 
-**Regra exata:** livro, título, capítulo, seção e subseção viram headings.
+**Regra exata:** ADCT, livro, título, capítulo, seção e subseção viram headings.
 Anexo usa o heading específico da Seção 3.3. Artigo, parágrafo, inciso,
 alínea, item, pena e tabela viram itens de lista referenciáveis, respeitando a
 relação pai-filho da `IdentifiedNormaAST`. A lista reinicia no nível 0 a cada
-artigo; uma pena fica exatamente um nível abaixo do dispositivo ao qual
-pertence.
+artigo; cada descendente e cada pena ficam exatamente um nível abaixo do pai
+real. Quando a fonte omite um nível jurídico intermediário — por exemplo,
+alínea diretamente sob artigo — a serialização não cria recuo vazio: a alínea
+fica no nível 1 (2 espaços).
 
 Cada nível de indentação usa **2 espaços** (não tab), consistente com o padrão de renderização de listas do Obsidian.
 
@@ -303,8 +306,11 @@ Regra de decisão pela nota em itálico:
   dispositivo revogado (`deviceStatus: 'revoked'`, Seção 5.1–5.4).
 
 O parsing inverso acumula as linhas de histórico (riscadas, sem Block ID) e as
-anexa como `redacoesAnteriores` (par `{ texto, nota }`) ao próximo dispositivo
+anexa como `redacoesAnteriores` (par `{ texto, nota? }`) ao próximo dispositivo
 com Block ID.
+
+Quando a fonte não trouxer nota, a linha histórica termina logo após o trecho
+riscado; o Formatter não inventa texto em itálico (ADR-011).
 
 ---
 
@@ -351,7 +357,7 @@ Callouts aparecem exclusivamente na região de cabeçalho do arquivo, entre o fr
 
 ## 7. Regras de geração de headings para divisões
 
-1. Toda divisão estrutural (livro, título, capítulo, seção, subseção) gera um heading Markdown no nível correspondente à Seção 3.1.
+1. Toda divisão estrutural (ADCT, livro, título, capítulo, seção, subseção) gera um heading Markdown no nível correspondente à Seção 3.1. O ADCT usa exatamente `# Ato das Disposições Constitucionais Transitórias` (ADR-011).
 2. O texto do heading reproduz a numeração romana/ordinal e a ementa da divisão exatamente como no texto oficial: `### Capítulo I - Dos Crimes contra a Vida`.
 3. **Divisões estruturais não recebem Block ID próprio por padrão.** A unidade referenciável mínima do sistema é o dispositivo legal (artigo e seus descendentes), não a divisão. Isso é consistente com `BLOCK_ID_SPEC.md`, que define IDs para `artigo`, `paragrafo`, `inciso`, `alinea`, `item`, `pena`, `anexo` e `tabela` — divisões intermediárias só aparecem *dentro* de um Block ID de dispositivo quando necessárias para desambiguação (ver `BLOCK_ID_SPEC.md`, Seção 2.4), nunca como Block ID de heading isolado.
 4. Exceção: se o produto exigir link direto para uma divisão inteira (ex.: "ver Capítulo I"), o Formatter pode opcionalmente anexar um Block ID de divisão usando o mesmo padrão de abreviação da Seção 2.4 do `BLOCK_ID_SPEC.md` (`^cp-cap-1`), mas essa é uma extensão opcional e não obrigatória nesta versão da especificação, e não deve ser confundida com o Block ID de artigo.

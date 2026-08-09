@@ -16,7 +16,7 @@
 | 001 | [Fundação do projeto](./lex-editor/001-project-foundation/spec.md) | P0 | done | — | Workspace, qualidade, shell seguro e smoke test executáveis |
 | 002 | [Contratos do domínio jurídico](./lex-editor/002-legal-domain-contracts/spec.md) | P0 | done | 001 | Objetos `parsed`/`identified` validados em runtime sem Electron |
 | 003 | [Primeiro pipeline jurídico vertical](./lex-editor/003-first-legal-pipeline/spec.md) | P0 | done | 002 | Fixture local produz Markdown canônico por CLI |
-| 004 | [Hierarquia jurídica completa](./lex-editor/004-full-legal-hierarchy/spec.md) | P0 | blocked | 003 | Três leis de referência cobrem a gramática normativa completa |
+| 004 | [Hierarquia jurídica completa](./lex-editor/004-full-legal-hierarchy/spec.md) | P0 | done | 003 | Três leis de referência cobrem a gramática normativa completa |
 | 005 | [Importação, preview e exportação desktop](./lex-editor/005-desktop-import-preview-export/spec.md) | P1 | draft | 001, 004 | Usuário importa, revisa e exporta no Electron |
 | 006 | [Revisão editorial e validação](./lex-editor/006-editorial-review-validation/spec.md) | P1 | draft | 004, 005 | Correção manual persistida e publicação bloqueada quando inválida |
 | 007 | [Publicação segura](./lex-editor/007-secure-publication/spec.md) | P2 | draft | 006 | SHA aprovado é promovido e sincronizado de forma idempotente |

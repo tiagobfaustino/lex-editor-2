@@ -9,7 +9,14 @@
 // porque a estrutura o exige, e então vale para qualquer norma.
 
 /** Divisões estruturais, da mais externa para a mais interna. */
-export const DIVISOES = ['livro', 'titulo', 'capitulo', 'secao', 'subsecao'] as const;
+export const DIVISOES = [
+  'ato_transitorio',
+  'livro',
+  'titulo',
+  'capitulo',
+  'secao',
+  'subsecao',
+] as const;
 
 export type TipoDivisao = (typeof DIVISOES)[number];
 
@@ -58,6 +65,12 @@ const regraDeDivisao = (tipo: TipoDivisao, rotulo: string): Regra => ({
  * antes de qualquer coisa que possa começar com romano.
  */
 export const REGRAS: readonly Regra[] = [
+  {
+    tipo: 'ato_transitorio',
+    padrao:
+      /^ATO DAS DISPOSI[ÇC][ÕO]ES CONSTITUCIONAIS TRANSIT[ÓO]RIAS(?:\s+\(Vide[^)]*\))?(?:\s+Vigência)?$/iu,
+    extrair: () => ({ numero: '', texto: 'Ato das Disposições Constitucionais Transitórias' }),
+  },
   regraDeDivisao('livro', 'LIVRO'),
   regraDeDivisao('titulo', 'T[ÍI]TULO'),
   regraDeDivisao('capitulo', 'CAP[ÍI]TULO'),
@@ -82,7 +95,7 @@ export const REGRAS: readonly Regra[] = [
     // (BLOCK_ID_SPEC §2.3.6), não um subdispositivo.
     tipo: 'artigo',
     padrao: new RegExp(
-      `^Art\\.?\\s*(\\d+)\\s*${ORDINAL}\\s*(?:-\\s*([A-Za-z]+))?\\s*[.\\-–—]?\\s*(.*)$`,
+      `^Art\\.?\\s*(\\d+)\\s*${ORDINAL}\\s*(?:-\\s*([A-Za-z]+(?:-[A-Za-z]+)*))?\\s*[.\\-–—\\u0096]?\\s*(.*)$`,
       'u',
     ),
     extrair: (m) => ({
@@ -92,8 +105,11 @@ export const REGRAS: readonly Regra[] = [
   },
   {
     tipo: 'pena',
-    padrao: /^(Pena|Multa|Detenção|Reclusão)\s*[-–—:]\s*(.*)$/u,
-    extrair: (m) => ({ numero: '', texto: `${m[1] ?? ''} - ${(m[2] ?? '').trim()}` }),
+    padrao: /^(Pena|Multa|Detenção|Reclusão)(?:\s+(\d+))?\s*[-–—\u0096:]\s*(.*)$/u,
+    extrair: (m) => ({
+      numero: m[2] ?? '',
+      texto: `${m[1] ?? ''}${m[2] === undefined ? '' : ` ${m[2]}`} - ${(m[3] ?? '').trim()}`,
+    }),
   },
   {
     tipo: 'paragrafo',
@@ -121,7 +137,7 @@ export const REGRAS: readonly Regra[] = [
     // brasileiro; é o que impede uma palavra composta só de letras romanas de
     // ser lida como designador.
     tipo: 'inciso',
-    padrao: /^([IVXLCDM]+(?:-[A-Za-z]+)?)\s*(?:[-–—]\s*(.*)|\s+([a-zà-ú].*))$/u,
+    padrao: /^([IVXLCDM]+(?:-[A-Za-z]+)?)\s*(?:[-–—\u0096]\s*(.*)|\s+([a-zà-ú].*))$/u,
     extrair: (m) => ({ numero: m[1] ?? '', texto: (m[2] ?? m[3] ?? '').trim() }),
   },
   {
@@ -176,5 +192,5 @@ export const ABREM_CONTEXTO: ReadonlySet<TipoDispositivo> = new Set(['artigo', '
 export const ehDivisao = (tipo: TipoReconhecido): tipo is TipoDivisao =>
   (DIVISOES as readonly string[]).includes(tipo);
 
-/** Profundidade da divisão: livro é 0, subseção é 4. */
+/** Profundidade da divisão: ADCT é 0, livro é 1, subseção é 5. */
 export const nivelDaDivisao = (tipo: TipoDivisao): number => DIVISOES.indexOf(tipo);

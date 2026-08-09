@@ -221,6 +221,13 @@ describe('histórico de redações (ADR-006)', () => {
     expect(redacoes.map((r) => r.texto)).toEqual(['a) mais antiga.', 'a) intermediária.']);
   });
 
+  it('preserva histórico sem inventar nota ausente (ADR-011)', () => {
+    const md = markdownDe(['~~Art. 1. Texto anterior.~~', 'Art. 1. Texto vigente.'].join('\n'));
+    const linha = md.split('\n').find((item) => item.includes('Texto anterior'));
+
+    expect(linha).toBe('- ~~Art. 1. Texto anterior.~~');
+  });
+
   it('distingue histórico de revogação: a nota decide (§5.5)', () => {
     // Riscado com nota de redação e sem Block ID vira histórico; o dispositivo
     // que o segue continua vigente.

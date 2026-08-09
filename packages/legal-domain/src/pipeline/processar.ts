@@ -13,6 +13,7 @@ import { contarBlockIds, identificar } from '../block-id/index.js';
 import { formatar } from '../formatter/index.js';
 import { validarMarkdownCanonico } from '../formatter/validar-canonico.js';
 import { analisar, type EntradaDoParser } from '../parser/index.js';
+import { aplicarDecisoesEditoriais, type DecisaoEditorial } from '../parser/decisoes-editoriais.js';
 import { percorrer, validarIdentifiedNormaAst } from '../ast/validate.js';
 import type { IdentifiedNormaAST } from '../ast/nodes.js';
 import { type Relatorio, situarProblemas } from './relatorio.js';
@@ -77,7 +78,9 @@ const contar = (
   return { dispositivos, revogados, revisao, artigos };
 };
 
-export const processar = (entrada: EntradaDoParser): ResultadoDoPipeline => {
+export const processar = (
+  entrada: EntradaDoParser & { readonly decisoesEditoriais?: readonly DecisaoEditorial[] },
+): ResultadoDoPipeline => {
   const linhasLidas = entrada.conteudo.split('\n').length;
 
   // --- parsing ---
@@ -93,8 +96,20 @@ export const processar = (entrada: EntradaDoParser): ResultadoDoPipeline => {
     };
   }
 
+  const revisada = aplicarDecisoesEditoriais(analisada.valor, entrada.decisoesEditoriais ?? []);
+
+  if (!revisada.ok) {
+    return {
+      relatorio: {
+        ok: false,
+        etapaFinal: 'parsing',
+        problemas: situarProblemas('parsing', revisada.problemas),
+      },
+    };
+  }
+
   // --- identificação ---
-  const identificada = identificar(analisada.valor, entrada.metadados.sigla);
+  const identificada = identificar(revisada.valor, entrada.metadados.sigla);
 
   if (!identificada.ok) {
     return {

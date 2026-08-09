@@ -85,6 +85,15 @@ describe('ADR-010 — alínea sob artigo', () => {
     expect(GOLDEN).not.toContain('lindb-art-15-inc-');
   });
 
+  it('indenta as alíneas um nível abaixo do artigo, sem níveis vazios', () => {
+    expect(GOLDEN).toContain(
+      '  - a) haver sido proferida por juiz competente; ^lindb-art-15-ali-a',
+    );
+    expect(GOLDEN).not.toContain(
+      '      - a) haver sido proferida por juiz competente; ^lindb-art-15-ali-a',
+    );
+  });
+
   it('alínea sob inciso continua carregando o segmento do inciso', () => {
     // Contraprova: a mudança da ADR-010 ampliou a gramática, não a afrouxou.
     const comInciso = /\^[a-z0-9-]*-inc-[a-z]+-ali-[a-z]+/u.test(GOLDEN);

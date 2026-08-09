@@ -26,6 +26,20 @@ const RUIDO_DE_PAGINA = [
   /^\(Vide .*\)$/iu,
 ];
 
+/**
+ * O Word pode deixar o fecho institucional no mesmo `<p>` do último artigo.
+ * Só removemos a cauda quando os dois sinais de rodapé aparecem juntos:
+ * local/data de assinatura e a certificação de que o HTML não substitui o
+ * D.O.U. Um simples uso da palavra "Brasília" no texto normativo não basta.
+ */
+const semRodapeDeAssinaturas = (texto: string): string => {
+  const inicio = texto.search(/\s+Brasília,\s+\d{1,2}\s+de\s+\p{L}+/iu);
+
+  return inicio >= 0 && texto.slice(inicio).includes('Este texto não substitui o publicado')
+    ? texto.slice(0, inicio).trimEnd()
+    : texto;
+};
+
 /** O que a gramática do parser responde sobre um pedaço. */
 export interface Reconhecimento {
   readonly tituloPendente?: boolean | undefined;
@@ -76,9 +90,22 @@ export const extrairLinhas = (html: string, opcoes: OpcoesDeExtracao = {}): read
   const reconhecer = opcoes.reconhecer ?? ((): undefined => undefined);
   const mantidos: string[] = [];
   let anteriorEsperaEmenta = false;
+  let emRodapeDeAssinaturas = false;
 
   for (const pedaco of varrerPedacos(html)) {
-    const reconhecido = reconhecer(pedaco.texto);
+    const texto = semRodapeDeAssinaturas(pedaco.texto);
+    const reconhecido = reconhecer(texto);
+
+    if (/^Brasília,\s+\d{1,2}\s+de\s+\p{L}+/iu.test(texto)) {
+      emRodapeDeAssinaturas = true;
+      continue;
+    }
+
+    if (emRodapeDeAssinaturas && reconhecido === undefined) {
+      continue;
+    }
+
+    emRodapeDeAssinaturas = false;
 
     if (pedaco.todoEmNegrito && reconhecido === undefined && !anteriorEsperaEmenta) {
       // Rubrica: negrito, não é dispositivo, e nada antes dela espera ementa.
@@ -87,7 +114,7 @@ export const extrairLinhas = (html: string, opcoes: OpcoesDeExtracao = {}): read
 
     // O riscado é conteúdo (ADR-006, MARKDOWN_SPEC §5) e só agora vira `~~`,
     // depois de ter cumprido seu papel como atributo do pedaço.
-    const linha = pedaco.todoRiscado ? `~~${pedaco.texto}~~` : pedaco.texto;
+    const linha = pedaco.todoRiscado ? `~~${texto}~~` : texto;
 
     if (RUIDO_DE_PAGINA.some((padrao) => padrao.test(linha))) {
       continue;
@@ -134,7 +161,37 @@ export const juntarContinuacoes = (
   const resultado: string[] = [];
   const riscada = (linha: string): boolean => linha.startsWith('~~');
 
-  for (const linha of linhas) {
+  /**
+   * O Word às vezes põe dois dispositivos no mesmo bloco. Só separamos quando
+   * o novo designador vem depois de uma nota editorial fechada — fronteira
+   * verificável no próprio HTML achatado — e a gramática confirma todo o
+   * sufixo. Isso evita cortes por palavras ou números incidentais.
+   */
+  const separarEmbutidos = (linha: string): string[] => {
+    const separar = (restante: string): string[] => {
+      const espacos = [...restante.matchAll(/\s+/gu)];
+      const fronteira = espacos.find((espaco) => {
+        const inicio = espaco.index;
+        const prefixo = restante.slice(0, inicio).trimEnd();
+        const sufixo = restante.slice(inicio + espaco[0].length).trimStart();
+
+        return (prefixo.endsWith(')') || prefixo.endsWith('Vigência')) && ehDesignador(sufixo);
+      });
+
+      if (fronteira === undefined) {
+        return [restante];
+      }
+
+      const inicio = fronteira.index;
+      const prefixo = restante.slice(0, inicio).trimEnd();
+      const sufixo = restante.slice(inicio + fronteira[0].length).trimStart();
+      return [prefixo, ...separar(sufixo)];
+    };
+
+    return separar(linha);
+  };
+
+  for (const linha of linhas.flatMap(separarEmbutidos)) {
     const ultima = resultado.at(-1);
 
     // O riscado é fronteira: uma redação anterior não absorve a redação

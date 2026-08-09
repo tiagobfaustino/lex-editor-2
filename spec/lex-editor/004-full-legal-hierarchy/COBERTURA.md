@@ -30,7 +30,7 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 | Seção vira `####` | MD §3.1 | `gramatica.test.ts` divisões | coberta |
 | Subseção vira `#####` | MD §3.1 | `gramatica.test.ts` divisões | coberta |
 | Divisão não recebe Block ID por padrão | MD §7.3 | `gramatica.test.ts` divisões | coberta |
-| Heading não pula nível | MD §9.10 | `divisoes/salto-de-nivel.txt` | `[ ]` |
+| Heading não pula nível | MD §9.10 | `validacao-canonica.test.ts` §9.10 | coberta |
 | Divisão entra no ID só para desambiguar | BID §2.4 | `gramatica.test.ts` desambiguação | coberta |
 | Número da divisão é ordinal cardinal, não romano | BID §8.2 | `gramatica.test.ts` desambiguação | coberta |
 
@@ -42,16 +42,16 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 | Artigo com sufixo alfabético (`121-A`) | BID §2.3.6 | `gramatica.test.ts` dispositivos | coberta |
 | Parágrafo numerado `par-{n}` | BID §2.3.5 | cp-art-121 | `003` |
 | Parágrafo único `par-unico` | BID §2.3.5 | `gramatica.test.ts` dispositivos | coberta |
-| Parágrafo único e numerado são exclusivos | BID §2.3.5 | `dispositivos/paragrafo-conflito.txt` | `[ ]` |
+| Parágrafo único e numerado têm segmentos distintos, mesmo se coexistirem na fonte | BID §2.3.5 e §9.5 | `gramatica.test.ts` casos-limite | coberta |
 | Inciso em romano minúsculo | BID §2.3.7 | cp-art-121 | `003` |
 | Inciso com sufixo (`inc-i-a`) | BID §2.1 | `gramatica.test.ts` dispositivos | coberta |
 | Alínea letra única | BID §2.3.8 | cp-art-121 | `003` |
 | Alínea letra dupla (`ali-aa`) | BID §7.2 | `gramatica.test.ts` dispositivos | coberta |
 | Item em cardinal arábico | BID §2.3.9 | `gramatica.test.ts` dispositivos | coberta |
 | Pena autônoma sem número | BID §2.3.12 | cp-art-121 | `003` |
-| Pena numerada (`pena-2`) | BID §2.3.12 | `dispositivos/pena-numerada.txt` | `[ ]` |
+| Pena numerada (`pena-2`) | BID §2.3.12 | `gramatica.test.ts` casos-limite | coberta |
 | Pena ancorada em ancestral, não no anterior | BID §2.3.12 | `gramatica.test.ts` ancoragem | coberta |
-| Pena na mesma frase não vira nó | BID §2.3.12 | `dispositivos/pena-embutida.txt` | `[ ]` |
+| Pena na mesma frase não vira nó | BID §2.3.12 | `gramatica.test.ts` casos-limite | coberta |
 
 > **Resolvido na T004-02.** O sinal disponível no texto plano é o dois-pontos:
 > um dispositivo que termina em `:` anuncia o que vem abaixo. Com um único
@@ -71,9 +71,9 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 | `revoked` com texto preservado e riscado | MD §5.1.2, §5.3 | `estados-e-anexos.test.ts` estados | coberta |
 | `vetoed` com nota padronizada | MD §5.1.3 | `estados-e-anexos.test.ts` estados | coberta |
 | `included`, `amended`, `suspended` | ADR-005 §3 | `estados-e-anexos.test.ts` estados | coberta |
-| `renumbered` com `renumeradoPara` | ADR-005 §3 | `estados-e-anexos.test.ts` estados (estado); `renumeradoPara` na T004-05 | parcial |
+| `renumbered` com `renumeradoPara` | ADR-005 §3 | `estados-e-anexos.test.ts`; `identidade.test.ts` redirect | coberta |
 | Block ID preservado em revogado | MD §5.1.4 | `estados-e-anexos.test.ts` estados | coberta |
-| Ativo não pode ter marcação de revogado | MD §9.7 | `estados/ativo-com-marcacao.txt` | `[ ]` |
+| Ativo não pode ter marcação de revogado | MD §9.7 | `norma-ast-contrato.test.ts` estado incompatível | coberta |
 
 ## 4. Histórico de redações (T004-03)
 
@@ -84,7 +84,7 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 | Redação anterior vira linha riscada acima da vigente | ADR-006 §1 | `estados-e-anexos.test.ts` histórico | coberta |
 | Ordem cronológica, mais antiga primeiro | ADR-006 §4 | `estados-e-anexos.test.ts` histórico | coberta |
 | Linha de histórico **não** recebe Block ID | ADR-006 §2 | `estados-e-anexos.test.ts` histórico | coberta |
-| `(Redação dada…)` riscada sem ID ≠ `(Revogado…)` com ID | MD §5.5 | `historico/distinguir-nota.txt` | `[ ]` |
+| `(Redação dada…)` riscada sem ID ≠ `(Revogado…)` com ID | MD §5.5 | `estados-e-anexos.test.ts` distingue histórico | coberta |
 | Parsing inverso acumula histórico no próximo nó com ID | MD §5.5 | `estados-e-anexos.test.ts` histórico | coberta |
 | Contagem de artigos vem da AST, não de itens de nível 0 | ADR-006, MD §9.4 | `estados-e-anexos.test.ts` histórico | coberta |
 
@@ -109,11 +109,11 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 | Regra | Fonte normativa | Fixture mínima | Estado |
 |---|---|---|---|
 | Exatamente uma `primary_current` | ADR-009 §1 | validado no domínio | `003` |
-| Compilada é a preferida para texto vigente | ADR-009 §2 | `fontes/compilada-e-anotada/` | `[ ]` |
-| Anotada enriquece histórico sem sobrescrever vigente | ADR-009 §3 | idem | `[ ]` |
-| Ausência de compilada não bloqueia importação | ADR-009 §4 | `fontes/so-anotada/` | `[ ]` |
-| `supportingSourceRefs` preserva a evidência complementar | ADR-009 §6 | `fontes/compilada-e-anotada/` | `[ ]` |
-| Conflito entre fontes exige revisão humana | ADR-009 §6 | `fontes/conflito.txt` | `[ ]` |
+| Compilada é a preferida para texto vigente | ADR-009 §2 | `fontes-e-decisoes.test.ts` | coberta |
+| Anotada enriquece histórico sem sobrescrever vigente | ADR-009 §3 | idem | coberta |
+| Ausência de compilada não bloqueia importação | ADR-009 §4 | idem — anotada como primária | coberta |
+| `supportingSourceRefs` preserva a evidência complementar | ADR-009 §6 | idem | coberta |
+| Conflito entre fontes exige revisão humana | ADR-009 §6 | idem — caso negativo | coberta |
 | Ausência na compilada ≠ revogação | ADR-009 §7 | `identidade.test.ts` namespace | coberta |
 | Confiança `low` exige `requiresHumanReview` | DM §NormaAST | validado no schema | `002` |
 | Baixa confiança não avança para identificada | spec, invariante | `gramatica.test.ts` baixa confiança | coberta |
@@ -130,7 +130,7 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 | Alteração textual não muda identidade | RF-004-03 | `identidade.test.ts` identidade/texto | coberta |
 | Colisão tardia não renomeia dispositivo publicado | BID §2.4 | `identidade.test.ts` colisão tardia | coberta |
 | Alias é permanente e acíclico | invariante | `identidade.test.ts` aliases | coberta |
-| Renumeração produz redirect, não novo ID | RF-004-03 | `reconciliar` emite alias a partir de `renumeradoPara` | parcial — falta caso ponta a ponta |
+| Renumeração produz redirect, não novo ID | RF-004-03 | `identidade.test.ts` redirect ponta a ponta | coberta |
 | Namespace histórico inclui revogados e depreciados | BID §2.4 | `identidade.test.ts` namespace | coberta |
 | Ambiguidade de identidade bloqueia | RF-004-04 | `identidade.test.ts` ambiguidade | coberta |
 
@@ -171,7 +171,7 @@ lei inteira não conta: a spec proíbe usar snapshot como única evidência.
 `LeiNode` estende `NormaNodeBase`, então a raiz carrega `id`, `ordem`,
 `sourceRef`, `supportingSourceRefs` e `parseEvidence`. **Nenhuma tabela tem
 coluna para eles**: `leis` e `versoes_lei` não os preveem, e `dispositivos` não
-aceita `tipo = 'lei'` — o CHECK enumera os catorze tipos e a raiz não está
+aceita `tipo = 'lei'` — o CHECK enumera os quinze tipos e a raiz não está
 entre eles.
 
 Sem tratamento, a ida e volta perderia a rastreabilidade da própria norma: de
@@ -191,9 +191,9 @@ todo o pipeline — o teste de ponto fixo garante que a normalização é estáv
 
 | Lei | Fonte | Estado |
 |---|---|---|
-| Código Penal, DL 2.848/1940 | [texto compilado](https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm) | `[ ]` |
-| Constituição Federal de 1988 | Planalto | `[ ]` |
-| Lei curta — LINDB, DL 4.657/1942 | [compilado](https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657compilado.htm) e [anotada](https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657.htm) | `[ ]` |
+| Código Penal, DL 2.848/1940 | [texto compilado](https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm) | snapshot, projeção e golden versionados; teste integral |
+| Constituição Federal de 1988 | Planalto | snapshot, projeção e golden versionados; teste integral |
+| Lei curta — LINDB, DL 4.657/1942 | [compilado](https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657compilado.htm) | snapshot, projeção e golden versionados; teste integral |
 
 A LINDB é a lei curta indicada porque a ADR-009 já a nomeia como caso de
 referência para mesclagem entre compilada e anotada — cobre a §6 desta matriz
@@ -208,12 +208,13 @@ com uma norma real e pequena.
 
 ---
 
-## Como esta matriz é usada
+## Como esta matriz foi fechada
 
-1. Nenhuma linha `[ ]` vira coberta sem fixture mínima **e** teste nomeado.
-2. As leis integrais entram por último, quando a gramática já estiver coberta
-   por casos mínimos — a ordem do `plan.md`.
-3. A T004-10 fecha a matriz: toda linha em `coberta` ou com destino registrado.
+1. Nenhuma linha foi marcada como coberta sem fixture mínima **e** teste
+   nomeado.
+2. As leis integrais entraram por último, depois dos casos mínimos — a ordem do
+   `plan.md`.
+3. Todas as linhas estão cobertas ou têm destino fora do escopo registrado.
 
 ---
 
@@ -243,12 +244,12 @@ elemento de bloco quebra. Corrigido em `extrairLinhas`.
 
 | Lei | Snapshot | Pipeline |
 |---|---|---|
-| LINDB (lei curta) | capturado | **passa**: 30 artigos, 88 dispositivos, 88 Block IDs |
-| Código Penal | capturado (660 KB) | **parsing completo**; para na identificação, por baixa confiança na ancoragem de pena |
-| Constituição Federal de 1988 | capturado (1,8 MB) | 12 linhas não reconhecidas |
+| LINDB (lei curta) | capturado | **passa**: 30 artigos, 89 dispositivos, 89 Block IDs |
+| Código Penal | capturado (660 KB) | **passa**: 434 artigos, 1.769 dispositivos, 1.684 Block IDs, 84 decisões editoriais aplicadas |
+| Constituição Federal de 1988 | capturado (1,8 MB) | **passa**: 411 artigos, 3.428 dispositivos, 3.328 Block IDs, ADCT isolado |
 
-Os três snapshots estão versionados. A LINDB fecha; CP e CF/88 esbarram em dois
-padrões, ambos identificados e ambos trabalho da T004-08:
+Os três snapshots estão versionados e atravessam o pipeline. Os padrões
+encontrados durante a T004-08 foram corrigidos por regra estrutural:
 
 **Nomen juris — resolvido na quarta tentativa.** O negrito do Planalto serve a
 **dois usos opostos**, e é isso que derrubou as três primeiras regras:
@@ -272,8 +273,9 @@ Coberto por `extrator-planalto.test.ts`, que prende as duas leituras lado a
 lado — inclusive o caso `<b>rubrica <br></b> Art. 188`, em que a tag de
 fechamento cai no pedaço do artigo.
 
-**Ementa de divisão separada do designador** na CF/88 segue aberta: quando o
-riscado quebra o par, o par não se reconstitui.
+**Ementa de divisão separada do designador** e o cabeçalho do ADCT são
+reconhecidos pela gramática injetada; o último cria `ato_transitorio` e o
+namespace `cf1988-adct-*`.
 
 ### O que a captura das três leis já corrigiu no extrator
 
@@ -291,54 +293,57 @@ inteiras **antes** de declarar a gramática pronta.
 
 ---
 
-## Bloqueios que exigem decisão normativa
+## Decisões normativas aplicadas
 
 Levantados em 2026-08-09, a partir de revisão externa e **conferidos aqui** —
 os números abaixo são os medidos, não os relatados.
 
-### 1. ADCT não existe no modelo
+### 1. ADCT no modelo — resolvido
 
-O extrator descarta `ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS` como
+O extrator descartava `ATO DAS DISPOSIÇÕES CONSTITUCIONAIS TRANSITÓRIAS` como
 rubrica: no HTML ele vem em `<b>`, e nada antes dele espera ementa. Sem esse
 nó, os artigos do ADCT ficam no topo e colidem com os da Constituição, que
 reinicia a numeração.
 
-Nem o `DATA_MODEL.md` nem a `BLOCK_ID_SPEC.md` definem nó ou segmento para o
+Antes da ADR-011, nem o `DATA_MODEL.md` nem a `BLOCK_ID_SPEC.md` definiam nó ou segmento para o
 ADCT. Modelá-lo como anexo seria decidir por conta própria que o ADCT é um
 anexo da Constituição, o que é afirmação jurídica, não de implementação.
 
-**Medido:** com o gerador corrigido, a CF/88 para na identificação com 4
+**Medido antes da decisão:** a CF/88 parava na identificação com 4
 colisões `block_id_duplicado` — comportamento correto da §7.3.
 
-**Sugestão a decidir:** namespace explícito, `cf1988-adct-art-1`. Exige ADR e
-emenda à `BLOCK_ID_SPEC.md` §2.1, no mesmo rito da ADR-010.
+**Resolvido pela ADR-011:** `ato_transitorio` é divisão estrutural e usa o
+namespace intrínseco `cf1988-adct-art-1`. A CF/88 integral prova a ausência de
+colisão entre corpo permanente e ADCT.
 
-### 2. Redação anterior sem nota
+### 2. Redação anterior sem nota — resolvido
 
-A ADR-006 §4 modela `redacoesAnteriores` como par `{ texto, nota }`, e o schema
-exige nota não vazia. O Planalto nem sempre fornece uma: a redação originária
+A ADR-006 §4 modelava `redacoesAnteriores` como par `{ texto, nota }`, e o schema
+exigia nota não vazia. O Planalto nem sempre fornece uma: a redação originária
 aparece riscada e sem parentético algum.
 
 **Medido:** a CF/88 tem 753 linhas riscadas; **743** produzem redação anterior
 sem nota. É a maioria, não a exceção.
 
-Inventar `"Redação original"` seria escrever conteúdo jurídico que a fonte não
-tem. **A decidir:** tornar `nota` opcional na ADR-006 e no schema, ou definir
-outra representação para a redação originária.
+Inventar `"Redação original"` escreveria conteúdo que a fonte não tem. A
+ADR-011 tornou `nota` opcional; o Formatter omite o itálico quando ausente.
 
-### 3. Ancoragem de pena no CP
+### 3. Ancoragem de pena no CP — resolvido
 
 O CP tem penas em que mais de um ancestral termina em dois-pontos. O contrato
 atual marca confiança `low`, e a invariante da feature impede que isso avance
 para a AST identificada — por desenho.
 
-**Medido:** a CLI reporta 50 problemas, que é o teto de `LIMITE_PROBLEMAS`; o
-total real é maior. Escolher o ancestral mais próximo automaticamente mudaria o
-contrato e precisa de regra jurídica aprovada com teste, não de ajuste local.
+**Medido após recuperar os dispositivos concatenados:** 84 penas permanecem
+legitimamente ambíguas. O parser continua emitindo `low`; o artefato
+`fixtures/legal/cp/decisoes-editoriais.json` confirma cada ocorrência pelo hash
+do artefato, hash do fragmento e linha. A aplicação deixa trilha
+`editorial_override` e o CP integral fecha sem revisão pendente.
 
-### 4. Fidelidade da extração, antes da identificação
+### 4. Fidelidade da extração — resolvido para as fixtures de referência
 
-Parsing completo não é parsing correto. **Medido e corrigido em parte.**
+Parsing completo não é parsing correto. A auditoria conferiu também estrutura e
+identidade, não apenas ausência de erro.
 
 A contaminação vinha de rubrica que escapava do descarte: a nota legislativa
 entrava na conta da ênfase, e `Feminicídio` — 11 caracteres em negrito contra
@@ -347,10 +352,26 @@ no fim do dispositivo anterior:
 
     Pena - reclusão, de doze a trinta anos. Feminicídio (Incluído pela Lei…)
 
-Excluindo o parênteses da conta, **75 linhas do CP** foram descontaminadas, e
-o riscado da CF/88 subiu de 753 para 755. Continua aberto: incisos
-concatenados entre si (`VI - (Revogado…) VII contra:`), que vêm num único
-elemento do HTML e não têm fronteira de bloco para separar.
+A primeira correção excluía **qualquer** conteúdo entre parênteses da conta.
+Isso era amplo demais: um parentético jurídico desconhecido também deixava de
+contar e podia fazer uma linha parcialmente enfatizada ser descartada como
+rubrica. A regra foi estreitada para ignorar apenas parentéticos com prefixo
+editorial conhecido (`Incluído`, `Redação`, `Revogado` etc.); o texto continua
+integralmente no pedaço em ambos os casos.
+
+O relato de **75 linhas descontaminadas** não é uma medida isolada do
+algoritmo: o mesmo comando recapturou os snapshots pela rede, e o CP oficial
+mudou entre as duas capturas. Reexecutada sobre o snapshot anterior imutável,
+a regra altera 52 posições da projeção e remove a contaminação conhecida de
+`Feminicídio`, sem mudar a quantidade de linhas. Nos snapshots agora
+versionados, a projeção reproduz exatamente `entrada.txt`: LINDB com 89
+dispositivos, CP com 1.769 e CF/88 com 4.185, dos quais 755 estão riscados.
+
+Os dispositivos concatenados são separados somente após parentético editorial
+fechado e quando a gramática confirma o sufixo inteiro. Isso recuperou 127
+fronteiras no CP sem corte por número ou palavra incidental. O travessão CP-1252
+também passou a integrar a gramática. Os testes integrais prendem o art. 121-A,
+seus incisos/pena e os arts. 359-M-A e 359-M-B.
 
 ## Correção de um relato anterior
 
@@ -360,3 +381,29 @@ inteira. A varredura da árvore identificada mostra **zero** nós sem texto. Os
 25 eram Block IDs com segmento vazio, hoje corrigidos.
 
 A lição é de método: não concluir a partir de relatório truncado.
+
+---
+
+## Validação real no Obsidian — T004-10
+
+Concluída em 2026-08-09 com Obsidian Desktop 1.13.4, em vault temporário e sem
+plugins de terceiros. O script `scripts/testar-no-vault.mjs` regenerou LINDB,
+CP, o recorte do art. 121 e CF/88 pela CLI e confirmou igualdade byte a byte
+com os quatro goldens versionados.
+
+Foram conferidos visualmente:
+
+- frontmatter reconhecido como propriedades e callouts nativos nas três leis;
+- listas recolhíveis e hierarquia de artigo, parágrafo, inciso e alínea;
+- navegação direta para Block IDs do CP, da CF/88/ADCT e da LINDB;
+- estado revogado no recorte do art. 121 e separação limpa entre o art. 250 da
+  CF/88 e o heading do ADCT.
+
+A revisão encontrou dois defeitos que os testes puramente textuais não
+expunham. O rodapé de promulgação da Constituição era absorvido pelo art. 250;
+o extrator agora o elimina somente quando os marcadores oficiais de rodapé
+estão presentes, com contraprova para texto jurídico comum. Além disso,
+alíneas diretamente sob artigo recebiam recuo de níveis jurídicos inexistentes,
+e o Obsidian indexava apenas o último ID da lista. O Formatter passou a usar a
+profundidade efetiva da AST; `^lindb-art-15-ali-a` a
+`^lindb-art-15-ali-e` são agora blocos independentes e navegáveis.

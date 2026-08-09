@@ -20,7 +20,7 @@ const ITEM_SEM_ID = /^(\s*)- (.*)$/u;
 const HEADING = /^(#{1,6}) (.*)$/u;
 
 /** Histórico da ADR-006: riscada, com nota, sem Block ID. */
-const LINHA_DE_HISTORICO = /^\s*- ~~.*~~\s*\*[^*]+\*\s*$/u;
+const LINHA_DE_HISTORICO = /^\s*- ~~.*~~(?:\s*\*[^*]+\*)?\s*$/u;
 
 const idsDaArvore = (raiz: IdentifiedNormaAST): Set<string> => {
   const encontrados = new Set<string>();
@@ -141,11 +141,10 @@ export const validarMarkdownCanonico = (
       );
     }
 
-    // A §9.5 admite explicitamente o salto de nível quando a AST não tem o
-    // intermediário — inciso direto sob artigo, sem parágrafo, é legítimo. A
-    // indentação vem de uma tabela fixa por tipo de nó, então ela já reflete a
-    // árvore; conferir salto aqui reprovaria estrutura válida. Sobra a regra
-    // que independe da AST: múltiplo de dois, sem tabs.
+    // A §9.5 admite um tipo jurídico normalmente mais profundo diretamente
+    // sob o pai quando a AST não tem o intermediário — inciso sob artigo, por
+    // exemplo. O Formatter usa a profundidade efetiva da árvore; nesta defesa
+    // textual sobra a regra verificável sem a AST: múltiplo de dois, sem tabs.
 
     if (comId === null) {
       // --- §9.3: só o histórico pode ficar sem Block ID ---

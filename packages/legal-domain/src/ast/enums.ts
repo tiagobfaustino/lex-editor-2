@@ -89,6 +89,7 @@ export const tipoNormaSchema = z.enum([
 /** Discriminantes de todos os nós reconhecidos pela NormaAST. */
 export const tipoNoSchema = z.enum([
   'lei',
+  'ato_transitorio',
   'livro',
   'titulo',
   'capitulo',
@@ -136,6 +137,7 @@ export type TipoReferenciavel = (typeof TIPOS_REFERENCIAVEIS)[number];
 
 /** Divisões estruturais: Block ID é opcional e ausente por padrão. */
 export const TIPOS_DIVISAO = [
+  'ato_transitorio',
   'livro',
   'titulo',
   'capitulo',

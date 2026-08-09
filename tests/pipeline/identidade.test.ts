@@ -228,4 +228,18 @@ describe('primeira publicação', () => {
 
     expect(resultado.ok ? resultado.valor.aliasesNovos : ['x']).toEqual([]);
   });
+
+  it('renumeração produz redirect para o destino, sem reciclar o ID antigo', () => {
+    const candidata = arvoreDe('Art. 1. Posição antiga.\nArt. 2. Posição nova.');
+    const antigo = candidata.children[0] as unknown as Record<string, unknown>;
+    antigo['deviceStatus'] = 'renumbered';
+    antigo['renumeradoPara'] = 'ldem-art-2';
+
+    const resultado = reconciliar(candidata, REGISTRO_VAZIO, 'ldem');
+    expect(resultado.ok).toBe(true);
+    expect(resultado.ok ? resultado.valor.aliasesNovos : []).toContainEqual({
+      antigo: 'ldem-art-1',
+      novo: 'ldem-art-2',
+    });
+  });
 });

@@ -444,6 +444,31 @@ describe('invariantes estruturais', () => {
     expect(codigos(validarIdentifiedNormaAst(arvore))).toContain('total_artigos_divergente');
   });
 
+  it('recusa renumeração para Block ID inexistente', () => {
+    const arvore = clonar(identifiedMinima) as unknown as {
+      children: { renumeradoPara?: string }[];
+    };
+    em(arvore.children, 0).renumeradoPara = 'ldem-art-999';
+
+    expect(codigos(validarIdentifiedNormaAst(arvore))).toContain('block_id_ausente');
+  });
+
+  it('recusa referência de redação cujo destino não existe na árvore', () => {
+    const arvore = clonar(identifiedMinima) as unknown as {
+      redacoesDadasPor?: { blockId: string; lei: string; data: string; descricao: string }[];
+    };
+    arvore.redacoesDadasPor = [
+      {
+        blockId: 'ldem-art-999',
+        lei: 'Lei nº 2',
+        data: '2026-01-01',
+        descricao: 'Alteração inexistente',
+      },
+    ];
+
+    expect(codigos(validarIdentifiedNormaAst(arvore))).toContain('block_id_ausente');
+  });
+
   it('recusa campo desconhecido em vez de descartá-lo em silêncio', () => {
     const arvore = { ...clonar(parsedMinima), campoInventado: 'x' };
 
@@ -456,6 +481,16 @@ describe('invariantes estruturais', () => {
     em(arvore.children, 0).caput = '   ';
 
     expect(codigos(validarParsedNormaAst(arvore))).toContain('texto_obrigatorio');
+  });
+
+  it('recusa dispositivo ativo com nota de revogação', () => {
+    const arvore = clonar(parsedMinima) as unknown as {
+      children: { notaStatus?: string; deviceStatus: string }[];
+    };
+    em(arvore.children, 0).deviceStatus = 'active';
+    em(arvore.children, 0).notaStatus = 'Revogado pela Lei nº 2';
+
+    expect(codigos(validarParsedNormaAst(arvore))).toContain('estado_incompativel');
   });
 });
 

@@ -9,7 +9,7 @@ import { descreverRelatorio } from '@lex-editor/legal-domain';
 import { CODIGO_DE_SAIDA, executarProcess } from './processar-arquivo.js';
 
 const USO = `Uso:
-  lex process <entrada> --manifesto <arquivo.json> --output <arquivo.md>
+  lex process <entrada> --manifesto <arquivo.json> --output <arquivo.md> [--decisoes <arquivo.json>]
 
 Códigos de saída:
   0  sucesso
@@ -44,6 +44,7 @@ export const executar = (argumentos: readonly string[]): number => {
   const entrada = resto[0];
   const manifesto = lerOpcao(resto, '--manifesto');
   const saida = lerOpcao(resto, '--output');
+  const decisoes = lerOpcao(resto, '--decisoes');
 
   if (entrada === undefined || manifesto === undefined || saida === undefined) {
     process.stderr.write(`Argumentos obrigatórios ausentes.\n\n${USO}`);
@@ -51,7 +52,12 @@ export const executar = (argumentos: readonly string[]): number => {
     return CODIGO_DE_SAIDA.entrada;
   }
 
-  const resultado = executarProcess({ entrada, manifesto, saida });
+  const resultado = executarProcess({
+    entrada,
+    manifesto,
+    saida,
+    ...(decisoes === undefined ? {} : { decisoes }),
+  });
   const descricao = descreverRelatorio(resultado.relatorio);
 
   if (resultado.codigo === CODIGO_DE_SAIDA.ok) {

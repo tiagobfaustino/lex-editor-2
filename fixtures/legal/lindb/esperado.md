@@ -8,7 +8,7 @@ ramo: "civil"
 fonte: "https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657compilado.htm"
 data_publicacao: 1942-09-09
 data_atualizacao_legal: 2018-04-25
-data_formatacao_vinculex: 2026-08-05
+data_formatacao_vinculex: 2026-08-09
 total_artigos: 30
 versao_vinculex: "1.0.0"
 legal_status: "vigente"
@@ -16,7 +16,7 @@ tags: ["civil", "fixture"]
 ---
 
 > [!info] Fonte Oficial
-> Texto compilado a partir de https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657compilado.htm. Última verificação de integridade em 2026-08-05.
+> Texto compilado a partir de https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657compilado.htm. Última verificação de integridade em 2026-08-09.
 
 > [!caution] Aviso de Segurança Jurídica
 > Este material é destinado a fins de estudo. O texto pode ter sofrido alterações após a publicação desta versão. Não deve ser utilizado como fonte para peticionamento ou decisão jurídica sem confirmação na fonte oficial.
@@ -82,11 +82,11 @@ tags: ["civil", "fixture"]
 - Art. 14. Não conhecendo a lei estrangeira, poderá o juiz exigir de quem a invoca prova do texto e da vigência. ^lindb-art-14
 
 - Art. 15. Será executada no Brasil a sentença proferida no estrangeiro, que reuna os seguintes requisitos: ^lindb-art-15
-      - a) haver sido proferida por juiz competente; ^lindb-art-15-ali-a
-      - b) terem sido os partes citadas ou haver-se legalmente verificado à revelia; ^lindb-art-15-ali-b
-      - c) ter passado em julgado e estar revestida das formalidades necessárias para a execução no lugar em que foi proferida; ^lindb-art-15-ali-c
-      - d) estar traduzida por intérprete autorizado; ^lindb-art-15-ali-d
-      - e) ter sido homologada pelo Supremo Tribunal Federal. (Vide art.105, I, i da Constituição Federal). ^lindb-art-15-ali-e
+  - a) haver sido proferida por juiz competente; ^lindb-art-15-ali-a
+  - b) terem sido os partes citadas ou haver-se legalmente verificado à revelia; ^lindb-art-15-ali-b
+  - c) ter passado em julgado e estar revestida das formalidades necessárias para a execução no lugar em que foi proferida; ^lindb-art-15-ali-c
+  - d) estar traduzida por intérprete autorizado; ^lindb-art-15-ali-d
+  - e) ter sido homologada pelo Supremo Tribunal Federal. (Vide art.105, I, i da Constituição Federal). ^lindb-art-15-ali-e
   - Parágrafo único. (Revogado pela Lei nº 12.036, de 2009). ^lindb-art-15-par-unico
 
 - Art. 16. Quando, nos termos dos artigos precedentes, se houver de aplicar a lei estrangeira, ter-se-á em vista a disposição desta, sem considerar-se qualquer remissão por ela feita a outra lei. ^lindb-art-16
@@ -121,7 +121,8 @@ tags: ["civil", "fixture"]
 
 - Art. 26. Para eliminar irregularidade, incerteza jurídica ou situação contenciosa na aplicação do direito público, inclusive no caso de expedição de licença, a autoridade administrativa poderá, após oitiva do órgão jurídico e, quando for o caso, após realização de consulta pública, e presentes razões de relevante interesse geral, celebrar compromisso com os interessados, observada a legislação aplicável, o qual só produzirá efeitos a partir de sua publicação oficial. (Incluído pela Lei nº 13.655, de 2018) (Regulamento) ^lindb-art-26
   - § 1º O compromisso referido no caput deste artigo: ^lindb-art-26-par-1
-    - I - buscará solução jurídica proporcional, equânime, eficiente e compatível com os interesses gerais; (Incluído pela Lei nº 13.655, de 2018) II  (VETADO); ^lindb-art-26-par-1-inc-i
+    - I - buscará solução jurídica proporcional, equânime, eficiente e compatível com os interesses gerais; ^lindb-art-26-par-1-inc-i
+    - II - (VETADO); ^lindb-art-26-par-1-inc-ii
     - III - não poderá conferir desoneração permanente de dever ou condicionamento de direito reconhecidos por orientação geral; ^lindb-art-26-par-1-inc-iii
     - IV - deverá prever com clareza as obrigações das partes, o prazo para seu cumprimento e as sanções aplicáveis em caso de descumprimento. ^lindb-art-26-par-1-inc-iv
   - § 2º (VETADO). ^lindb-art-26-par-2

@@ -79,7 +79,14 @@ describe('forma das linhas conforme o DATA_MODEL', () => {
   it('divisão pode ter block_id nulo; dispositivo referenciável, não', () => {
     // É o CHECK do DATA_MODEL: tipo de divisão OU block_id não nulo.
     for (const linha of projecao.dispositivos) {
-      const ehDivisao = ['livro', 'titulo', 'capitulo', 'secao', 'subsecao'].includes(linha.tipo);
+      const ehDivisao = [
+        'ato_transitorio',
+        'livro',
+        'titulo',
+        'capitulo',
+        'secao',
+        'subsecao',
+      ].includes(linha.tipo);
 
       expect(ehDivisao || linha.block_id !== null).toBe(true);
     }
