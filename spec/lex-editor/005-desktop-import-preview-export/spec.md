@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: draft
+- `implementation_status`: done
 - `priority`: P1
 - `owner`: não atribuído
 
@@ -72,11 +72,11 @@ rede/preview bloqueiam o ataque sem executar conteúdo.
 
 ## Critérios de aceite
 
-- [ ] Fluxo arquivo → preview → exportação passa em E2E.
-- [ ] Fluxo URL Planalto válido produz resultado equivalente.
-- [ ] SSRF, XSS e IPC forjado têm testes negativos.
-- [ ] Preview navega em lei extensa sem travar o renderer.
-- [ ] Falhas exibem mensagem específica e preservam estado recuperável.
+- [x] Fluxo arquivo → preview → exportação passa em E2E.
+- [x] Fluxo URL Planalto válido produz resultado equivalente.
+- [x] SSRF, XSS e IPC forjado têm testes negativos.
+- [x] Preview navega em lei extensa sem travar o renderer.
+- [x] Falhas exibem mensagem específica e preservam estado recuperável.
 
 ## Validação mínima
 
