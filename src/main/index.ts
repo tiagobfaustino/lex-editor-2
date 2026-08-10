@@ -1,6 +1,12 @@
-import { BrowserWindow, Menu, app, session } from 'electron';
+import { BrowserWindow, Menu, app, dialog, session } from 'electron';
 
+import {
+  DESKTOP_IMPORT_LIMITS,
+  PIPELINE_PROGRESS_CHANNEL,
+  ProgressDtoSchema,
+} from '../shared/ipc/import.js';
 import { registerIpcHandlers } from './ipc/register.js';
+import { createLocalProjectService } from './local-project-service.js';
 import { resolveRendererLocation } from './renderer-location.js';
 import { denyAllSessionPermissions, installWebContentsGuards } from './security.js';
 import { createMainWindow } from './window.js';
@@ -46,9 +52,28 @@ void app.whenReady().then(() => {
   denyAllSessionPermissions(session.defaultSession);
 
   Menu.setApplicationMenu(null);
+  const importCapabilities = createLocalProjectService({
+    storageRoot: app.getPath('userData'),
+    dialog,
+    getMainWindow: () => mainWindow,
+    sendProgress: (progress) => {
+      const parsed = ProgressDtoSchema.safeParse(progress);
+      const encoded = parsed.success ? Buffer.byteLength(JSON.stringify(parsed.data), 'utf8') : 0;
+
+      if (
+        parsed.success &&
+        encoded <= DESKTOP_IMPORT_LIMITS.progressEventBytes &&
+        mainWindow !== null &&
+        !mainWindow.isDestroyed()
+      ) {
+        mainWindow.webContents.send(PIPELINE_PROGRESS_CHANNEL, parsed.data);
+      }
+    },
+  });
   disposeIpcHandlers = registerIpcHandlers({
     rendererLocation,
     getMainWindow: () => mainWindow,
+    importCapabilities,
   });
   openMainWindow(rendererLocation);
 

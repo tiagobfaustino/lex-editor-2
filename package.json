@@ -64,6 +64,8 @@
     "vitest": "4.1.10"
   },
   "dependencies": {
+    "defuddle": "0.19.2",
+    "linkedom": "0.18.13",
     "zod": "4.4.3"
   }
 }

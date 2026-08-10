@@ -4,6 +4,7 @@ import type { z } from 'zod';
 
 import type { DesktopErrorCode, DesktopErrorDto, IpcResult } from '../../shared/ipc/desktop-api.js';
 import { isTrustedRendererUrl, type RendererLocation } from '../renderer-location.js';
+import { isPlanaltoNetworkError } from '../import/planalto-source.js';
 
 export const DEFAULT_MAX_IPC_PAYLOAD_BYTES = 16 * 1024;
 
@@ -33,17 +34,45 @@ const errorDetails: Record<DesktopErrorCode, Readonly<{ message: string; retryab
     message: 'A operação não é permitida neste contexto.',
     retryable: false,
   },
+  NETWORK_NOT_ALLOWED: {
+    message: 'A URL ou o destino de rede não é permitido.',
+    retryable: false,
+  },
+  NETWORK_DNS: {
+    message: 'Não foi possível resolver o endereço da fonte oficial.',
+    retryable: true,
+  },
+  NETWORK_TIMEOUT: {
+    message: 'Não foi possível acessar a fonte: tempo esgotado.',
+    retryable: true,
+  },
+  NETWORK_HTTP: {
+    message: 'A fonte oficial retornou um erro HTTP.',
+    retryable: true,
+  },
+  NETWORK_CONTENT_TYPE: {
+    message: 'A fonte não retornou uma página HTML válida.',
+    retryable: false,
+  },
+  NETWORK_TOO_LARGE: {
+    message: 'A página excede o limite permitido para importação.',
+    retryable: false,
+  },
+  NETWORK_CERTIFICATE: {
+    message: 'O certificado TLS da fonte oficial não é válido.',
+    retryable: false,
+  },
   FAILED: {
     message: 'A operação desktop não pôde ser concluída.',
     retryable: true,
   },
 };
 
-const failed = <Value>(code: DesktopErrorCode): IpcResult<Value> => {
+const failed = <Value>(code: DesktopErrorCode, safeMessage?: string): IpcResult<Value> => {
   const details = errorDetails[code];
   const error: DesktopErrorDto = {
     code,
-    message: details.message,
+    message: safeMessage ?? details.message,
     retryable: details.retryable,
   };
 
@@ -124,7 +153,14 @@ export const executeValidatedIpcHandler = async <Input, Output>(
       ok: true,
       value: parsedOutput.data,
     };
-  } catch {
+  } catch (error) {
+    if (isPlanaltoNetworkError(error) && error.code !== 'NETWORK_FAILED') {
+      const message =
+        error.code === 'NETWORK_HTTP' && error.httpStatus !== undefined
+          ? `A fonte oficial retornou HTTP ${String(error.httpStatus)}.`
+          : undefined;
+      return failed(error.code, message);
+    }
     return failed('FAILED');
   }
 };
