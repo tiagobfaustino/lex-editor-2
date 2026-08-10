@@ -129,7 +129,16 @@ test('não entrega Node, Electron ou ipcRenderer ao renderer', async () => {
   expect(reachable.module).toBe('undefined');
   expect(reachable.ipcRenderer).toBe('undefined');
   expect(reachable.electron).toBe('undefined');
-  expect(reachable.bridgeKeys).toEqual(['app', 'capabilities', 'version']);
+  expect(reachable.bridgeKeys).toEqual([
+    'app',
+    'capabilities',
+    'diagnostics',
+    'export',
+    'pipeline',
+    'preview',
+    'source',
+    'version',
+  ]);
 });
 
 test('expõe somente a capacidade declarada e ela responde', async () => {
@@ -139,6 +148,14 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
           version: number;
           capabilities: readonly string[];
           app: { getVersion(): Promise<unknown> };
+          source: { selectLocal(): Promise<unknown> };
+          pipeline: Record<string, unknown>;
+          preview: Record<string, unknown>;
+          diagnostics: Record<string, unknown>;
+          export: {
+            chooseDestination(input: { projectId: string }): Promise<unknown>;
+            write(input: { projectId: string; destinationId: string }): Promise<unknown>;
+          };
         }
       | undefined;
 
@@ -150,14 +167,37 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
       version: api.version,
       capabilities: [...api.capabilities],
       appKeys: Object.keys(api.app).sort(),
+      sourceKeys: Object.keys(api.source).sort(),
+      pipelineKeys: Object.keys(api.pipeline).sort(),
+      previewKeys: Object.keys(api.preview).sort(),
+      diagnosticKeys: Object.keys(api.diagnostics).sort(),
+      exportKeys: Object.keys(api.export).sort(),
       result: await api.app.getVersion(),
     };
   });
 
   expect(bridge).not.toBeNull();
   expect(bridge?.version).toBe(1);
-  expect(bridge?.capabilities).toEqual(['app.getVersion']);
+  expect(bridge?.capabilities).toEqual([
+    'app.getVersion',
+    'source.selectLocal',
+    'source.importFromUrl',
+    'pipeline.start',
+    'pipeline.cancel',
+    'pipeline.onProgress',
+    'preview.getDocument',
+    'preview.getPage',
+    'preview.revealNode',
+    'diagnostics.getPage',
+    'export.chooseDestination',
+    'export.write',
+  ]);
   expect(bridge?.appKeys).toEqual(['getVersion']);
+  expect(bridge?.sourceKeys).toEqual(['importFromUrl', 'selectLocal']);
+  expect(bridge?.pipelineKeys).toEqual(['cancel', 'onProgress', 'start']);
+  expect(bridge?.previewKeys).toEqual(['getDocument', 'getPage', 'revealNode']);
+  expect(bridge?.diagnosticKeys).toEqual(['getPage']);
+  expect(bridge?.exportKeys).toEqual(['chooseDestination', 'write']);
   expect(bridge?.result).toEqual({ ok: true, value: { version: '0.1.0' } });
 });
 
@@ -195,6 +235,15 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
   const registered = await app.evaluate(({ ipcMain }) => {
     const candidates = [
       'app:get-version',
+      'source:select-local',
+      'pipeline:start',
+      'pipeline:cancel',
+      'preview:get-document',
+      'preview:get-page',
+      'preview:reveal-node',
+      'diagnostics:get-page',
+      'export:choose-destination',
+      'export:write',
       'execute',
       'shell',
       'readFile',
@@ -218,5 +267,16 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
     });
   });
 
-  expect(registered).toEqual(['app:get-version']);
+  expect(registered).toEqual([
+    'app:get-version',
+    'source:select-local',
+    'pipeline:start',
+    'pipeline:cancel',
+    'preview:get-document',
+    'preview:get-page',
+    'preview:reveal-node',
+    'diagnostics:get-page',
+    'export:choose-destination',
+    'export:write',
+  ]);
 });
