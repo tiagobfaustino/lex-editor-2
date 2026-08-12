@@ -11,6 +11,23 @@
 
 import { varrerPedacos } from './pedacos.js';
 
+/**
+ * Decodifica o mapeamento de um byte usado pelas fixtures históricas do
+ * Planalto. Ele preserva inclusive C1 (como 0x96), que a gramática normaliza
+ * como separador, e não varia com a versão de ICU embutida no Node.
+ */
+export const decodificarHtmlPlanalto = (bytes: Uint8Array): string => {
+  const partes: string[] = [];
+  const pontos: number[] = [];
+
+  for (const byte of bytes) {
+    pontos.push(byte);
+    if (pontos.length === 8192) partes.push(String.fromCodePoint(...pontos.splice(0)));
+  }
+  if (pontos.length > 0) partes.push(String.fromCodePoint(...pontos));
+  return partes.join('');
+};
+
 const decodificarEntidades = (texto: string): string =>
   texto
     .replace(/&#x([0-9a-f]+);/giu, (_, codigo: string) =>

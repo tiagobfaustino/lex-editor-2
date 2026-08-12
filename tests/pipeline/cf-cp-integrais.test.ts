@@ -5,19 +5,19 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { extrairLinhas, juntarContinuacoes, reconhecer } from '@lex-editor/legal-domain';
+import {
+  decodificarHtmlPlanalto,
+  extrairLinhas,
+  juntarContinuacoes,
+  reconhecer,
+} from '@lex-editor/legal-domain';
 import { CODIGO_DE_SAIDA, executarProcess } from '@lex-editor/cli/processar-arquivo.js';
 
 const FIXTURES = fileURLToPath(new URL('../../fixtures/legal/', import.meta.url));
 
 const projetarSnapshot = (nome: 'cf1988' | 'cp' | 'lindb'): string => {
   const bytes = readFileSync(`${FIXTURES}${nome}/snapshot.html`);
-  let html: string;
-  try {
-    html = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch {
-    html = new TextDecoder('windows-1252').decode(bytes);
-  }
+  const html = decodificarHtmlPlanalto(bytes);
   const gramatica = (linha: string) => reconhecer(linha.replace(/^~~|~~$/gu, '').trim());
   const linhas = juntarContinuacoes(
     extrairLinhas(html, {

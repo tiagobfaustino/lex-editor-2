@@ -10,7 +10,12 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 
-import { extrairLinhas, juntarContinuacoes, reconhecer } from '@lex-editor/legal-domain';
+import {
+  decodificarHtmlPlanalto,
+  extrairLinhas,
+  juntarContinuacoes,
+  reconhecer,
+} from '@lex-editor/legal-domain';
 
 const [url, destino] = process.argv.slice(2);
 
@@ -31,17 +36,10 @@ if (!resposta.ok) {
   process.exit(2);
 }
 
-// O Planalto serve cp1252 na maioria das páginas e nem sempre declara. Tentar
-// utf-8 estrito e cair para latin1 é mais confiável que ler o cabeçalho: o
-// decodificador falha alto em vez de produzir texto corrompido em silêncio.
+// O Planalto serve Windows-1252 e nem sempre declara. O adaptador usa mapa
+// próprio para não variar conforme a versão de ICU embutida no Node.
 const bytes = Buffer.from(await resposta.arrayBuffer());
-let html;
-
-try {
-  html = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-} catch {
-  html = new TextDecoder('windows-1252').decode(bytes);
-}
+const html = decodificarHtmlPlanalto(bytes);
 
 const pasta = dirname(destino);
 

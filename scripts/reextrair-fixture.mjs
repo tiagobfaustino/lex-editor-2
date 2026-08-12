@@ -4,7 +4,12 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 
-import { extrairLinhas, juntarContinuacoes, reconhecer } from '@lex-editor/legal-domain';
+import {
+  decodificarHtmlPlanalto,
+  extrairLinhas,
+  juntarContinuacoes,
+  reconhecer,
+} from '@lex-editor/legal-domain';
 
 const [snapshotPath, entryPath] = process.argv.slice(2);
 if (snapshotPath === undefined || entryPath === undefined) {
@@ -13,12 +18,7 @@ if (snapshotPath === undefined || entryPath === undefined) {
 }
 
 const bytes = readFileSync(snapshotPath);
-let html;
-try {
-  html = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-} catch {
-  html = new TextDecoder('windows-1252').decode(bytes);
-}
+const html = decodificarHtmlPlanalto(bytes);
 
 const grammar = (line) => reconhecer(line.replace(/^~~|~~$/gu, '').trim());
 const lines = juntarContinuacoes(

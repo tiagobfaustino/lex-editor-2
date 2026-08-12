@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import {
   analisar,
+  decodificarHtmlPlanalto,
   extrairLinhas,
   formatar,
   identificar,
@@ -58,18 +59,10 @@ type LawName = 'l9099' | 'l9605' | 'l10826';
 const readManifest = (law: LawName): LawManifest =>
   JSON.parse(readFileSync(join(FIXTURES, law, 'manifesto.json'), 'utf8')) as LawManifest;
 
-const decodeHtml = (bytes: Buffer): string => {
-  try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch {
-    return new TextDecoder('windows-1252').decode(bytes);
-  }
-};
-
 const projectSnapshot = (bytes: Buffer): string => {
   const grammar = (line: string) => reconhecer(line.replace(/^~~|~~$/gu, '').trim());
   const lines = juntarContinuacoes(
-    extrairLinhas(decodeHtml(bytes), {
+    extrairLinhas(decodificarHtmlPlanalto(bytes), {
       comecarEm: /^~?~?Art\.?\s*1[.º°o]/u,
       reconhecer: grammar,
     }),

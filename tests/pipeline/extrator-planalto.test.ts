@@ -9,6 +9,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  decodificarHtmlPlanalto,
   extrairLinhas,
   juntarContinuacoes,
   reconhecer,
@@ -18,6 +19,14 @@ import {
 const gramatica = (linha: string) => reconhecer(linha.replace(/^~~|~~$/gu, '').trim());
 
 const extrair = (html: string): readonly string[] => extrairLinhas(html, { reconhecer: gramatica });
+
+describe('decodificação Windows-1252 estável', () => {
+  it('mapeia pontuação C1 e acentos sem depender do ICU do Node', () => {
+    expect(decodificarHtmlPlanalto(Uint8Array.from([0x49, 0x49, 0x20, 0x96, 0x20, 0xed]))).toBe(
+      'II \u0096 í',
+    );
+  });
+});
 
 describe('os dois usos do negrito', () => {
   it('mantém a ementa da divisão, que vem em negrito logo após o designador', () => {

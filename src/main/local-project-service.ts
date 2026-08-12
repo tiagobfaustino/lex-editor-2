@@ -9,6 +9,7 @@ import {
   applyEditorialCommand,
   approveEditorialRevision,
   calculateRevisionHash,
+  decodificarHtmlPlanalto,
   collectConfirmedWarningFingerprints,
   createLegalNormCatalog,
   detectLegalReferences,
@@ -1256,7 +1257,14 @@ export const createLocalProjectService = ({
           const bytes = await readFile(artifact.snapshotPath);
           if (sha256(bytes) !== artifact.sourceArtifactSha256)
             throw new Error('Snapshot integrity check failed.');
-          return { record: artifact, bytes, original: decodeText(bytes) };
+          return {
+            record: artifact,
+            bytes,
+            original:
+              project.source.summary.sourceKind === 'planalto_url'
+                ? decodificarHtmlPlanalto(bytes)
+                : decodeText(bytes),
+          };
         }),
       );
       const primaryBytes = loadedBytes.find(

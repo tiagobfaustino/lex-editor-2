@@ -123,7 +123,7 @@ export {
 export { montarConjuntoDeFontes, referenciarFragmento } from './source/snapshot.js';
 export { mesclarFontes } from './source/mesclar.js';
 export type { OpcoesDeMesclagem } from './source/mesclar.js';
-export { extrairLinhas, juntarContinuacoes } from './source/planalto.js';
+export { decodificarHtmlPlanalto, extrairLinhas, juntarContinuacoes } from './source/planalto.js';
 export type { OpcoesDeExtracao } from './source/planalto.js';
 export { varrerPedacos } from './source/pedacos.js';
 export type { Pedaco } from './source/pedacos.js';
