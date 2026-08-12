@@ -1,0 +1,28 @@
+{
+  "sourceType": "planalto_html",
+  "sourceRole": "primary_current",
+  "sourceVariant": "annotated",
+  "dataFormatacaoVinculex": "2026-08-12",
+  "dataVerificacaoIntegridade": "2026-08-12",
+  "versaoVinculex": "1.0.0",
+  "legalStatus": "vigente",
+  "publicationStatus": "draft",
+  "descricao": "Lei de Licitações e Contratos Administrativos; snapshot e extração completos, com recorte executável do art. 1º para referências.",
+  "sigla": "nllc",
+  "titulo": "Lei de Licitações e Contratos Administrativos",
+  "tipoNorma": "lei ordinária",
+  "numero": "14.133",
+  "ano": 2021,
+  "ramo": "direito administrativo",
+  "fonte": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm",
+  "dataPublicacao": "2021-04-01",
+  "dataAtualizacaoLegal": "2026-08-12",
+  "tags": ["licitações", "contratos administrativos", "fixture", "referências"],
+  "snapshotSha256": {
+    "snapshot.html": "9774693d9d7df92b7f24eb6d4d486d38729bbecf6f87aaaa8e6e3169c904a3cc",
+    "entrada-completa.txt": "415386ad68383b843e46c15dc45d68f00999934e7d815f432adf68f101259cdd",
+    "entrada.txt": "3b0677d8d42330b26d43afc7ae5a4c9701319d5d3e796708631c77b6770c366d",
+    "esperado.md": "f2558486f9f9e4ea413aa944ec09dd2b237418e4df9ba0f9f57ccfd4102569bb",
+    "markdown-pessoal-artigo-1.md": "e138e78bf1ecfee00811e4ae7070a23a800702005d7ed5bfc731e7695c151d9e"
+  }
+}

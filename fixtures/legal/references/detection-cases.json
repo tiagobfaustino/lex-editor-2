@@ -1,0 +1,117 @@
+{
+  "positive": [
+    {
+      "name": "parágrafo no mesmo artigo",
+      "text": "O empréstimo de que trata o § 3º deste artigo deverá ser documentado.",
+      "mention": "§ 3º",
+      "scope": "same_law",
+      "context": "same_article",
+      "selectorKind": "point",
+      "points": [{ "paragrafo": "3" }]
+    },
+    {
+      "name": "caput de artigo em lei externa",
+      "text": "Serão observados os princípios estabelecidos no caput do art. 37 da Constituição Federal.",
+      "mention": "caput do art. 37",
+      "scope": "external_law",
+      "lawMention": "Constituição Federal",
+      "selectorKind": "point",
+      "points": [{ "artigo": "37", "caput": true }]
+    },
+    {
+      "name": "lista de artigos externa",
+      "text": "Aplica-se aos agentes descritos nos arts. 142 e 144 da Constituição Federal.",
+      "mention": "arts. 142 e 144",
+      "scope": "external_law",
+      "lawMention": "Constituição Federal",
+      "selectorKind": "list",
+      "points": [{ "artigo": "142" }, { "artigo": "144" }]
+    },
+    {
+      "name": "intervalo de artigos interno",
+      "text": "Permanecem vigentes os arts. 61 a 62 desta Lei.",
+      "mention": "arts. 61 a 62",
+      "scope": "same_law",
+      "context": "same_law",
+      "selectorKind": "range",
+      "points": [{ "artigo": "61" }, { "artigo": "62" }]
+    },
+    {
+      "name": "lista de incisos com ancestrais",
+      "text": "Incidem as hipóteses dos incisos III, IV e VIII do § 2º do art. 121 desta Lei.",
+      "mention": "incisos III, IV e VIII do § 2º do art. 121",
+      "scope": "same_law",
+      "context": "same_law",
+      "selectorKind": "list",
+      "points": [
+        { "artigo": "121", "paragrafo": "2", "inciso": "III" },
+        { "artigo": "121", "paragrafo": "2", "inciso": "IV" },
+        { "artigo": "121", "paragrafo": "2", "inciso": "VIII" }
+      ]
+    },
+    {
+      "name": "lista de alíneas contextual",
+      "text": "Observam-se as alíneas a e b do inciso II do § 1º deste artigo.",
+      "mention": "alíneas a e b do inciso II do § 1º",
+      "scope": "same_law",
+      "context": "same_article",
+      "selectorKind": "list",
+      "points": [
+        { "paragrafo": "1", "inciso": "II", "alinea": "a" },
+        { "paragrafo": "1", "inciso": "II", "alinea": "b" }
+      ]
+    },
+    {
+      "name": "lista de itens contextual",
+      "text": "Aplicam-se os itens 1 e 2 da alínea a do inciso I deste artigo.",
+      "mention": "itens 1 e 2 da alínea a do inciso I",
+      "scope": "same_law",
+      "context": "same_article",
+      "selectorKind": "list",
+      "points": [
+        { "inciso": "I", "alinea": "a", "item": "1" },
+        { "inciso": "I", "alinea": "a", "item": "2" }
+      ]
+    },
+    {
+      "name": "caput do mesmo artigo",
+      "text": "A regra prevista no caput deste artigo não se aplica ao anexo.",
+      "mention": "caput",
+      "scope": "same_law",
+      "context": "same_article",
+      "selectorKind": "point",
+      "points": [{ "caput": true }]
+    },
+    {
+      "name": "artigo de lei numerada externa",
+      "text": "Ressalva-se o disposto no art. 1º da Lei nº 13.303/2016.",
+      "mention": "art. 1º",
+      "scope": "external_law",
+      "lawMention": "Lei nº 13.303/2016",
+      "selectorKind": "point",
+      "points": [{ "artigo": "1" }]
+    }
+  ],
+  "negative": [
+    {
+      "name": "menção sem contexto",
+      "text": "O § 3º contém a regra aplicável."
+    },
+    {
+      "name": "número da lei sem dispositivo",
+      "text": "Esta norma foi instituída pela Lei nº 14.133/2021."
+    },
+    {
+      "name": "uso não jurídico da palavra artigo",
+      "text": "O artigo científico apresenta três resultados."
+    },
+    {
+      "name": "referência externa incompleta",
+      "text": "Aplica-se o art. 37 da Constituição."
+    },
+    {
+      "name": "marcador parecido dentro de palavra",
+      "text": "O subitem 1 desta lista não é um dispositivo legal."
+    }
+  ]
+}
