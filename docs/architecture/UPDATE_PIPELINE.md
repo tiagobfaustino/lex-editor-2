@@ -199,7 +199,7 @@ candidata assume caso a atualização seja aprovada:
 | Inalterado | `active` (mantido) | Texto normalizado idêntico | Mantém o mesmo Block ID |
 | Alterado | `amended` | Mesma posição hierárquica, texto normalizado diferente | Mantém o mesmo Block ID, novo texto associado |
 | Novo | `included` | Dispositivo sem correspondência na versão publicada | Recebe Block ID novo; se o candidato simples já estiver reservado, somente o novo dispositivo recebe qualificação estrutural |
-| Revogado | `revoked` | Dispositivo presente na versão publicada, ausente/expressamente revogado na candidata | Mantém o Block ID, marcado com `deviceStatus: 'revoked'`, texto original preservado |
+| Revogado | `revoked` | Dispositivo expressamente revogado na evidência oficial; ausência simples permanece pendência de revisão | Mantém o Block ID, marcado com `deviceStatus: 'revoked'`, texto original preservado |
 | Renumerado | `renumbered` | Ato normativo renumera explicitamente um dispositivo existente | O ID antigo continua reservado; a nova posição recebe ID canônico próprio e um redirecionamento permanente liga o ID antigo ao novo |
 
 Cada entrada de diff carrega:
@@ -357,7 +357,7 @@ Quando o editor rejeita uma pendência (total ou parcialmente):
 - A pendência permanece registrada com `update_review_status = 'rejected'`,
   nunca é apagada — isso preserva histórico de auditoria de decisões
   editoriais.
-- O editor pode anexar uma nota em `rejection_reason` explicando o motivo
+- O editor deve anexar uma nota em `rejection_reason` explicando o motivo
   (ex.: "parser não capturou corretamente a ressalva do § 4º, aguardando
   ajuste do parser antes de reavaliar").
 - Nenhuma alteração é aplicada ao Markdown publicado nem ao Git.

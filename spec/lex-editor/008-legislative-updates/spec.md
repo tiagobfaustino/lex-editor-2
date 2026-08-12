@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: draft
+- `implementation_status`: done
 - `priority`: P3
 - `owner`: não atribuído
 
@@ -41,6 +41,7 @@ publicar.
 - `../../../docs/architecture/ADR-004-pipeline-publicacao.md`
 - `../../../docs/architecture/ADR-005-status-fields.md`
 - `../../../docs/architecture/ADR-009-fontes-compiladas-e-historicas.md`
+- `../../../docs/architecture/ADR-012-projecoes-completa-e-vigente.md`
 - `../../../docs/architecture/UPDATE_PIPELINE.md`
 - `../../../docs/architecture/DATA_MODEL.md`
 
@@ -73,14 +74,24 @@ corretos.
 Dada mudança apenas de HTML ou proposta rejeitada sem nova divergência, quando
 o worker roda novamente, então não publica nem recria ruído equivalente.
 
+### Fontes oficiais reais
+
+Dados snapshots versionados das Leis nº 9.099/1995, nº 9.605/1998 e
+nº 10.826/2003, quando processados sem rede, então o pipeline distingue texto
+vigente, redação anterior e dispositivo revogado; para a Lei nº 10.826/2003,
+a página compilada determina o texto vigente e a anotada preserva a evidência
+histórica.
+
 ## Critérios de aceite
 
-- [ ] Worker detecta alteração simulada e gera diff estrutural correto.
-- [ ] Mudança cosmética é filtrada ou classificada sem falsa urgência.
-- [ ] Credencial do worker falha ao tentar escrita normativa.
-- [ ] Aprovar percorre integralmente a Feature 007.
-- [ ] Rejeitar preserva versão pública e motivo.
-- [ ] Retry e detecções repetidas não duplicam pendência.
+- [x] Worker detecta alteração simulada e gera diff estrutural correto.
+- [x] Mudança cosmética é filtrada ou classificada sem falsa urgência.
+- [x] Credencial do worker falha ao tentar escrita normativa.
+- [x] Aprovar percorre integralmente a Feature 007.
+- [x] Rejeitar preserva versão pública e motivo.
+- [x] Retry e detecções repetidas não duplicam pendência.
+- [x] As três leis reais da matriz do plano passam sem usar Markdown pessoal
+  como golden nem depender da rede em CI.
 
 ## Validação mínima
 

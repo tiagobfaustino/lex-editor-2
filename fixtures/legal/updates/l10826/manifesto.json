@@ -1,0 +1,27 @@
+{
+  "descricao": "Recorte oficial versionado do art. 5º para testar página compilada como fonte vigente e anotada como evidência histórica.",
+  "capturadoEm": "2026-08-11",
+  "sigla": "l10826",
+  "titulo": "Estatuto do Desarmamento",
+  "tipoNorma": "lei ordinária",
+  "numero": "10.826",
+  "ano": 2003,
+  "ramo": "penal",
+  "fonte": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826compilado.htm",
+  "fonteAnotada": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826.htm",
+  "dataPublicacao": "2003-12-22",
+  "dataAtualizacaoLegal": "2019-12-24",
+  "dataFormatacaoVinculex": "2026-08-11",
+  "dataVerificacaoIntegridade": "2026-08-11",
+  "versaoVinculex": "1.0.0",
+  "legalStatus": "vigente",
+  "publicationStatus": "draft",
+  "sourceType": "planalto_html",
+  "sourceRole": "primary_current",
+  "sourceVariant": "compiled",
+  "snapshotSha256": {
+    "before.txt": "1f04d66a10c7bf06bfc8bb51a9994a5e99d7066e03d96874479c71007bc0501b",
+    "after-compiled.txt": "bf719c24b3fe34641da151424708fcd5891ea03ce270ca256ac92b93d94747c4",
+    "after-annotated.txt": "9822b017d2356f425c2bfb3b6963ba711055fb96a49dbd44ed8d833f9bae35eb"
+  }
+}

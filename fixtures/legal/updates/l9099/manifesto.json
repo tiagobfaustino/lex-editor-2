@@ -1,0 +1,25 @@
+{
+  "descricao": "Recorte oficial versionado dos arts. 61 e 62 para testar alteração de redação sem falsa revogação.",
+  "capturadoEm": "2026-08-11",
+  "sigla": "l9099",
+  "titulo": "Lei dos Juizados Especiais",
+  "tipoNorma": "lei ordinária",
+  "numero": "9.099",
+  "ano": 1995,
+  "ramo": "processual penal",
+  "fonte": "https://www.planalto.gov.br/ccivil_03/leis/l9099.htm",
+  "dataPublicacao": "1995-09-26",
+  "dataAtualizacaoLegal": "2018-01-09",
+  "dataFormatacaoVinculex": "2026-08-11",
+  "dataVerificacaoIntegridade": "2026-08-11",
+  "versaoVinculex": "1.0.0",
+  "legalStatus": "vigente",
+  "publicationStatus": "draft",
+  "sourceType": "planalto_html",
+  "sourceRole": "primary_current",
+  "sourceVariant": "annotated",
+  "snapshotSha256": {
+    "before.txt": "da31b1264bb3bf28ab6d08d7b60a6a5aa9c44f7a2cf29cee0a994e81daeb5445",
+    "after.txt": "a7c980ddde3108f8660a4fd96ef53e8552792068a322b70d9e3f49b58a9a4b4c"
+  }
+}

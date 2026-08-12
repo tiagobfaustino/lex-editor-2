@@ -1,0 +1,25 @@
+{
+  "descricao": "Recorte oficial versionado dos arts. 65 e 67 para testar alteração, inclusão, revogação e renumeração explícita.",
+  "capturadoEm": "2026-08-11",
+  "sigla": "l9605",
+  "titulo": "Lei de Crimes Ambientais",
+  "tipoNorma": "lei ordinária",
+  "numero": "9.605",
+  "ano": 1998,
+  "ramo": "penal",
+  "fonte": "https://www.planalto.gov.br/ccivil_03/leis/l9605.htm",
+  "dataPublicacao": "1998-02-12",
+  "dataAtualizacaoLegal": "2025-08-08",
+  "dataFormatacaoVinculex": "2026-08-11",
+  "dataVerificacaoIntegridade": "2026-08-11",
+  "versaoVinculex": "1.0.0",
+  "legalStatus": "vigente",
+  "publicationStatus": "draft",
+  "sourceType": "planalto_html",
+  "sourceRole": "primary_current",
+  "sourceVariant": "annotated",
+  "snapshotSha256": {
+    "before.txt": "da44ad594af3322d8dc1184b4df04790f55d7ec088bc39d0c196fdb0b7989232",
+    "after.txt": "a7d45a63894e46679c4e248e975608d6cf9a647a060b919d36a9ffc295ee8b45"
+  }
+}
