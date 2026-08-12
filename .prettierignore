@@ -1,5 +1,7 @@
 .agents/
 .claude/
+.codex/
+AGENTS.md
 CLAUDE.md
 .playwright-mcp/
 .kilo/
@@ -19,5 +21,6 @@ build/
 release/
 artifacts/
 coverage/
+supabase/functions/publisher/generated/
 package-lock.json
 skills-lock.json

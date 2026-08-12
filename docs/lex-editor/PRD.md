@@ -1,9 +1,9 @@
 # PRD — Lex Editor
 
-> Versão do documento: 2.1
+> Versão do documento: 2.2
 > Produto: Lex Editor (ferramenta editorial interna do ecossistema Vinculex)
-> Última atualização: 2026-07-30
-> Documentos relacionados: `../architecture/SYSTEM_ARCHITECTURE.md`, `../architecture/DATA_MODEL.md`, `../architecture/BLOCK_ID_SPEC.md`, `../architecture/MARKDOWN_SPEC.md`, `../architecture/UPDATE_PIPELINE.md`, `./ROADMAP.md`, `./USER_FLOWS.md`
+> Última atualização: 2026-08-11
+> Documentos relacionados: `../architecture/SYSTEM_ARCHITECTURE.md`, `../architecture/DATA_MODEL.md`, `../architecture/BLOCK_ID_SPEC.md`, `../architecture/MARKDOWN_SPEC.md`, `../architecture/UPDATE_PIPELINE.md`, `../architecture/ADR-013-referencias-juridicas-resolvidas.md`, `./ROADMAP.md`, `./USER_FLOWS.md`
 
 ## Sumário
 
@@ -139,12 +139,20 @@ O Lex Editor existe para eliminar esses custos automatizando as etapas mecânica
 
 O Lex Editor cobre integralmente o pipeline entre a fonte oficial de uma lei e sua publicação para o Vinculex SaaS:
 
-- **Importação**: por URL de fonte oficial suportada ou por arquivo local (HTML, Markdown ou texto).
+- **Importação**: por URL de fonte oficial suportada ou por arquivo local
+  (HTML, Markdown ou texto); para o Planalto, preserva a página anotada/completa
+  e também a compilada quando disponível, como artefatos separados.
 - **Aquisição e extração**: preservação do artefato bruto imutável com SHA-256 e produção, pelo Defuddle, de uma projeção em Markdown limpo.
 - **Parser**: reconhecimento da estrutura jurídica, incluindo pena, anexo e tabela suportada, e produção de `ParsedNormaAST` rastreável.
 - **NormaAST**: contrato intermediário validado em duas fases, `ParsedNormaAST` e `IdentifiedNormaAST`.
 - **Geração e reconciliação de Block IDs**: cálculo determinístico na primeira publicação; nas atualizações, reutilização do registro histórico e verificação de unicidade contra todo o namespace reservado.
 - **Formatter Markdown/Obsidian**: geração do arquivo `.md` final, incluindo frontmatter e lista indentada hierárquica.
+- **Projeções de conteúdo**: geração, a partir da mesma NormaAST aprovada, do
+  Markdown completo com histórico ou de uma saída somente com texto vigente,
+  conforme a ADR-012.
+- **Referências jurídicas**: análise de remissões internas e entre leis,
+  resolução por identidade canônica e Block ID, preview do bloco ao hover/foco
+  e navegação ao alvo, conforme a ADR-013.
 - **Preview**: visualização dentro do app do resultado como ele apareceria no Obsidian.
 - **Validação estrutural**: checagem de integridade antes de permitir exportação/publicação.
 - **Exportação**: arquivo `.md` único ou pacote em lote de múltiplas leis.
@@ -184,13 +192,23 @@ O Lex Editor cobre integralmente o pipeline entre a fonte oficial de uma lei e s
 | CU-15 | Como Editor Jurídico, quero editar manualmente o frontmatter de uma lei antes de publicar, para corrigir metadados que o parser não conseguiu inferir com segurança. |
 | CU-16 | Como Administrador Técnico, quero consultar logs de importação, parsing, validação e publicação de forma pesquisável, para diagnosticar falhas sem precisar reproduzir o problema do zero. |
 | CU-17 | Como Editor Jurídico, quero que o sistema gere automaticamente o `UPDATE.md` a cada publicação, para manter um changelog legível sem esforço manual adicional. |
+| CU-18 | Como Editor Jurídico, quero alternar o preview e a exportação entre a lei completa, com histórico e tachados oficiais, e somente o texto vigente, para atender auditoria e leitura corrente sem manter duas versões editáveis. |
+| CU-19 | Como leitor/editor, quero pré-visualizar uma remissão e abrir diretamente o dispositivo da própria lei ou de outra lei importada, para consultar o fundamento sem perder o contexto de leitura. |
 
 ## 8. Fluxos do Editor
 
 Esta seção resume, em alto nível, os fluxos operacionais principais do Lex Editor. O detalhamento passo a passo de cada tela, estado e transição está em `./USER_FLOWS.md`; o sequenciamento de entregas por fase está em `./ROADMAP.md`.
 
 **Fluxo 1 — Importação e primeira publicação de uma lei nova**
-Importar (URL ou arquivo) → preservar artefato bruto e SHA-256 → Defuddle produz Markdown limpo → adaptador gera `ParsedNormaAST` com rastreabilidade → validar → reconciliar Block IDs → obter `IdentifiedNormaAST` → Formatter gera Markdown/Obsidian + frontmatter → preview → editor revisa e corrige pontos assinalados → validação final → exportação opcional → aprovação → release candidate → publicação server-side.
+Importar (URL ou arquivo) → preservar o conjunto de artefatos brutos e seus
+SHA-256 → Defuddle produz Markdown limpo → adaptador gera `ParsedNormaAST` com
+rastreabilidade → validar → reconciliar Block IDs → obter
+`IdentifiedNormaAST` → Formatter gera Markdown/Obsidian completo por padrão e
+analisador resolve referências jurídicas por catálogo + Block ID → Formatter
+gera Markdown/Obsidian completo por padrão e permite a projeção somente vigente
+no preview/exportação → editor revisa e
+corrige pontos assinalados → validação final → exportação opcional → aprovação
+→ release candidate → publicação server-side.
 
 **Fluxo 2 — Atualização legislativa de lei já publicada**
 Worker detecta divergência normativa ou do snapshot da fonte oficial → reprocessa e reconcilia a candidata → gera diff estrutural por dispositivo → Lex Editor exibe notificação de atualização pendente → editor abre o diff lado a lado (versão publicada vs. candidata) → editor aprova (dispara nova publicação com novo commit e `UPDATE.md`) ou rejeita (mantém versão publicada e registra a rejeição com motivo).
@@ -560,6 +578,7 @@ reescrita do Git nem simples troca do Supabase para uma versão histórica.
 | RF-22 | Aprovação/rejeição de atualização pelo editor | O sistema deve permitir que o Editor Jurídico aprove (disparando nova publicação) ou rejeite (mantendo a versão atual, com motivo registrado) uma atualização legislativa detectada pelo worker. | Ao aprovar uma atualização de teste, uma nova publicação é criada conforme fluxo do capítulo 18; ao rejeitar, nenhuma alteração é publicada e o motivo da rejeição fica registrado em log. |
 | RF-23 | Logs de auditoria pesquisáveis | O sistema deve registrar eventos de importação, parsing, validação e publicação em logs estruturados e pesquisáveis pela UI, filtráveis por lei, por tipo de evento e por período. | Um Administrador Técnico consegue localizar, em até 3 filtros, o log de uma publicação específica realizada em uma lei de teste. |
 | RF-24 | Edição manual de frontmatter | O sistema deve permitir que o Editor Jurídico edite manualmente qualquer campo do frontmatter antes da publicação, com validação de tipo e formato em tempo real. | Ao editar um campo de frontmatter com valor inválido (ex. data mal formatada), o sistema exibe erro de validação e impede a submissão até a correção. |
+| RF-25 | Referências jurídicas navegáveis | O sistema deve detectar remissões no texto canônico, resolver referências internas e a leis importadas por identidade + Block ID e oferecer preview por hover/foco e navegação por clique, sem alterar a NormaAST. | Na Lei nº 14.133/2021, `§ 3º deste artigo` no art. 1º, § 4º abre `nllc-art-1-par-3`, e `caput do art. 37 da Constituição Federal` no § 5º abre `cf1988-art-37`; alvo ausente permanece texto literal com diagnóstico. |
 
 ## 20. Requisitos Não Funcionais
 

@@ -25,6 +25,9 @@
     "src/main/**/*.ts",
     "src/preload/**/*.ts",
     "src/shared/**/*.ts",
+    "services/publisher/src/**/*.ts",
+    "services/update-worker/src/**/*.ts",
+    "scripts/run-publication-staging-e2e.ts",
     "tests/**/*.ts",
     // Consequência do `paths` acima: com `composite`, todo arquivo do programa
     // precisa estar listado. Isto NÃO afrouxa o isolamento do domínio — aqui

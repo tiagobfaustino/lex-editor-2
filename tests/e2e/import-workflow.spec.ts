@@ -49,14 +49,24 @@ let temporaryRoot: string;
 let maliciousSourcePath: string;
 let canonicalSourcePath: string;
 let extensiveSourcePath: string;
+let ambiguousSourcePath: string;
+let referenceSourcePath: string;
+let referenceTargetPath: string;
 let exportPath: string;
+let l9099CompleteExportPath: string;
+let l9099CurrentExportPath: string;
 
 test.beforeAll(async () => {
   temporaryRoot = await mkdtemp(join(tmpdir(), 'lex-feature-005-e2e-'));
   maliciousSourcePath = join(temporaryRoot, 'lindb-maliciosa.html');
   canonicalSourcePath = join(temporaryRoot, 'lindb-canonica.md');
   extensiveSourcePath = join(temporaryRoot, 'cf1988-extensa.md');
+  ambiguousSourcePath = join(temporaryRoot, 'pena-ambigua.md');
+  referenceSourcePath = join(temporaryRoot, 'nllc-referencias.md');
+  referenceTargetPath = join(temporaryRoot, 'cf1988-referencias.md');
   exportPath = join(temporaryRoot, 'lindb-exportada.md');
+  l9099CompleteExportPath = join(temporaryRoot, 'l9099-completa.md');
+  l9099CurrentExportPath = join(temporaryRoot, 'l9099-vigente.md');
 
   const maliciousProbe = Buffer.from(
     '<script id="lex-xss-payload">globalThis.__lexXssExecuted=true;void globalThis.lexDesktop?.source?.selectLocal?.();</script><img src="x" onerror="globalThis.__lexXssExecuted=true">',
@@ -71,6 +81,34 @@ test.beforeAll(async () => {
     ),
     readFile(fixture('cf1988', 'esperado.md')).then((bytes) =>
       writeFile(extensiveSourcePath, bytes),
+    ),
+    writeFile(
+      ambiguousSourcePath,
+      `---
+title: "Lei de teste editorial"
+sigla: "lte"
+tipo: "lei ordinária"
+numero: "1"
+ano: 2026
+ramo: "teste"
+fonte: "https://local.lex-editor.invalid/teste"
+data_publicacao: 2026-08-10
+data_atualizacao_legal: 2026-08-10
+data_formatacao_vinculex: 2026-08-10
+total_artigos: 1
+versao_vinculex: "1.0.0"
+legal_status: "vigente"
+---
+
+- Art. 1º Conduta principal:
+  - § 1º Nas seguintes hipóteses:
+    - I - praticar a conduta descrita:
+      - Pena - reclusão, de um a dois anos.
+`,
+    ),
+    readFile(fixture('nllc', 'esperado.md')).then((bytes) => writeFile(referenceSourcePath, bytes)),
+    readFile(fixture('cf1988', 'esperado.md')).then((bytes) =>
+      writeFile(referenceTargetPath, bytes),
     ),
   ]);
 
@@ -135,10 +173,17 @@ test('importa, navega por diagnóstico, bloqueia conteúdo ativo e exporta bytes
   );
   await expect(mainWindow.locator('.document-state')).toContainText('lindb · 30 artigos');
   await expect(mainWindow.getByRole('button', { name: 'Exportar Markdown' })).toBeVisible();
+  await expect(mainWindow.getByText('Salvo no diário local')).toBeVisible();
+  await mainWindow.getByRole('button', { name: 'Aprovar preview' }).click();
+  await expect(mainWindow.getByRole('button', { name: 'Preview aprovado' })).toBeVisible();
+
+  await mainWindow.getByRole('button', { name: 'Preparar release' }).click();
+  await expect(mainWindow.locator('#publicacao').getByRole('alert')).toBeVisible();
+  await expect(mainWindow.locator('#publicacao')).not.toContainText('Publicado e confirmado');
 
   await mainWindow.getByRole('button', { name: 'Exportar Markdown' }).click();
   await expect(mainWindow.getByRole('status')).toContainText(
-    'lindb-exportada.md exportado com integridade verificada.',
+    'lindb-exportada.md exportado no perfil lei completa, com integridade verificada.',
   );
   const exported = await readFile(exportPath);
   const exportedText = exported.toString('utf8');
@@ -218,4 +263,126 @@ test('mantém o preview responsivo e paginado com a Constituição completa', as
   if (reviewScreenshot !== undefined) {
     await mainWindow.screenshot({ path: reviewScreenshot });
   }
+});
+
+test('abre preview acessível e navega entre referências internas e externas', async () => {
+  await configureDialogs(app, referenceTargetPath, join(temporaryRoot, 'cf-referencias.md'));
+  await mainWindow.getByRole('button', { name: 'Selecionar arquivo local' }).click();
+  await expect(mainWindow.locator('.document-state')).toContainText('cf1988 · 411 artigos', {
+    timeout: 30_000,
+  });
+  await configureDialogs(app, referenceSourcePath, join(temporaryRoot, 'nllc-exportada.md'));
+  await mainWindow.getByRole('button', { name: 'Selecionar arquivo local' }).click();
+  await expect(mainWindow.locator('.document-state')).toContainText('nllc · 1 artigos', {
+    timeout: 30_000,
+  });
+  await mainWindow.getByRole('button', { name: 'Expandir Art. 1' }).click();
+
+  const external = mainWindow
+    .locator('.legal-reference-link')
+    .filter({ hasText: 'caput do art. 37' });
+  await external.hover();
+  const popover = mainWindow.locator('.legal-reference-popover');
+  await expect(popover).toContainText('Constituição da República Federativa do Brasil de 1988');
+  await expect(popover).toContainText('Art. 37');
+  await expect(popover).toContainText('A administração pública direta e indireta');
+
+  await external.focus();
+  await mainWindow.keyboard.press('Escape');
+  await expect(popover).toHaveCount(0);
+  await expect(external).toBeFocused();
+
+  await external.click();
+  await expect(mainWindow.locator('.document-state')).toContainText('cf1988 · 411 artigos');
+  await expect(mainWindow.locator('.preview-node.is-selected')).toContainText('Art. 37');
+  await mainWindow.getByRole('button', { name: 'Voltar à referência' }).click();
+  await expect(mainWindow.locator('.document-state')).toContainText('nllc · 1 artigos');
+  await expect(external).toBeFocused();
+
+  await mainWindow.getByRole('button', { name: 'Recolher Art. 1' }).click();
+  await mainWindow.getByRole('button', { name: 'Expandir Art. 1' }).click();
+
+  const internal = mainWindow.locator('.legal-reference-link').filter({ hasText: '§ 3º' });
+  await internal.focus();
+  await mainWindow.keyboard.press('Enter');
+  await expect(mainWindow.locator('.preview-node.is-selected')).toContainText(
+    'Nas licitações e contratações que envolvam recursos provenientes de empréstimo',
+  );
+});
+
+test('importa, corrige, valida, aprova e exporta uma interpretação de baixa confiança', async () => {
+  const correctedExportPath = join(temporaryRoot, 'pena-revisada.md');
+  await configureDialogs(app, ambiguousSourcePath, correctedExportPath);
+  await mainWindow.getByRole('button', { name: 'Selecionar arquivo local' }).click();
+
+  await expect(mainWindow.locator('.selected-source')).toContainText('pena-ambigua.md');
+  await expect(mainWindow.getByText('Revisão obrigatória')).toBeVisible({ timeout: 30_000 });
+  await expect(mainWindow.getByText('human_review_required')).toBeVisible();
+  await expect(mainWindow.getByRole('button', { name: 'Exportar Markdown' })).toBeDisabled();
+
+  await mainWindow
+    .getByLabel('Interpretação textual atual')
+    .fill('Pena - reclusão, de dois a três anos.');
+  await mainWindow
+    .getByLabel('Motivo editorial')
+    .fill('Texto literal conferido no snapshot oficial da fonte.');
+  await mainWindow.getByRole('button', { name: 'Salvar correção' }).click();
+  await expect(mainWindow.getByLabel('Interpretação textual atual')).toHaveValue(
+    'Pena - reclusão, de dois a três anos.',
+  );
+  await expect(mainWindow.getByText('Validação incremental')).toBeVisible();
+
+  await mainWindow
+    .getByLabel('Motivo editorial')
+    .fill('A pena pertence ao inciso após conferência da estrutura oficial.');
+  await mainWindow.getByRole('button', { name: 'Confirmar interpretação' }).click();
+  await expect(mainWindow.getByText('Revisão obrigatória')).toHaveCount(0);
+  await mainWindow.getByRole('button', { name: 'Validar revisão' }).click();
+  await expect(mainWindow.getByText('Validação completa')).toBeVisible();
+  await mainWindow.getByRole('button', { name: 'Aprovar preview' }).click();
+  await expect(mainWindow.getByRole('button', { name: 'Exportar Markdown' })).toBeEnabled();
+  await mainWindow.getByRole('button', { name: 'Exportar Markdown' }).click();
+  await expect(mainWindow.getByRole('status')).toContainText(
+    'pena-revisada.md exportado no perfil lei completa, com integridade verificada.',
+  );
+
+  const exported = await readFile(correctedExportPath, 'utf8');
+  expect(exported).toContain('Pena - reclusão, de dois a três anos.');
+  expect(exported).toContain('^lte-art-1-par-1-inc-i-pena');
+});
+
+test('alterna e exporta as duas projeções da Lei 9.099 sem duplicar Block IDs', async () => {
+  await configureDialogs(app, fixture('l9099', 'snapshot.html'), l9099CompleteExportPath);
+  await mainWindow.getByRole('button', { name: 'Selecionar arquivo local' }).click();
+  await expect(mainWindow.getByText('Documento pronto para revisão e exportação')).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(mainWindow.getByRole('radio', { name: /Lei completa/u })).toBeChecked();
+  await mainWindow.getByRole('button', { name: 'Aprovar preview' }).click();
+  await expect(mainWindow.getByRole('button', { name: 'Preview aprovado' })).toBeVisible();
+  await mainWindow.getByRole('button', { name: 'Exportar Markdown' }).click();
+  await expect(mainWindow.getByRole('status')).toContainText(
+    'l9099-completa.md exportado no perfil lei completa, com integridade verificada.',
+  );
+
+  const complete = await readFile(l9099CompleteExportPath, 'utf8');
+  expect(complete).toContain('~~Art. 61. Consideram-se infrações penais');
+  expect(complete.match(/\^l9099-art-61\b/gu)).toHaveLength(1);
+
+  await mainWindow.getByRole('radio', { name: /Somente texto vigente/u }).click();
+  await expect(mainWindow.getByRole('radio', { name: /Somente texto vigente/u })).toBeChecked();
+  await configureDialogs(app, fixture('l9099', 'snapshot.html'), l9099CurrentExportPath);
+  await mainWindow.getByRole('button', { name: 'Exportar Markdown' }).click();
+  await expect(mainWindow.getByRole('status')).toContainText(
+    'l9099-vigente.md exportado no perfil somente vigente, com integridade verificada.',
+  );
+
+  const current = await readFile(l9099CurrentExportPath, 'utf8');
+  expect(current).toContain('projection_profile: "current_only"');
+  expect(current).not.toContain('pena máxima não superior a um ano');
+  expect(current).not.toContain('~~');
+  expect(current).toContain('^l9099-art-61');
+
+  await mainWindow.getByRole('radio', { name: /Lei completa/u }).click();
+  await expect(mainWindow.getByRole('radio', { name: /Lei completa/u })).toBeChecked();
 });

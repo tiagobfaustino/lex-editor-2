@@ -98,7 +98,8 @@ flowchart TD
     E --> F["Validação estrutural"]
     F --> G["Reconciliação de Block IDs\ncom a versão publicada"]
     G --> H["IdentifiedNormaAST"]
-    H --> I["Formatter\nMarkdown/Obsidian"]
+    H --> H2["Análise e resolução de\nreferências jurídicas"]
+    H2 --> I["Formatter\nMarkdown/Obsidian"]
     I --> J["Revisão humana\n(Lex Editor - preview)"]
     J -- aprovado --> J2["Fixa versão + gera\nUPDATE.md e manifesto"]
     J2 --> K["Release commit + push\n(branch candidato)"]
@@ -149,6 +150,13 @@ gera valores apenas para dispositivos novos. O valor persistido não contém
 `^`; o Formatter acrescenta o prefixo ao produzir a âncora Obsidian
 `^cp-art-121-par-2-inc-viii`. IDs e aliases publicados formam um namespace
 append-only. Regras completas em `./BLOCK_ID_SPEC.md`.
+
+**Análise de referências jurídicas.** Depois da identificação, uma etapa
+derivada detecta remissões no texto canônico e resolve lei + dispositivo contra
+o catálogo local e os Block IDs publicados. A NormaAST não recebe sintaxe wiki;
+o índice resolvido alimenta Formatter, preview e projeção SQL. Paths do vault
+são derivados apenas na exportação, conforme
+`./ADR-013-referencias-juridicas-resolvidas.md`.
 
 **Formatter Markdown/Obsidian.** Serializa a NormaAST com Block IDs em Markdown final: lista indentada hierárquica, frontmatter rico, callouts de cabeçalho. É a última etapa automática antes da revisão humana. Especificação completa em `./MARKDOWN_SPEC.md`.
 
@@ -224,6 +232,10 @@ Convenções:
   idempotência, commit-base esperado e hashes dos artefatos. Um retry reutiliza
   o mesmo caminho e bytes.
 - Leis muito extensas podem futuramente ser divididas por Livro/Título em arquivos separados dentro do mesmo diretório, desde que a convenção seja formalizada em `./MARKDOWN_SPEC.md` antes de ser adotada — não é o padrão atual.
+- Na exportação local para um vault, essa árvore é materializada sob a pasta
+  `VincuLex/`; links entre leis partem da raiz do vault e apontam ao Block ID.
+  A pasta de exportação não substitui `leis/` como layout canônico do
+  repositório nem participa da identidade jurídica do alvo (ADR-013).
 
 ### O que o SaaS espera receber (contrato de leitura via Supabase)
 

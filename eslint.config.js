@@ -53,6 +53,8 @@ export default defineConfig([
     'release/**',
     'artifacts/**',
     'coverage/**',
+    'supabase/functions/publisher/generated/**',
+    'supabase/functions/publisher/index.ts',
   ]),
   {
     files: [sourceExtensions],
@@ -117,6 +119,52 @@ export default defineConfig([
           {
             group: ['@lex-editor/legal-domain/**', ...layerPatterns('main', 'preload', 'renderer')],
             message: 'shared/ipc não pode depender de uma camada privilegiada ou de apresentação.',
+          },
+        ],
+      }),
+    },
+  },
+  {
+    files: ['src/shared/publication/**/*.{js,ts}'],
+    rules: {
+      'no-restricted-imports': boundaryRule({
+        paths: [
+          ...nodePaths,
+          restrictedPath('electron', 'O protocolo compartilhado não pode depender de Electron.'),
+        ],
+        patterns: [
+          {
+            group: ['electron/**', ...layerPatterns('main', 'preload', 'renderer')],
+            message: 'O protocolo compartilhado não pode atravessar uma camada da aplicação.',
+          },
+        ],
+      }),
+    },
+  },
+  {
+    files: ['services/publisher/src/**/*.{js,ts}'],
+    languageOptions: {
+      globals: globals.node,
+    },
+    rules: {
+      'no-restricted-imports': boundaryRule({
+        paths: [
+          restrictedPath('electron', 'O publicador server-side não pode depender de Electron.'),
+          restrictedPath('react', 'O publicador server-side não pode depender da apresentação.'),
+          restrictedPath(
+            'react-dom',
+            'O publicador server-side não pode depender da apresentação.',
+          ),
+        ],
+        patterns: [
+          {
+            group: [
+              'electron/**',
+              'react/**',
+              'react-dom/**',
+              ...layerPatterns('main', 'preload', 'renderer'),
+            ],
+            message: 'A autoridade server-side não pode importar camadas do aplicativo desktop.',
           },
         ],
       }),

@@ -7,6 +7,7 @@
 ## Sumário
 
 - [NormaAST](#normaast)
+- [Índice de referências jurídicas](#índice-de-referências-jurídicas)
 - [Metadados de frontmatter](#metadados-de-frontmatter)
 - [Schema Postgres/Supabase](#schema-postgressupabase)
 - [Relacionamentos entre tabelas](#relacionamentos-entre-tabelas)
@@ -229,7 +230,7 @@ falham antes de chegar ao Preview.
 ```typescript
 interface AnexoNode extends DispositivoNodeBase {
   tipo: 'anexo';
-  numero: string;       // ex.: "I"
+  numero: string;       // ex.: "I"; "único" quando a fonte traz ANEXO sem numeral
   titulo: string;       // ex.: "Tabela Oficial"
   children: (ArtigoNode | TabelaNode)[];
 }
@@ -371,6 +372,190 @@ Notas de modelagem:
 
 ---
 
+## Índice de referências jurídicas
+
+Referências detectadas no texto normativo não são campos da NormaAST. Elas
+formam uma projeção derivada, ligada à identidade da lei e ao hash da revisão,
+conforme a ADR-013. Assim, inserir ou remover um wikilink não altera o texto
+literal nem simula uma mudança legislativa.
+
+O contrato runtime está em
+`packages/legal-domain/src/legal-reference/contracts.ts`. Todos os tipos desta
+seção são inferidos dos schemas Zod correspondentes; não se mantém uma segunda
+definição manual no código.
+
+### Primitivos e identidade
+
+```typescript
+type LegalReferenceState = 'detected' | 'resolved' | 'unresolved' | 'ambiguous';
+type LegalReferenceSeverity = 'error' | 'warning' | 'info';
+type LegalReferenceSourceField = 'caput' | 'texto';
+
+interface LegalNormIdentity {
+  tipoNorma: TipoNorma;
+  numero: string;
+  ano: number;
+}
+
+interface LegalReferenceSpan {
+  encoding: 'utf16';
+  start: number; // inclusivo, em unidades UTF-16
+  end: number;   // exclusivo, em unidades UTF-16
+  text: string;  // trecho literal; text.length === end - start
+}
+```
+
+`LegalNormIdentity` é a identidade jurídica mínima usada na referência. Sigla,
+título, alias, nome de arquivo e path do vault são atributos de catálogo ou de
+apresentação e não participam da igualdade. Os offsets usam UTF-16 para serem
+compatíveis com `String#slice` no runtime JavaScript. Antes de decorar o texto,
+o consumidor deve conferir `field.slice(start, end) === text`.
+
+### Localizador jurídico
+
+Um ponto pode conter `artigo`, `caput`, `paragrafo`, `inciso`, `alinea` e
+`item`. Ao menos um designador é obrigatório; `caput` não pode coexistir com
+dispositivo subordinado. O seletor representa um ponto, uma lista de pontos ou
+um intervalo:
+
+```typescript
+type LegalReferenceSelector =
+  | { kind: 'point'; point: LegalReferencePoint }
+  | { kind: 'list'; points: LegalReferencePoint[] }
+  | { kind: 'range'; from: LegalReferencePoint; to: LegalReferencePoint };
+
+type LegalReferenceLocator =
+  | {
+      scope: 'same_law';
+      context: 'same_article' | 'same_law';
+      selector: LegalReferenceSelector;
+    }
+  | {
+      scope: 'external_law';
+      lawMention: string;
+      selector: LegalReferenceSelector;
+    };
+```
+
+O localizador preserva o que a gramática reconheceu. `same_article` autoriza
+completar ancestrais pelo artigo da origem; `same_law` usa apenas a lei da
+origem. Uma referência externa conserva a menção literal à norma para que o
+catálogo possa resolver título, número, sigla ou alias sem transformar esse
+texto em identidade.
+
+### Estados e severidades
+
+Toda referência possui `referenceId` determinístico (SHA-256), Block ID e
+campo de origem, span, localizador e ao menos uma evidência enumerada. O estado
+controla quais campos adicionais existem:
+
+| Estado | Campos específicos | Severidade permitida | Efeito |
+|---|---|---|---|
+| `detected` | — | `info` | Menção reconhecida, ainda não submetida ao resolvedor |
+| `resolved` | `target` | `info` | Lei, revisão e Block ID-alvo foram provados |
+| `unresolved` | `reason` | `warning`, ou `error` para `stale_target` | Texto permanece literal, sem wikilink |
+| `ambiguous` | `reason`, dois ou mais `candidates` distintos | `warning`, ou `error` para `alias_collision` | Exige decisão editorial antes de criar vínculo |
+
+Razões não resolvidas são `law_not_imported`, `device_not_found`,
+`insufficient_context`, `unsupported_locator`, `stale_target` e
+`editorially_unlinked`. Esta última registra a decisão explícita de preservar a
+menção literal sem vínculo. Ambiguidade distingue `multiple_targets` de
+`alias_collision`. `error` bloqueia a projeção enriquecida/exportação;
+`warning` é revisável e mantém o texto sem link.
+
+O alvo resolvido ou candidato nunca carrega path:
+
+```typescript
+interface LegalReferenceTarget {
+  law: LegalNormIdentity;
+  revisionHash: string;
+  blockId: string; // canônico, sem ^
+}
+```
+
+Uma referência `same_law` resolvida deve apontar para a mesma
+`LegalNormIdentity` do índice. Uma `external_law` resolvida deve apontar para
+outra identidade.
+
+### Índice por revisão
+
+```typescript
+interface LegalReferenceIndex {
+  schemaVersion: 1;
+  law: LegalNormIdentity;
+  revisionHash: string;
+  analyzerVersion: string; // SemVer
+  references: LegalReference[];
+}
+```
+
+O índice impõe:
+
+1. `referenceId` único;
+2. ordem canônica por Block ID, campo, início/fim do span e `referenceId`;
+3. spans não sobrepostos dentro do mesmo Block ID/campo;
+4. schemas estritos, sem campos pertencentes a outro estado;
+5. Block IDs canônicos sem `^` e hashes SHA-256 em hexadecimal minúsculo;
+6. texto, NormaAST e hash da revisão independentes do resultado da resolução.
+
+O schema valida a coerência interna do span. A conferência contra o texto real,
+a existência dos Block IDs e a correspondência do hash com a NormaAST exigem
+os dados da revisão e pertencem às etapas de detecção/resolução.
+
+### Catálogo canônico e decisões editoriais
+
+O catálogo é uma fotografia derivada das revisões `identified` disponíveis. A
+chave canônica combina `tipoNorma`, número normalizado e ano; título, sigla e
+aliases participam somente da descoberta. Cada entrada enumera os Block IDs e
+seus pontos jurídicos estruturados, sempre ligados ao hash da revisão. Paths de
+filesystem ou do vault não fazem parte deste contrato.
+
+Aliases são normalizados com Unicode, caixa, acentos, pontuação jurídica e
+espaços previsíveis. Repetições dentro da mesma identidade são deduplicadas.
+Quando o mesmo alias normalizado alcança identidades distintas, o catálogo
+registra a colisão e o resolvedor produz `ambiguous/alias_collision`; a ordem de
+cadastro nunca escolhe um vencedor. Duas revisões selecionadas para a mesma
+identidade tornam o catálogo inválido.
+
+Uma decisão editorial de referência possui schema versionado e fica amarrada a
+`referenceId`, hash da revisão, Block ID/campo de origem e span literal. As
+ações permitidas são:
+
+- `confirm_target`, com identidade, hash e Block ID que ainda precisam existir
+  no catálogo;
+- `keep_unlinked`, que mantém o texto literal e produz
+  `editorially_unlinked`.
+
+Se o vínculo confirmado deixar de existir, a decisão não é redirecionada: a
+referência passa a `unresolved/stale_target` com severidade `error`. Decisão
+cuja origem não corresponda exatamente à menção atual é rejeitada. Recriar o
+catálogo e executar novamente o resolvedor pode mudar apenas o índice derivado;
+a NormaAST, o texto e o hash da revisão de origem permanecem idênticos.
+
+### Layout `VincuLex` e projeção de arestas
+
+O layout de exportação é derivado do catálogo e das revisões efetivamente
+incluídas no lote. Ele contém apenas paths wiki lógicos sob `VincuLex`, sem
+extensão, e a relação de Block IDs presentes em cada perfil. O pacote contém
+um arquivo por identidade, hash/tamanho dos bytes e é validado integralmente
+antes da escrita em staging. Paths absolutos ou escolhidos pelo usuário
+existem somente no processo principal e não integram contratos de domínio.
+
+A projeção SQL/SaaS usa uma linha por `referenceId`, com:
+
+- `source_law_key`, `source_revision_sha256`, `source_block_id` e
+  `source_field`;
+- span literal, estado, severidade, localizador e evidência;
+- `target_law_key`, revisão e Block ID apenas para `resolved`;
+- candidatos canônicos estruturados para `ambiguous`.
+
+Nenhuma coluna recebe título de nota, path wiki ou path de filesystem. A tabela
+`referencias_juridicas` é ligada à versão de origem, usa RLS e expõe arestas
+somente da versão pública atual. O contrato puro correspondente é
+`projectLegalReferenceSqlEdges`.
+
+---
+
 ## Metadados de frontmatter
 
 Mapeamento entre os campos de frontmatter do Markdown (ver `./MARKDOWN_SPEC.md` para a sintaxe exata) e os campos estruturados do modelo de dados.
@@ -447,6 +632,11 @@ CREATE TABLE versoes_lei (
     data_verificacao_integridade date NOT NULL,
     avisos_atualizacao          text[] NOT NULL DEFAULT '{}',
     notas_editoriais            text[] NOT NULL DEFAULT '{}',
+    raiz_id                     text NOT NULL,              -- id interno da raiz da IdentifiedNormaAST
+    raiz_ordem                  integer NOT NULL CHECK (raiz_ordem >= 0),
+    raiz_source_ref             jsonb NOT NULL,
+    raiz_supporting_source_refs jsonb NOT NULL DEFAULT '[]'::jsonb,
+    raiz_parse_evidence         jsonb NOT NULL,
     changelog                   text NOT NULL,              -- entrada pública de UPDATE.md, sem identidade privada
     mudancas                    jsonb NOT NULL,              -- arrays de IDs; renumbered usa {from,to}
     aprovado_por                uuid NOT NULL REFERENCES auth.users(id),
@@ -458,6 +648,9 @@ CREATE TABLE versoes_lei (
     CHECK (jsonb_typeof(mudancas) = 'object'),
     CHECK (jsonb_typeof(redacoes_dadas_por) = 'array'),
     CHECK (jsonb_typeof(ids_depreciados) = 'array'),
+    CHECK (jsonb_typeof(raiz_source_ref) = 'object'),
+    CHECK (jsonb_typeof(raiz_supporting_source_refs) = 'array'),
+    CHECK (jsonb_typeof(raiz_parse_evidence) = 'object'),
     CHECK (
         (tipo_publicacao = 'rollback' AND restaura_versao_id IS NOT NULL)
         OR (tipo_publicacao <> 'rollback' AND restaura_versao_id IS NULL)
@@ -620,28 +813,56 @@ CREATE UNIQUE INDEX dispositivos_ordem_raiz_unique
 -- descreve o andamento da revisão da pendência, não o estado jurídico da
 -- lei, o fluxo editorial da publicação nem o estado de um dispositivo.
 CREATE TABLE updates_legislativos (
-    id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    lei_id                uuid NOT NULL REFERENCES leis(id) ON DELETE CASCADE,
-    hash_fonte_anterior   text NOT NULL,
-    hash_fonte_atual      text NOT NULL,
-    diff_resumo           text,               -- diff textual ou estrutural resumido
-    update_review_status  text NOT NULL DEFAULT 'pending'
+    id                           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    lei_id                       uuid NOT NULL REFERENCES leis(id) ON DELETE CASCADE,
+    base_versao_id               uuid NOT NULL,
+    base_normative_sha256        text NOT NULL,
+    candidate_normative_sha256   text,
+    detection_key                text NOT NULL,
+    source_artifacts             jsonb NOT NULL DEFAULT '[]'::jsonb,
+    candidate_artifact_id        uuid,
+    source_url                   text NOT NULL,
+    diff                         jsonb,
+    diff_summary                 jsonb NOT NULL DEFAULT '{}'::jsonb,
+    overall_confidence           text NOT NULL
+        CHECK (overall_confidence IN ('high','medium','low')),
+    requires_human_review        boolean NOT NULL DEFAULT true,
+    update_review_status         text NOT NULL DEFAULT 'pending'
         CHECK (update_review_status IN ('pending','approved','rejected','superseded','error')),
-    versao_publicada_id   uuid,
-    detectado_em          timestamptz NOT NULL DEFAULT now(),
-    approved_by           uuid REFERENCES auth.users(id),
-    approved_at           timestamptz,
-    rejection_reason      text,
-    error_message         text,
-    FOREIGN KEY (versao_publicada_id, lei_id)
+    detection_count              integer NOT NULL DEFAULT 1,
+    retry_count                  integer NOT NULL DEFAULT 0,
+    detected_at                  timestamptz NOT NULL DEFAULT now(),
+    last_detected_at             timestamptz NOT NULL DEFAULT now(),
+    approved_by                  uuid REFERENCES auth.users(id),
+    approved_at                  timestamptz,
+    rejected_by                  uuid REFERENCES auth.users(id),
+    rejection_reason             text,
+    error_code                   text,
+    superseded_by_update_id      uuid REFERENCES updates_legislativos(id),
+    publication_id               uuid,
+    reprocess_requested_at       timestamptz,
+    reprocess_claimed_at         timestamptz,
+
+    UNIQUE (lei_id, detection_key),
+    FOREIGN KEY (base_versao_id, lei_id)
         REFERENCES versoes_lei(id, lei_id),
+    CHECK (base_normative_sha256 ~ '^[0-9a-f]{64}$'),
+    CHECK (candidate_normative_sha256 IS NULL OR candidate_normative_sha256 ~ '^[0-9a-f]{64}$'),
+    CHECK (detection_key ~ '^[0-9a-f]{64}$'),
+    CHECK (jsonb_typeof(source_artifacts) = 'array'),
+    CHECK (diff IS NULL OR jsonb_typeof(diff) = 'object'),
+    CHECK (jsonb_typeof(diff_summary) = 'object'),
     CHECK (
         update_review_status <> 'approved'
-        OR (approved_by IS NOT NULL AND approved_at IS NOT NULL)
+        OR (approved_by IS NOT NULL AND approved_at IS NOT NULL AND publication_id IS NOT NULL)
     ),
     CHECK (
         update_review_status <> 'rejected'
-        OR rejection_reason IS NOT NULL
+        OR (rejected_by IS NOT NULL AND length(btrim(rejection_reason)) >= 10)
+    ),
+    CHECK (
+        update_review_status <> 'error'
+        OR (error_code IS NOT NULL AND candidate_normative_sha256 IS NULL AND diff IS NULL)
     )
 );
 
@@ -664,6 +885,8 @@ CREATE TABLE publicacoes (
         CHECK (canal IN ('supabase','github-publico','obsidian-publish')),
     tentativas_sync              integer NOT NULL DEFAULT 0,
     ultimo_erro                  text,
+    resume_from_status           text
+        CHECK (resume_from_status IN ('pushed','syncing')),
     preparado_em                 timestamptz NOT NULL DEFAULT now(),
     publicado_em                 timestamptz,
     atualizado_em                timestamptz NOT NULL DEFAULT now(),
@@ -681,6 +904,10 @@ CREATE TABLE publicacoes (
             AND publicado_por IS NOT NULL
             AND publicado_em IS NOT NULL
         )
+    ),
+    CHECK (
+        publication_attempt_status = 'failed'
+        OR resume_from_status IS NULL
     ),
     UNIQUE (lei_id, idempotency_key),
     UNIQUE (lei_id, versao_vinculex),

@@ -106,7 +106,7 @@ dispositivo-pena
 anexo           = "anx" , "-" , numero-anexo ,
                   [ "-" , ( dispositivo-artigo | tabela ) ] ;
 tabela          = "tab" , "-" , numero-cardinal ;
-numero-anexo    = numero-cardinal | numeral-romano-minusculo | letra-aditiva ;
+numero-anexo    = numero-cardinal | numeral-romano-minusculo | letra-aditiva | "unico" ;
 
 numero-cardinal = digito-sequencia ;
 digito-sequencia
@@ -149,7 +149,7 @@ No Markdown, e somente nele, o Formatter serializa esses valores como
     quando desdobra um inciso.
 8. **Alíneas usam letra minúscula única (ou dupla — ver §7.2):** `ali-a`, `ali-b`, ..., `ali-z`, e após esgotar o alfabeto, `ali-aa`, `ali-bb`.
 9. **Itens usam numeral cardinal arábico**, conforme a convenção legislativa (itens de alínea são normalmente numerados em arábico: "1.", "2."): `item-1`, `item-2`.
-10. **Anexos suportados usam `anx-{numero}`.** O número é normalizado sem acento e em minúsculas (`ANEXO I` → `anx-i`). Dispositivos textuais dentro de anexo carregam esse segmento antes de `art`.
+10. **Anexos suportados usam `anx-{numero}`.** O número é normalizado sem acento e em minúsculas (`ANEXO I` → `anx-i`). Um único anexo sem numeral expresso usa `anx-unico`; o pipeline não inventa `I` ou `1`. Dispositivos textuais dentro de anexo carregam esse segmento antes de `art`.
 11. **Tabelas simples suportadas usam `tab-{numero}`.** O ID referencia a tabela inteira, nunca linha ou célula individual. Uma tabela dentro de anexo inclui o segmento do anexo (`lda-anx-i-tab-1`).
 12. **Penas textualmente autônomas usam `pena`.** Quando a fonte apresenta a
     pena como linha própria vinculada a um artigo, parágrafo, inciso, alínea ou item,

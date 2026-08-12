@@ -18,9 +18,11 @@
 | 003 | [Primeiro pipeline jurídico vertical](./lex-editor/003-first-legal-pipeline/spec.md) | P0 | done | 002 | Fixture local produz Markdown canônico por CLI |
 | 004 | [Hierarquia jurídica completa](./lex-editor/004-full-legal-hierarchy/spec.md) | P0 | done | 003 | Três leis de referência cobrem a gramática normativa completa |
 | 005 | [Importação, preview e exportação desktop](./lex-editor/005-desktop-import-preview-export/spec.md) | P1 | done | 001, 004 | Usuário importa, revisa e exporta no Electron |
-| 006 | [Revisão editorial e validação](./lex-editor/006-editorial-review-validation/spec.md) | P1 | draft | 004, 005 | Correção manual persistida e publicação bloqueada quando inválida |
-| 007 | [Publicação segura](./lex-editor/007-secure-publication/spec.md) | P2 | draft | 006 | SHA aprovado é promovido e sincronizado de forma idempotente |
-| 008 | [Atualizações legislativas](./lex-editor/008-legislative-updates/spec.md) | P3 | draft | 007 | Worker gera proposta revisável sem publicar automaticamente |
+| 006 | [Revisão editorial e validação](./lex-editor/006-editorial-review-validation/spec.md) | P1 | done | 004, 005 | Correção manual persistida e publicação bloqueada quando inválida |
+| 007 | [Publicação segura](./lex-editor/007-secure-publication/spec.md) | P2 | done | 006 | SHA aprovado é promovido e sincronizado de forma idempotente |
+| 008 | [Atualizações legislativas](./lex-editor/008-legislative-updates/spec.md) | P3 | done | 007 | Worker gera proposta revisável sem publicar automaticamente |
+| 009 | [Projeções completa e vigente](./lex-editor/009-complete-current-projections/spec.md) | P1 | done | 008 | Uma revisão gera Markdown completo ou somente vigente sem perder histórico |
+| 010 | [Referências jurídicas e navegação por dispositivo](./lex-editor/010-legal-reference-navigation/spec.md) | P1 | done | 004, 005, 006, 009 | Menções resolvidas abrem e pré-visualizam o bloco interno ou de outra lei importada |
 
 ## Regra de ativação
 
@@ -44,6 +46,8 @@ Antes de alterar uma feature para `in_progress`:
 | 006 | Fases 5 e 6 |
 | 007 | Fase 7 |
 | 008 | Fase 8 |
+| 009 | Extensão das Fases 4–6 |
+| 010 | Extensão das Fases 4–6 |
 
 Esse mapeamento não altera o roadmap. Ele reorganiza sua execução para obter
 feedback ponta a ponta antes de generalizar todos os casos jurídicos.

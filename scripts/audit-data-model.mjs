@@ -20,6 +20,7 @@ writeFileSync(
   arqImpl,
   `
 import type * as N from '${process.cwd()}/packages/legal-domain/src/ast/nodes.ts';
+import type * as R from '${process.cwd()}/packages/legal-domain/src/legal-reference/contracts.ts';
 type B = N.SlotComBlockId; type D = N.SlotBlockIdOpcional;
 export type LeiNode = N.LeiNode<'identified', B, D>;
 export type AtoTransitorioNode = N.AtoTransitorioNode<B, D>;
@@ -43,6 +44,10 @@ export type BlockIdDepreciado = N.BlockIdDepreciado;
 export type NormaNodeBase = N.NormaNodeBase;
 export type DispositivoNodeBase = N.DispositivoNodeBase<B>;
 export type DivisaoNodeBase = N.DivisaoNodeBase<D>;
+export type LegalNormIdentity = R.LegalNormIdentity;
+export type LegalReferenceSpan = R.LegalReferenceSpan;
+export type LegalReferenceTarget = R.LegalReferenceTarget;
+export type LegalReferenceIndex = R.LegalReferenceIndex;
 `,
 );
 

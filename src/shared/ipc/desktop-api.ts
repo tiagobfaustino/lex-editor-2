@@ -5,23 +5,69 @@ import type {
   CancelJobResult,
   ChooseExportDestinationCommand,
   ChooseExportDestinationResult,
+  ChooseBatchExportDestinationCommand,
+  ChooseBatchExportDestinationResult,
   GetDiagnosticPageCommand,
   GetDiagnosticPageResult,
   GetPreviewDocumentCommand,
   GetPreviewDocumentResult,
   GetPreviewPageCommand,
   GetPreviewPageResult,
+  GetLegalReferencePreviewResult,
   ImportFromUrlCommand,
   ImportFromUrlResult,
+  LegalReferenceCommand,
+  NavigateLegalReferenceResult,
   ProgressDto,
   RevealPreviewNodeCommand,
   RevealPreviewNodeResult,
+  SetPreviewProjectionProfileCommand,
+  SetPreviewProjectionProfileResult,
   SelectLocalSourceResult,
   StartProcessingCommand,
   StartProcessingResult,
   WriteExportCommand,
   WriteExportResult,
+  WriteBatchExportCommand,
+  WriteBatchExportResult,
 } from './import.js';
+import type {
+  ApproveEditorialCommand,
+  ApproveEditorialResult,
+  ConfirmEditorialInterpretationCommand,
+  ConfirmEditorialInterpretationResult,
+  ConfirmEditorialWarningCommand,
+  ConfirmEditorialWarningResult,
+  CorrectEditorialTextCommand,
+  CorrectEditorialTextResult,
+  GetEditorialStateCommand,
+  GetEditorialStateResult,
+  ValidateEditorialCommand,
+  ValidateEditorialResult,
+} from './editorial.js';
+import type {
+  GetPublicationDiffCommand,
+  ListPublicationHistoryCommand,
+  PreparePublicationCommand,
+  PreparePublicationResult,
+  PrepareRollbackCommand,
+  PrepareRollbackResult,
+  PublicationAttemptResult,
+  PublicationDiffResult,
+  PublicationHistoryResult,
+  PublicationIdCommand,
+} from './publication.js';
+import type {
+  ApproveLegislativeUpdateCommand,
+  GetLegislativeUpdateCountsCommand,
+  LegislativeUpdateCountsResult,
+  LegislativeUpdateDecisionResult,
+  LegislativeUpdateDetailResult,
+  LegislativeUpdateIdCommand,
+  LegislativeUpdateListResult,
+  ListLegislativeUpdatesCommand,
+  RejectLegislativeUpdateCommand,
+} from './updates.js';
 
 export const DESKTOP_API_VERSION = 1 as const;
 export const APP_GET_VERSION_CHANNEL = 'app:get-version' as const;
@@ -35,9 +81,33 @@ export const DESKTOP_CAPABILITIES = Object.freeze([
   'preview.getDocument',
   'preview.getPage',
   'preview.revealNode',
+  'preview.setProjectionProfile',
+  'preview.getLegalReference',
+  'preview.navigateLegalReference',
   'diagnostics.getPage',
+  'editorial.getState',
+  'editorial.correctText',
+  'editorial.confirmInterpretation',
+  'editorial.confirmWarning',
+  'editorial.validate',
+  'editorial.approve',
   'export.chooseDestination',
   'export.write',
+  'export.chooseBatchDestination',
+  'export.writeBatch',
+  'publication.prepare',
+  'publication.execute',
+  'publication.getAttempt',
+  'publication.retry',
+  'publication.listHistory',
+  'publication.getDiff',
+  'publication.prepareRollback',
+  'updates.list',
+  'updates.getDetail',
+  'updates.getCounts',
+  'updates.approve',
+  'updates.reject',
+  'updates.reprocess',
 ] as const);
 
 export const DesktopErrorCodeSchema = z.enum([
@@ -105,15 +175,51 @@ export type LexDesktopApiV1 = Readonly<{
     getDocument(input: GetPreviewDocumentCommand): Promise<GetPreviewDocumentResult>;
     getPage(input: GetPreviewPageCommand): Promise<GetPreviewPageResult>;
     revealNode(input: RevealPreviewNodeCommand): Promise<RevealPreviewNodeResult>;
+    setProjectionProfile(
+      input: SetPreviewProjectionProfileCommand,
+    ): Promise<SetPreviewProjectionProfileResult>;
+    getLegalReference(input: LegalReferenceCommand): Promise<GetLegalReferencePreviewResult>;
+    navigateLegalReference(input: LegalReferenceCommand): Promise<NavigateLegalReferenceResult>;
   }>;
   diagnostics: Readonly<{
     getPage(input: GetDiagnosticPageCommand): Promise<GetDiagnosticPageResult>;
+  }>;
+  editorial: Readonly<{
+    getState(input: GetEditorialStateCommand): Promise<GetEditorialStateResult>;
+    correctText(input: CorrectEditorialTextCommand): Promise<CorrectEditorialTextResult>;
+    confirmInterpretation(
+      input: ConfirmEditorialInterpretationCommand,
+    ): Promise<ConfirmEditorialInterpretationResult>;
+    confirmWarning(input: ConfirmEditorialWarningCommand): Promise<ConfirmEditorialWarningResult>;
+    validate(input: ValidateEditorialCommand): Promise<ValidateEditorialResult>;
+    approve(input: ApproveEditorialCommand): Promise<ApproveEditorialResult>;
   }>;
   export: Readonly<{
     chooseDestination(
       input: ChooseExportDestinationCommand,
     ): Promise<ChooseExportDestinationResult>;
     write(input: WriteExportCommand): Promise<WriteExportResult>;
+    chooseBatchDestination(
+      input: ChooseBatchExportDestinationCommand,
+    ): Promise<ChooseBatchExportDestinationResult>;
+    writeBatch(input: WriteBatchExportCommand): Promise<WriteBatchExportResult>;
+  }>;
+  publication: Readonly<{
+    prepare(input: PreparePublicationCommand): Promise<PreparePublicationResult>;
+    execute(input: PublicationIdCommand): Promise<PublicationAttemptResult>;
+    getAttempt(input: PublicationIdCommand): Promise<PublicationAttemptResult>;
+    retry(input: PublicationIdCommand): Promise<PublicationAttemptResult>;
+    listHistory(input: ListPublicationHistoryCommand): Promise<PublicationHistoryResult>;
+    getDiff(input: GetPublicationDiffCommand): Promise<PublicationDiffResult>;
+    prepareRollback(input: PrepareRollbackCommand): Promise<PrepareRollbackResult>;
+  }>;
+  updates: Readonly<{
+    list(input: ListLegislativeUpdatesCommand): Promise<LegislativeUpdateListResult>;
+    getDetail(input: LegislativeUpdateIdCommand): Promise<LegislativeUpdateDetailResult>;
+    getCounts(input: GetLegislativeUpdateCountsCommand): Promise<LegislativeUpdateCountsResult>;
+    approve(input: ApproveLegislativeUpdateCommand): Promise<LegislativeUpdateDecisionResult>;
+    reject(input: RejectLegislativeUpdateCommand): Promise<LegislativeUpdateDecisionResult>;
+    reprocess(input: LegislativeUpdateIdCommand): Promise<LegislativeUpdateDecisionResult>;
   }>;
 }>;
 

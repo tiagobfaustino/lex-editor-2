@@ -16,6 +16,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build:app": "electron-vite build",
+    "build:publisher-edge": "node scripts/build-publisher-edge.mjs",
     "build:workspaces": "npm run build --workspaces --if-present",
     "postinstall": "install-electron",
     "preview": "electron-vite preview",
@@ -28,8 +29,13 @@
     "test": "npm run test:unit",
     "test:boundaries": "node tests/config/eslint-boundaries.test.mjs",
     "check:data-model": "node scripts/audit-data-model.mjs",
+    "check:sensitive-output": "node scripts/scan-sensitive-output.mjs out test-results playwright-report",
     "test:unit": "vitest run",
+    "test:publication-db": "node scripts/test-secure-publication-db.mjs",
+    "test:publication-staging": "node scripts/run-publication-staging-e2e.mjs",
+    "test:updates-e2e": "vitest run tests/services/legislative-update-e2e.test.ts && npm run test:publication-db",
     "test:vault": "node scripts/testar-no-vault.mjs",
+    "review:vinculex": "npm run build:workspaces && node scripts/prepare-vinculex-review.mjs",
     "typecheck": "npm run typecheck:workspaces && npm run typecheck:node && npm run typecheck:renderer",
     "typecheck:workspaces": "npm run typecheck --workspaces --if-present",
     "typecheck:node": "tsc --project tsconfig.node.json --noEmit",
@@ -51,6 +57,7 @@
     "electron": "43.2.0",
     "electron-builder": "26.15.3",
     "electron-vite": "5.0.0",
+    "esbuild": "0.25.12",
     "eslint": "10.8.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.5.3",
@@ -65,7 +72,9 @@
   },
   "dependencies": {
     "defuddle": "0.19.2",
+    "headroom-ai": "^0.22.4",
     "linkedom": "0.18.13",
+    "postgres": "3.4.7",
     "zod": "4.4.3"
   }
 }

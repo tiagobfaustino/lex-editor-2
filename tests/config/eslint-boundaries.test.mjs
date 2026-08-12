@@ -20,6 +20,16 @@ const deniedCases = [
     code: "import * as renderer from '../renderer/index.js';\nvoid renderer;\n",
   },
   {
+    name: 'shared/publication -> Node',
+    filePath: 'src/shared/publication/boundary-check.js',
+    code: "import fs from 'node:fs';\nvoid fs;\n",
+  },
+  {
+    name: 'publisher -> main',
+    filePath: 'services/publisher/src/boundary-check.js',
+    code: "import * as main from '../../../src/main/index.js';\nvoid main;\n",
+  },
+  {
     name: 'preload -> main',
     filePath: 'src/preload/boundary-check.js',
     code: "import * as main from '../main/index.js';\nvoid main;\n",
@@ -46,6 +56,11 @@ const allowedCases = [
     name: 'renderer -> shared/ipc',
     filePath: 'src/renderer/boundary-check.js',
     code: "import * as ipc from '../shared/ipc/index.js';\nvoid ipc;\n",
+  },
+  {
+    name: 'publisher -> shared publication protocol',
+    filePath: 'services/publisher/src/boundary-check.js',
+    code: "import * as protocol from '../../../src/shared/publication/approval.js';\nvoid protocol;\n",
   },
 ];
 

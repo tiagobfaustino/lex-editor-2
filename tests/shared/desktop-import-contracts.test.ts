@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest';
 
 import {
   DESKTOP_IMPORT_LIMITS,
+  ChooseExportDestinationCommandSchema,
+  ContentProjectionProfileDtoSchema,
   DiagnosticPageDtoSchema,
   GetDiagnosticPageCommandSchema,
+  LegalReferenceCommandSchema,
+  LegalReferenceNavigationDtoSchema,
+  LegalReferencePreviewDtoSchema,
   GetPreviewPageCommandSchema,
   ImportFromUrlCommandSchema,
   PreviewDocumentDtoSchema,
   PreviewPageDtoSchema,
+  SetPreviewProjectionProfileCommandSchema,
   ProgressDtoSchema,
   SourceSummaryDtoSchema,
 } from '../../src/shared/ipc/import.js';
@@ -41,6 +47,7 @@ const previewNode = {
   hasChildren: false,
   childCount: 0,
   histories: [],
+  legalReferences: [],
   sourceRange: null,
 } as const;
 
@@ -59,6 +66,33 @@ describe('contratos de comando da importação desktop', () => {
     ]) {
       expect(ImportFromUrlCommandSchema.safeParse({ url }).success).toBe(false);
     }
+  });
+
+  it('aceita somente os dois perfis de projeção e nunca recebe AST ou path', () => {
+    expect(ContentProjectionProfileDtoSchema.safeParse('complete_with_history').success).toBe(true);
+    expect(ContentProjectionProfileDtoSchema.safeParse('current_only').success).toBe(true);
+    expect(ContentProjectionProfileDtoSchema.safeParse('infer_current').success).toBe(false);
+
+    expect(
+      SetPreviewProjectionProfileCommandSchema.safeParse({
+        projectId: PROJECT_ID,
+        projectionProfile: 'current_only',
+      }).success,
+    ).toBe(true);
+    expect(
+      SetPreviewProjectionProfileCommandSchema.safeParse({
+        projectId: PROJECT_ID,
+        projectionProfile: 'current_only',
+        ast: { children: [] },
+      }).success,
+    ).toBe(false);
+    expect(
+      ChooseExportDestinationCommandSchema.safeParse({
+        projectId: PROJECT_ID,
+        projectionProfile: 'complete_with_history',
+        path: '/tmp/lei.md',
+      }).success,
+    ).toBe(false);
   });
 
   it('fecha objetos e aplica defaults e máximos das páginas', () => {
@@ -108,6 +142,50 @@ describe('DTO de progresso', () => {
 });
 
 describe('projeções paginadas e sanitizadas', () => {
+  it('limita referências jurídicas a IDs opacos e texto plano', () => {
+    const referenceId = 'b'.repeat(64);
+    expect(
+      LegalReferenceCommandSchema.safeParse({ projectId: PROJECT_ID, referenceId }).success,
+    ).toBe(true);
+    expect(
+      LegalReferenceCommandSchema.safeParse({
+        projectId: PROJECT_ID,
+        referenceId,
+        path: '/home/editor/VincuLex/cf88.md',
+      }).success,
+    ).toBe(false);
+    expect(
+      LegalReferencePreviewDtoSchema.safeParse({
+        referenceId,
+        targetTitle: 'Constituição Federal de 1988',
+        targetSigla: 'cf88',
+        targetLegalPath: 'Art. 37',
+        targetDeviceStatus: 'active',
+        targetPlainText: 'A administração pública obedecerá aos princípios legais.',
+        external: true,
+      }).success,
+    ).toBe(true);
+    expect(
+      LegalReferencePreviewDtoSchema.safeParse({
+        referenceId,
+        targetTitle: 'CF',
+        targetSigla: 'cf88',
+        targetLegalPath: 'Art. 37',
+        targetDeviceStatus: 'active',
+        targetPlainText: 'Texto',
+        external: true,
+        html: '<strong>Texto</strong>',
+      }).success,
+    ).toBe(false);
+    expect(
+      LegalReferenceNavigationDtoSchema.safeParse({
+        targetProjectId: PROJECT_ID,
+        targetPreviewNodeId: NODE_ID,
+        external: true,
+      }).success,
+    ).toBe(true);
+  });
+
   it('expõe resumo seguro da fonte sem path, HTML ou AST', () => {
     expect(SourceSummaryDtoSchema.safeParse(source).success).toBe(true);
 
@@ -158,6 +236,7 @@ describe('projeções paginadas e sanitizadas', () => {
     expect(
       PreviewDocumentDtoSchema.safeParse({
         projectId: PROJECT_ID,
+        projectionProfile: 'complete_with_history',
         source,
         title: 'Código Penal',
         sigla: 'cp',

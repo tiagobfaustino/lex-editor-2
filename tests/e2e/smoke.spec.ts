@@ -51,6 +51,7 @@ test('abre a janela principal com as três áreas do shell', async () => {
 
   await expect(mainWindow.getByRole('heading', { name: 'Importação' })).toBeVisible();
   await expect(mainWindow.getByRole('heading', { name: 'Preview' })).toBeVisible();
+  await expect(mainWindow.getByRole('heading', { name: 'Publicação' })).toBeVisible();
   await expect(mainWindow.getByRole('heading', { name: 'Logs e validação' })).toBeVisible();
 });
 
@@ -133,10 +134,13 @@ test('não entrega Node, Electron ou ipcRenderer ao renderer', async () => {
     'app',
     'capabilities',
     'diagnostics',
+    'editorial',
     'export',
     'pipeline',
     'preview',
+    'publication',
     'source',
+    'updates',
     'version',
   ]);
 });
@@ -152,9 +156,17 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
           pipeline: Record<string, unknown>;
           preview: Record<string, unknown>;
           diagnostics: Record<string, unknown>;
+          editorial: Record<string, unknown>;
+          publication: Record<string, unknown>;
+          updates: Record<string, unknown>;
           export: {
-            chooseDestination(input: { projectId: string }): Promise<unknown>;
+            chooseDestination(input: {
+              projectId: string;
+              projectionProfile: 'complete_with_history' | 'current_only';
+            }): Promise<unknown>;
             write(input: { projectId: string; destinationId: string }): Promise<unknown>;
+            chooseBatchDestination(input: { projectIds: string[] }): Promise<unknown>;
+            writeBatch(input: { destinationId: string }): Promise<unknown>;
           };
         }
       | undefined;
@@ -171,6 +183,9 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
       pipelineKeys: Object.keys(api.pipeline).sort(),
       previewKeys: Object.keys(api.preview).sort(),
       diagnosticKeys: Object.keys(api.diagnostics).sort(),
+      editorialKeys: Object.keys(api.editorial).sort(),
+      publicationKeys: Object.keys(api.publication).sort(),
+      updatesKeys: Object.keys(api.updates).sort(),
       exportKeys: Object.keys(api.export).sort(),
       result: await api.app.getVersion(),
     };
@@ -188,16 +203,77 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
     'preview.getDocument',
     'preview.getPage',
     'preview.revealNode',
+    'preview.setProjectionProfile',
+    'preview.getLegalReference',
+    'preview.navigateLegalReference',
     'diagnostics.getPage',
+    'editorial.getState',
+    'editorial.correctText',
+    'editorial.confirmInterpretation',
+    'editorial.confirmWarning',
+    'editorial.validate',
+    'editorial.approve',
     'export.chooseDestination',
     'export.write',
+    'export.chooseBatchDestination',
+    'export.writeBatch',
+    'publication.prepare',
+    'publication.execute',
+    'publication.getAttempt',
+    'publication.retry',
+    'publication.listHistory',
+    'publication.getDiff',
+    'publication.prepareRollback',
+    'updates.list',
+    'updates.getDetail',
+    'updates.getCounts',
+    'updates.approve',
+    'updates.reject',
+    'updates.reprocess',
   ]);
   expect(bridge?.appKeys).toEqual(['getVersion']);
   expect(bridge?.sourceKeys).toEqual(['importFromUrl', 'selectLocal']);
   expect(bridge?.pipelineKeys).toEqual(['cancel', 'onProgress', 'start']);
-  expect(bridge?.previewKeys).toEqual(['getDocument', 'getPage', 'revealNode']);
+  expect(bridge?.previewKeys).toEqual([
+    'getDocument',
+    'getLegalReference',
+    'getPage',
+    'navigateLegalReference',
+    'revealNode',
+    'setProjectionProfile',
+  ]);
   expect(bridge?.diagnosticKeys).toEqual(['getPage']);
-  expect(bridge?.exportKeys).toEqual(['chooseDestination', 'write']);
+  expect(bridge?.editorialKeys).toEqual([
+    'approve',
+    'confirmInterpretation',
+    'confirmWarning',
+    'correctText',
+    'getState',
+    'validate',
+  ]);
+  expect(bridge?.publicationKeys).toEqual([
+    'execute',
+    'getAttempt',
+    'getDiff',
+    'listHistory',
+    'prepare',
+    'prepareRollback',
+    'retry',
+  ]);
+  expect(bridge?.updatesKeys).toEqual([
+    'approve',
+    'getCounts',
+    'getDetail',
+    'list',
+    'reject',
+    'reprocess',
+  ]);
+  expect(bridge?.exportKeys).toEqual([
+    'chooseBatchDestination',
+    'chooseDestination',
+    'write',
+    'writeBatch',
+  ]);
   expect(bridge?.result).toEqual({ ok: true, value: { version: '0.1.0' } });
 });
 
@@ -236,14 +312,29 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
     const candidates = [
       'app:get-version',
       'source:select-local',
+      'source:import-url',
       'pipeline:start',
       'pipeline:cancel',
       'preview:get-document',
       'preview:get-page',
       'preview:reveal-node',
       'diagnostics:get-page',
+      'editorial:get-state',
+      'editorial:correct-text',
+      'editorial:confirm-interpretation',
+      'editorial:confirm-warning',
+      'editorial:validate',
+      'editorial:approve',
       'export:choose-destination',
       'export:write',
+      'export:choose-batch-destination',
+      'export:write-batch',
+      'updates:list',
+      'updates:get-detail',
+      'updates:get-counts',
+      'updates:approve',
+      'updates:reject',
+      'updates:reprocess',
       'execute',
       'shell',
       'readFile',
@@ -270,13 +361,28 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
   expect(registered).toEqual([
     'app:get-version',
     'source:select-local',
+    'source:import-url',
     'pipeline:start',
     'pipeline:cancel',
     'preview:get-document',
     'preview:get-page',
     'preview:reveal-node',
     'diagnostics:get-page',
+    'editorial:get-state',
+    'editorial:correct-text',
+    'editorial:confirm-interpretation',
+    'editorial:confirm-warning',
+    'editorial:validate',
+    'editorial:approve',
     'export:choose-destination',
     'export:write',
+    'export:choose-batch-destination',
+    'export:write-batch',
+    'updates:list',
+    'updates:get-detail',
+    'updates:get-counts',
+    'updates:approve',
+    'updates:reject',
+    'updates:reprocess',
   ]);
 });

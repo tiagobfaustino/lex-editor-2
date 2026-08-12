@@ -1,6 +1,6 @@
 # Fluxos de Usuário — Lex Editor
 
-> Referências: `../architecture/SYSTEM_ARCHITECTURE.md`, `../architecture/BLOCK_ID_SPEC.md`, `../architecture/MARKDOWN_SPEC.md`, `../architecture/UPDATE_PIPELINE.md`, `./ROADMAP.md`.
+> Referências: `../architecture/SYSTEM_ARCHITECTURE.md`, `../architecture/BLOCK_ID_SPEC.md`, `../architecture/MARKDOWN_SPEC.md`, `../architecture/UPDATE_PIPELINE.md`, `../architecture/ADR-013-referencias-juridicas-resolvidas.md`, `./ROADMAP.md`.
 > Este documento descreve os fluxos operacionais do Lex Editor sob a ótica das duas personas internas: **Editor Jurídico** (revisa fidelidade do texto legal, aprova publicações e atualizações) e **Administrador Técnico** (configura fontes, monitora logs, resolve falhas de parsing). Cada fluxo traz passo a passo numerado (ação do usuário / resposta do sistema) e um diagrama Mermaid correspondente.
 
 ## Sumário
@@ -13,6 +13,7 @@
 6. [Configurar uma nova fonte de monitoramento](#6-configurar-uma-nova-fonte-de-monitoramento) — Administrador Técnico
 7. [Investigar uma falha de parsing](#7-investigar-uma-falha-de-parsing) — Administrador Técnico
 8. [Restaurar uma versão anterior](#8-restaurar-uma-versão-anterior) — Administrador Técnico
+9. [Consultar uma referência jurídica](#9-consultar-uma-referência-jurídica) — Editor Jurídico
 
 ---
 
@@ -33,19 +34,28 @@
 3. O editor confirma a importação (botão "Importar").
 4. O sistema exibe estado de carregamento na área de importação e registra o início do processo na área de logs ("Buscando conteúdo da fonte...").
 5. O processo `main` faz o download com timeout, limite de redirects/tamanho,
-   validação de tipo e TLS, sem encaminhar headers sensíveis entre origens.
-   Persiste snapshot bruto imutável com permissão restrita e SHA-256.
+   validação de tipo e TLS, sem encaminhar headers sensíveis entre origens. No
+   Planalto, captura a página anotada/completa e também a compilada quando ela
+   existir; persiste cada snapshot bruto separadamente, com função, variante,
+   permissão restrita e SHA-256 próprios.
    - Se a requisição falha (timeout, host inexistente, HTTP 4xx/5xx, certificado inválido), o sistema interrompe o fluxo e exibe mensagem específica na área de logs e como toast/alerta (ex.: "Não foi possível acessar a fonte: tempo esgotado" ou "Fonte retornou erro 404"). O editor pode tentar novamente ou cancelar.
-6. Com o snapshot preservado, o sistema executa o Defuddle para produzir uma
-   projeção em Markdown limpo.
+6. Com o conjunto de snapshots preservado, o sistema executa o Defuddle para
+   produzir uma projeção em Markdown limpo de cada artefato.
    - Se o Defuddle retorna conteúdo vazio ou sem padrão reconhecível de norma jurídica (ex.: página de busca, texto institucional genérico do Planalto), o sistema classifica como "fonte não suportada/reconhecida" e interrompe antes de acionar o Parser, exibindo mensagem orientando o editor a verificar se a URL aponta diretamente para o texto da norma.
-7. O adaptador Planalto recebe em conjunto o HTML bruto e o Markdown limpo,
-   produz uma `ParsedNormaAST` com `sourceRef` e `parseEvidence` por nó e a
-   valida estruturalmente. O reconciliador então atribui ou reutiliza Block IDs,
-   produz a `IdentifiedNormaAST`, e somente essa fase segue para o Formatter.
+7. O adaptador Planalto recebe os HTMLs brutos e Markdown limpos, usa a fonte
+   compilada como `primary_current` quando disponível e a anotada como
+   `historical_auxiliary`, produz uma única `ParsedNormaAST` com `sourceRef`,
+   `supportingSourceRefs` e `parseEvidence` por nó e a valida estruturalmente.
+   O reconciliador então atribui ou reutiliza Block IDs, produz a
+   `IdentifiedNormaAST` e o analisador deriva o índice de referências
+   jurídicas. Apenas a árvore identificada e esse índice seguem para o
+   Formatter.
    Todo o pipeline roda automaticamente, registrando progresso na área de logs
    (ex.: "347 dispositivos reconhecidos").
-8. O sistema navega automaticamente para a tela de Preview, exibindo a lei renderizada e o painel de avisos de validação (mesmo que vazio).
+8. O sistema navega automaticamente para a tela de Preview, exibindo a lei
+   completa por padrão e o painel de avisos de validação (mesmo que vazio). O
+   editor pode alternar para a projeção somente vigente sem alterar ou
+   reprocessar a NormaAST; estado desconhecido bloqueia essa projeção.
 9. O editor passa a revisar o conteúdo (continua no fluxo 2).
 
 ### Diagrama
@@ -56,17 +66,18 @@ flowchart TD
     B --> C{URL e destino permitidos?}
     C -- não --> C1[Erro inline: URL inválida ou bloqueada] --> B
     C -- sim --> D[Confirma importação]
-    D --> E[Sistema baixa HTML da fonte]
+    D --> E[Sistema baixa conjunto de HTMLs oficiais]
     E --> F{Download OK?}
     F -- não --> F1[Log de erro: falha de rede\ntimeout / DNS / HTTP 4xx-5xx] --> Z1([Editor tenta novamente ou cancela])
-    F -- sim --> F2[Persiste snapshot bruto\n+ SHA-256]
-    F2 --> G[Executa Defuddle: HTML → Markdown limpo]
+    F -- sim --> F2[Persiste snapshots brutos\n+ funções, variantes e SHA-256]
+    F2 --> G[Executa Defuddle em cada HTML\n→ Markdown limpo]
     G --> H{Conteúdo reconhecível\ncomo norma jurídica?}
     H -- não --> H1[Log de erro: fonte não suportada] --> Z1
     H -- sim --> I[Parser usa HTML bruto + Markdown limpo\ne gera ParsedNormaAST]
     I --> I2[Valida estrutura + sourceRef\n+ parseEvidence]
-    I2 --> J[Reconcilia IDs → IdentifiedNormaAST\n→ Formatter]
-    J --> K[Navega para tela de Preview]
+    I2 --> J[Reconcilia IDs → IdentifiedNormaAST]
+    J --> J2[Detecta e resolve referências jurídicas]
+    J2 --> K[Formatter → tela de Preview]
     K --> L([Preview renderizado, pronto para revisão])
 ```
 
@@ -421,4 +432,46 @@ flowchart TD
     J --> K[Publicador valida/promove\n+ sync transacional]
     K --> L[Troca versao_publicada_id]
     L --> M([Rollback publicado para frente\nhistórico preservado])
+```
+
+---
+
+## 9. Consultar uma referência jurídica
+
+**Persona:** Editor Jurídico
+**Pré-condição:** Preview de uma lei processada está aberto; a análise de
+referências terminou.
+**Pós-condição de sucesso:** O dispositivo mencionado foi lido ou aberto sem
+perder a posição de origem.
+
+### Passo a passo
+
+1. O sistema realça somente menções com alvo resolvido por identidade de lei e
+   Block ID. Menções ausentes ou ambíguas permanecem texto literal e aparecem
+   no painel de validação.
+2. Ao passar o cursor ou focar uma referência por teclado, o renderer solicita
+   pelo ID opaco um preview ao processo principal.
+3. O sistema exibe popover com lei, caminho jurídico, status e texto sanitizado
+   do bloco exato. A operação é local e não acessa a fonte oficial.
+4. `Escape` fecha o popover. Ao clicar ou acionar pelo teclado:
+   - referência interna revela e focaliza o bloco na lei atual;
+   - referência externa abre a lei importada e revela o bloco-alvo.
+5. A navegação registra a origem para que o editor retorne ao ponto anterior.
+6. Na exportação, o mesmo alvo vira wikilink para Block ID; links externos usam
+   a raiz `VincuLex` e internos omitem o caminho da nota atual.
+
+### Diagrama
+
+```mermaid
+flowchart TD
+    A[Leitor encontra uma remissão] --> B{Referência resolvida?}
+    B -- não --> C[Texto literal + diagnóstico]
+    B -- sim --> D[Hover ou foco solicita preview por ID]
+    D --> E[Popover mostra bloco sanitizado]
+    E --> F{Ativa o link?}
+    F -- não --> A
+    F -- interna --> G[Revela bloco na lei atual]
+    F -- externa --> H[Abre lei importada e revela bloco]
+    G --> I[Retorno preserva a origem]
+    H --> I
 ```

@@ -4,6 +4,10 @@
 > dívida é algo que já está no repositório e precisa de correção; risco é o que
 > pode dar errado adiante.
 
+> Atualização em 2026-08-12: as Features 001–010 estão concluídas. As seções
+> datadas abaixo permanecem como histórico; o estado operacional atual está no
+> `spec/FEATURE_INDEX.md` e nos `review.md` de cada feature.
+
 ## Resolvido em 2026-08-04
 
 Dois bloqueadores que este documento registrava foram corrigidos e ficam aqui
@@ -49,17 +53,12 @@ Nada. T001-08 a T001-10 estão concluídas, os cinco critérios de aceite estão
 marcados no `spec.md` e a feature está `done` no `FEATURE_INDEX.md`. O que
 ficou em aberto não bloqueava o fechamento e está no `review.md` da feature.
 
-## Pendências de escopo já previstas
+## Escopo concluído desde o levantamento
 
-Não são atrasos; são o roadmap.
-
-- domínio jurídico (`packages/legal-domain` está vazio) — Feature 002;
-- parser, Block IDs e Formatter sobre fixture pequena — Feature 003;
-- gramática normativa completa e as três leis de referência — Feature 004;
-- importação real, preview e exportação no Electron — Feature 005;
-- correção editorial, validação bloqueante e `UPDATE.md` — Feature 006;
-- release candidate, Serviço de Publicação e rollback — Feature 007;
-- worker de atualização legislativa — Feature 008.
+As Features 002–010 implementaram o domínio jurídico, parser, Block IDs,
+Formatter, importação/preview/exportação, revisão editorial, publicação segura,
+atualizações legislativas, projeções completa/vigente e referências jurídicas
+navegáveis. Não há feature ativa nem tarefa parcial no índice atual.
 
 ## Dívidas menores
 
@@ -103,12 +102,12 @@ sintéticas — com dispositivos revogados, vetados e redações dadas por leis
 posteriores; e exigir revisão humana obrigatória para todo nó de baixa
 confiança, que não pode chegar silenciosamente à fase `identified`.
 
-### Ambiguidade entre fontes oficiais (crítico)
+### Ambiguidade entre fontes oficiais (crítico, mitigado)
 
-A ADR-009 resolveu o desenho, mas a implementação ainda precisa provar que o
-adaptador separa com segurança texto vigente, texto superado e nota editorial
-na página anotada do Planalto, e que ausência na compilada nunca é tratada como
-revogação.
+A ADR-009 e as Features 008–009 implementam e testam a separação entre fonte
+compilada vigente e página anotada/histórica. Conflitos continuam exigindo
+decisão editorial explícita e permanecem um risco de regressão a ser coberto
+pelas fixtures reais.
 
 ### Colisão e estabilidade de Block ID (crítico)
 
@@ -129,10 +128,9 @@ canal genérico.
 Registrado no `spec.md` da Feature 001 e mitigado limitando a UI ao shell
 necessário.
 
-## Sugestão de sequência
+## Próxima sequência
 
-1. ~~Fechar T001-08~~ — feito em 2026-08-05.
-2. ~~Fechar T001-09~~ — feito em 2026-08-05.
-3. ~~Fechar T001-10~~ — feito em 2026-08-05.
-4. Marcar a Feature 001 como `done` no `FEATURE_INDEX.md` e só então ativar a
-   Feature 002.
+1. Manter a suíte e as fixtures reais das Features 001–010 verdes.
+2. Tratar as dívidas menores acima sem misturá-las a uma nova feature.
+3. Especificar e ativar a Feature 011 somente após definir seu resultado
+   verificável e dependências no `FEATURE_INDEX.md`.

@@ -1,6 +1,6 @@
 # Especificação do Formato Markdown/Obsidian — Vinculex / Lex Editor
 
-Versão: 1.1
+Versão: 1.3
 Status: Normativo (fonte de verdade para o Formatter e para qualquer ferramenta que consuma os arquivos `.md` gerados pelo Lex Editor)
 Depende de: `BLOCK_ID_SPEC.md` (todo Block ID citado aqui segue aquela gramática)
 
@@ -56,6 +56,8 @@ O frontmatter é um bloco YAML delimitado por `---` no início do arquivo. Todos
 
 | Campo | Tipo | Obrigatório | Exemplo | Descrição |
 |---|---|---|---|---|
+| `projection_profile` | string (enum) | na projeção derivada | `"current_only"` | Identifica a saída derivada contendo somente dispositivos vigentes. A publicação canônica `complete_with_history` omite o campo para preservar compatibilidade byte a byte; sua ausência significa o perfil canônico completo (ADR-012). |
+| `aliases` | list\<string\> | não | `["NLLC", "Lei 14.133/2021"]` | Nomes alternativos sem colisão obtidos do catálogo da revisão exportada; auxiliam descoberta no Obsidian, mas não substituem a identidade jurídica (ADR-013). |
 | `tags` | list\<string\> | não | `["penal", "cfo-pmmg", "concurso"]` | Tags Obsidian para navegação por grafo e filtros de estudo |
 | `revogada_por` | string \| null | não | `null` | Sigla/identificação da norma revogadora, se `legal_status` for `revogada` |
 | `redacao_dada_por` | list\<object\> | não | ver exemplo abaixo | Histórico de leis que alteraram a redação de dispositivos específicos desta norma |
@@ -89,6 +91,7 @@ data_formatacao_vinculex: 2026-07-01
 total_artigos: 361
 versao_vinculex: "1.3.0"
 legal_status: "vigente"
+aliases: ["CP", "Código Penal Brasileiro", "Decreto-Lei 2.848/1940"]
 tags: ["penal", "cfo-pmmg", "concurso", "codigo"]
 revogada_por: null
 redacao_dada_por:
@@ -106,6 +109,7 @@ NormaAST:
 
 1. os 13 campos obrigatórios aparecem primeiro e na ordem da Seção 2.1;
 2. campos opcionais presentes aparecem depois, na ordem da Seção 2.2;
+   `projection_profile`, quando exigido, é o primeiro deles;
 3. strings, incluindo URLs, enums, número da norma e semver, usam aspas duplas
    e escaping compatível com JSON; inteiros e datas `YYYY-MM-DD` usam forma
    escalar sem aspas;
@@ -189,6 +193,8 @@ em uma única linha canônica:
 Regras:
 
 1. O Block ID do anexo usa o segmento `anx-{numero}`.
+   Quando a fonte possui um único `ANEXO` sem numeral, o rótulo é
+   `Anexo único` e o segmento canônico é `anx-unico`; não se inventa `I`.
 2. O Block ID da tabela usa o segmento `tab-{numero}` e referencia a tabela
    inteira.
 3. Cabeçalhos são separados por `; `; linhas são separadas por ` / `; células
@@ -214,6 +220,29 @@ O valor recebido da NormaAST e persistido no banco não contém `^`
 ```markdown
 - Art. 33. A pena de reclusão deve ser executada em forma progressiva, com a transferência para regime menos rigoroso, a ser determinada pelo juiz, quando o preso tiver cumprido ao menos: ^cp-art-33
 ```
+
+### 4.1 Wikilinks jurídicos derivados
+
+O Formatter recebe a NormaAST e um `LegalReferenceIndex` da mesma revisão. Os
+links são decoração derivada: não entram na NormaAST, não alteram o hash
+jurídico e são aplicados somente ao trecho literal conferido pelo span UTF-16.
+
+- alvo na mesma nota: `[[#^nllc-art-1-par-3|§ 3º]]`;
+- alvo em outra norma do pacote:
+  `[[VincuLex/constituicao-federal/cf88#^cf1988-art-37|caput do art. 37]]`;
+- a extensão `.md` e paths locais nunca são emitidos;
+- o label é exatamente o trecho literal da lei;
+- `unresolved` e `ambiguous` permanecem texto literal;
+- um alvo `resolved` cuja revisão, nota ou âncora não exista no layout bloqueia
+  a materialização, em vez de produzir link quebrado;
+- embeds `![[...]]` não são gerados.
+
+Os spans de cada campo são validados antes da decoração e aplicados da direita
+para a esquerda. O Formatter rejeita sobreposição, trecho divergente e label
+com sintaxe insegura para wikilink. A projeção `current_only` omite referências
+cuja origem foi removida e só materializa alvos presentes no pacote vigente;
+`complete_with_history` também analisa dispositivos históricos preservados,
+sem atribuir link ou Block ID às linhas editoriais de redação anterior.
 
 ---
 
@@ -486,7 +515,16 @@ antiga no corpo atual.
 snapshot identificado por SHA-256 e `parseEvidence` coerente. Evidência
 `low` exige `requiresHumanReview: true` e confirmação editorial registrada
 antes da publicação.
+15. **Identificação da projeção.** A saída derivada `current_only` declara
+`projection_profile: "current_only"` exatamente uma vez no frontmatter. A
+publicação canônica `complete_with_history` omite o campo para manter os bytes
+históricos e é identificada por essa ausência, conforme a ADR-012.
+16. **Aliases e wikilinks jurídicos.** Quando existe índice de referências, os
+aliases correspondem exatamente à entrada da revisão no layout; cada wikilink
+materializa um span literal `resolved`, aponta para arquivo e Block ID presentes
+no mesmo pacote/perfil e usa a forma interna ou externa da Seção 4.1. Nenhum
+embed, path local ou link de estado não resolvido é aceito.
 
-Somente após as quatorze verificações acima o arquivo é liberado para revisão
+Somente após as dezesseis verificações acima o arquivo é liberado para revisão
 humana e, em seguida, para release candidate; promoção no Git e sync no
 Supabase são executados pelo Serviço de Publicação conforme o pipeline geral.

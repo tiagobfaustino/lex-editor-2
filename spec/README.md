@@ -87,7 +87,8 @@ spec/
     ├── 005-desktop-import-preview-export/
     ├── 006-editorial-review-validation/
     ├── 007-secure-publication/
-    └── 008-legislative-updates/
+    ├── 008-legislative-updates/
+    └── 009-complete-current-projections/
 ```
 
 O primeiro corte jurídico é deliberadamente vertical. Tipos, parser, IDs e

@@ -26,6 +26,8 @@ jobs:
         run: npm run typecheck
       - name: Testes unitários
         run: npm run test:unit
+      - name: Contrato transacional de publicação
+        run: npm run test:publication-db
       - name: Fronteiras de módulo
         run: npm run test:boundaries
 
@@ -43,6 +45,8 @@ jobs:
         run: npm ci
       - name: Smoke E2E
         run: xvfb-run --auto-servernum npm run test:e2e
+      - name: Ausência de secrets em bundle e relatórios E2E
+        run: npm run check:sensitive-output
 
   package:
     name: Empacotamento e integridade do bundle
@@ -64,6 +68,8 @@ jobs:
         run: npm run build
       - name: Inspeção do bundle e fuses
         run: node scripts/inspect-bundle.mjs release/linux-unpacked
+      - name: Ausência de secrets no pacote expandido
+        run: node scripts/scan-sensitive-output.mjs release/linux-unpacked
       # Um alvo removido da configuração não faria o build falhar; sem esta
       # conferência, o RF-001-02 deixaria de ser exercido em silêncio.
       - name: Alvos instaláveis presentes

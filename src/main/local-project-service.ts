@@ -1,37 +1,64 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { constants as fileConstants } from 'node:fs';
 import { basename, dirname, extname, join } from 'node:path';
-import { lstat, mkdir, open, readFile, realpath, rename, unlink } from 'node:fs/promises';
+import { lstat, mkdir, open, readFile, realpath, rename, rm, unlink } from 'node:fs/promises';
 
 import {
   analisar,
+  appendEditorialJournalEntry,
+  applyEditorialCommand,
+  approveEditorialRevision,
+  calculateRevisionHash,
+  collectConfirmedWarningFingerprints,
+  createLegalNormCatalog,
+  detectLegalReferences,
   contarBlockIds,
+  deriveStructuredChanges,
   extrairLinhas,
   formatar,
+  generateUpdateMarkdown,
   identificar,
   juntarContinuacoes,
+  legalNormIdentityKey,
   mesclarFontes,
+  normalizeLegalNormAlias,
   percorrer,
+  projectContent,
   processar,
   reconhecer,
+  resolveLegalReferences,
+  runEditorialValidation,
   situarProblemas,
   validarIdentifiedNormaAst,
   validarMarkdownCanonico,
   type IdentifiedNormaAST,
+  type EditorialApproval,
+  type EditorialCommand,
+  type EditorialJournal,
+  type EditorialValidationReport,
   type MetadadosDaNorma,
+  type LegalReference,
+  type LegalReferenceIndex,
   type NormaChildNode,
   type ProblemaDeEtapa,
   type ResultadoDoPipeline,
   type SourceRole,
   type SourceVariant,
+  type ContentProjectionProfile,
 } from '@lex-editor/legal-domain';
 import type { BrowserWindow, OpenDialogOptions, SaveDialogOptions } from 'electron';
 
 import {
   DESKTOP_IMPORT_LIMITS,
   type DiagnosticDto,
+  type BatchExportFailureCode,
+  type BatchExportItemResultDto,
+  type BatchExportResultDto,
   type DiagnosticPageDto,
   type ExportResultDto,
+  type LegalReferenceNavigationDto,
+  type LegalReferencePreviewDto,
+  type ProjectionPreferenceDto,
   type PreviewDocumentDto,
   type PreviewNodeDto,
   type PreviewNodePathDto,
@@ -39,6 +66,12 @@ import {
   type ProgressDto,
   type SourceSummaryDto,
 } from '../shared/ipc/import.js';
+import { DESKTOP_EDITORIAL_LIMITS } from '../shared/ipc/editorial.js';
+import type {
+  EditorialDiagnosticDto,
+  EditorialReviewTargetDto,
+  EditorialStateDto,
+} from '../shared/ipc/editorial.js';
 import type { DesktopImportIpcCapabilities } from './ipc/register.js';
 import { defuddleSnapshot, SourceExtractionError } from './import/defuddle.js';
 import {
@@ -46,6 +79,7 @@ import {
   PlanaltoNetworkError,
   type PlanaltoNetworkPorts,
 } from './import/planalto-source.js';
+import { createEditorialProjectStore } from './projects/editorial-project-store.js';
 
 const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
 
@@ -78,16 +112,27 @@ type SourceRecord = Readonly<{
 type PreviewRecord = Readonly<{
   dto: PreviewNodeDto;
   children: readonly string[];
+  domainNodeId: string;
 }>;
 
 interface ProjectRecord {
   readonly projectId: string;
   readonly source: SourceRecord;
   markdown?: string;
+  projectionProfile: ContentProjectionProfile;
   document?: PreviewDocumentDto;
   readonly nodes: Map<string, PreviewRecord>;
   readonly roots: string[];
   diagnostics: DiagnosticDto[];
+  ast?: IdentifiedNormaAST;
+  detectedReferenceIndex?: LegalReferenceIndex;
+  referenceIndex?: LegalReferenceIndex;
+  referenceIndexDigest?: string;
+  journal?: EditorialJournal;
+  validation?: EditorialValidationReport;
+  approval?: EditorialApproval;
+  approvalWasInvalidated: boolean;
+  readonly editorialDiagnosticIds: Map<string, string>;
 }
 
 interface JobRecord {
@@ -115,6 +160,32 @@ export type LocalProjectServiceOptions = Readonly<{
 
 const sha256 = (value: string | Uint8Array): string =>
   createHash('sha256').update(value).digest('hex');
+
+const conventionalLegalAliases = (ast: IdentifiedNormaAST): readonly string[] => {
+  if (ast.tipoNorma === 'constituição' && ast.ano === 1988) {
+    return ['Constituição Federal', 'CF', 'CF/88', 'CF1988'];
+  }
+  return [];
+};
+
+const slugifyExportName = (value: string, fallback: string): string => {
+  const slug = value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/gu, '')
+    .toLocaleLowerCase('en-US')
+    .replace(/[^a-z0-9]+/gu, '-')
+    .replace(/^-+|-+$/gu, '')
+    .slice(0, 80)
+    .replace(/-+$/gu, '');
+  return slug.length === 0 ? fallback : slug;
+};
+
+const safeSourceSummary = (value: string): string =>
+  value
+    .replace(/[\r\n`]+/gu, ' ')
+    .replace(/\s+/gu, ' ')
+    .trim()
+    .slice(0, 500);
 
 const decodeText = (bytes: Uint8Array): string => {
   try {
@@ -193,8 +264,22 @@ const normalizeCanonicalMarkdown = (markdown: string): string => {
       continue;
     }
 
-    const withoutList = trimmed.replace(/^-\s+/u, '');
-    result.push(withoutList.replace(/\s+\^[a-z0-9-]+$/u, ''));
+    const withoutList = trimmed.replace(/^[-*+]\s+/u, '');
+    const withoutPersonalBlockId = withoutList.replace(/\s+\^[a-z0-9-]+$/u, '');
+    const withoutPersonalDecoration = withoutPersonalBlockId
+      .replace(/<!--[\s\S]*?-->/gu, ' ')
+      .replace(/!?\[\[[^\]|]+\|([^\]]+)\]\]/gu, '$1')
+      .replace(/!?\[\[([^\]]+)\]\]/gu, '$1')
+      .replace(/!\[([^\]]*)\]\([^)]*\)/gu, '$1')
+      .replace(/\[([^\]]+)\]\([^)]*\)/gu, '$1')
+      .replace(/<[^>]*>/gu, ' ')
+      .replace(/(?:\*\*|__|==|`)/gu, '')
+      .replace(/\s+/gu, ' ')
+      .trim();
+
+    if (withoutPersonalDecoration.length > 0) {
+      result.push(withoutPersonalDecoration);
+    }
   }
 
   return result.join('\n');
@@ -240,11 +325,19 @@ const metadataFor = (
   );
   const tipoNorma: MetadadosDaNorma['tipoNorma'] = typeLabel.includes('complementar')
     ? 'lei complementar'
-    : typeLabel.includes('decreto-lei')
-      ? 'decreto-lei'
-      : typeLabel === 'decreto'
-        ? 'decreto'
-        : 'lei ordinária';
+    : typeLabel.includes('constitui')
+      ? 'constituição'
+      : typeLabel.includes('emenda constitucional')
+        ? 'emenda constitucional'
+        : typeLabel.includes('medida provisória')
+          ? 'medida provisória'
+          : typeLabel.includes('código')
+            ? 'código'
+            : typeLabel.includes('decreto-lei')
+              ? 'decreto-lei'
+              : typeLabel === 'decreto'
+                ? 'decreto'
+                : 'lei ordinária';
   const fallbackTitle =
     titleFromHtml?.replace(/compilado/giu, '').trim() ??
     basename(displayName, extname(displayName));
@@ -397,7 +490,9 @@ const processHtmlSourceSet = (
       },
     };
   }
-  const identified = identificar(merged.valor, merged.valor.sigla);
+  const identified = identificar(merged.valor, merged.valor.sigla, {
+    permitirBaixaConfianca: true,
+  });
   if (!identified.ok) {
     return {
       relatorio: {
@@ -500,8 +595,20 @@ export const createLocalProjectService = ({
   const sources = new Map<string, SourceRecord>();
   const projects = new Map<string, ProjectRecord>();
   const jobs = new Map<string, JobRecord>();
-  const destinations = new Map<string, Readonly<{ projectId: string; path: string }>>();
+  const destinations = new Map<
+    string,
+    Readonly<{ projectId: string; path: string; projectionProfile: ContentProjectionProfile }>
+  >();
+  const batchDestinations = new Map<
+    string,
+    Readonly<{ projectIds: readonly string[]; rootPath: string }>
+  >();
   const cursors = new Map<string, CursorRecord>();
+  const referencePreviewCache = new Map<
+    string,
+    Omit<LegalReferencePreviewDto, 'referenceId' | 'external'>
+  >();
+  const editorialStore = createEditorialProjectStore(storageRoot);
 
   const persistArtifact = async (
     sourceId: string,
@@ -575,6 +682,560 @@ export const createLocalProjectService = ({
     return { items, nextCursor, totalItems: ids.length };
   };
 
+  const editorialProjectOrThrow = (
+    projectId: string,
+  ): ProjectRecord & { ast: IdentifiedNormaAST; journal: EditorialJournal } => {
+    const project = projectOrThrow(projectId);
+    if (project.ast === undefined || project.journal === undefined) {
+      throw new Error('Editorial project is not ready.');
+    }
+    return project as ProjectRecord & { ast: IdentifiedNormaAST; journal: EditorialJournal };
+  };
+
+  const rebuildProjection = (project: ProjectRecord, ast: IdentifiedNormaAST): void => {
+    const canonical = formatar(ast, 'complete_with_history');
+    if (
+      !canonical.ok ||
+      validarMarkdownCanonico(canonical.valor, ast, 'complete_with_history').length > 0
+    ) {
+      throw new Error('Editorial revision cannot be formatted canonically.');
+    }
+    const projection = projectContent(ast, project.projectionProfile);
+    if (!projection.ok) {
+      throw new Error('The selected content projection is not available.');
+    }
+    const projectedAst = projection.valor.ast;
+    const referencesByBlockId = new Map<string, LegalReference[]>();
+    for (const reference of project.referenceIndex?.references ?? []) {
+      const references = referencesByBlockId.get(reference.sourceBlockId) ?? [];
+      references.push(reference);
+      referencesByBlockId.set(reference.sourceBlockId, references);
+    }
+    const nodes = new Map<string, PreviewRecord>();
+    const roots: string[] = [];
+    const build = (
+      node: NormaChildNode<unknown, unknown>,
+      parent: string | null,
+      depth: number,
+      order: number,
+    ): string => {
+      const previewNodeId = randomUUID();
+      const children = node.children.map((child, index) =>
+        build(child as NormaChildNode<unknown, unknown>, previewNodeId, depth + 1, index),
+      );
+      const record = node as unknown as Record<string, unknown>;
+      const source = node.sourceRef;
+      const plainText = childText(record).slice(0, DESKTOP_IMPORT_LIMITS.maxPlainTextCharacters);
+      const blockId = typeof record['blockId'] === 'string' ? record['blockId'] : null;
+      const sourceField = node.tipo === 'artigo' ? 'caput' : 'texto';
+      const dto: PreviewNodeDto = {
+        previewNodeId,
+        parentPreviewNodeId: parent,
+        nodeKind: node.tipo,
+        depth,
+        order,
+        label: childLabel(record).slice(0, DESKTOP_IMPORT_LIMITS.maxLabelCharacters),
+        plainText,
+        blockId,
+        deviceStatus:
+          typeof record['deviceStatus'] === 'string'
+            ? (record['deviceStatus'] as PreviewNodeDto['deviceStatus'])
+            : null,
+        hasChildren: children.length > 0,
+        childCount: children.length,
+        histories: Array.isArray(record['redacoesAnteriores'])
+          ? (record['redacoesAnteriores'] as { texto: string; nota?: string }[])
+              .slice(0, DESKTOP_IMPORT_LIMITS.maxHistoriesPerNode)
+              .map((history) => ({ plainText: history.texto, note: history.nota ?? null }))
+          : [],
+        legalReferences: (blockId === null ? [] : (referencesByBlockId.get(blockId) ?? []))
+          .filter(
+            (reference) =>
+              reference.sourceField === sourceField &&
+              reference.span.end <= plainText.length &&
+              plainText.slice(reference.span.start, reference.span.end) === reference.span.text,
+          )
+          .slice(0, DESKTOP_IMPORT_LIMITS.maxLegalReferencesPerNode)
+          .map((reference) => ({
+            referenceId: reference.referenceId,
+            state: reference.state,
+            severity: reference.severity,
+            start: reference.span.start,
+            end: reference.span.end,
+            label: reference.span.text,
+          })),
+        sourceRange:
+          source.rawStartLine === undefined || source.rawEndLine === undefined
+            ? null
+            : {
+                sourceArtifactId: project.source.primary.sourceArtifactId,
+                startLine: source.rawStartLine,
+                endLine: source.rawEndLine,
+              },
+      };
+      nodes.set(previewNodeId, { dto, children, domainNodeId: node.id });
+      return previewNodeId;
+    };
+    roots.push(...projectedAst.children.map((node, index) => build(node, null, 0, index)));
+    const document: PreviewDocumentDto = {
+      projectId: project.projectId,
+      projectionProfile: project.projectionProfile,
+      source: project.source.summary,
+      title: projectedAst.titulo.slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
+      sigla: projectedAst.sigla,
+      legalStatus: projectedAst.legalStatus,
+      totalArticles: projectedAst.totalArtigos,
+      totalPreviewNodes: nodes.size,
+      metadata: [
+        ['title', projectedAst.titulo],
+        ['sigla', projectedAst.sigla],
+        ['tipo', projectedAst.tipoNorma],
+        ['numero', projectedAst.numero],
+        ['ano', projectedAst.ano],
+        ['ramo', projectedAst.ramo],
+        ['fonte', projectedAst.fonte],
+        ['data_publicacao', projectedAst.dataPublicacao],
+        ['data_atualizacao_legal', projectedAst.dataAtualizacaoLegal],
+        ['data_formatacao_vinculex', projectedAst.dataFormatacaoVinculex],
+        ['total_artigos', projectedAst.totalArtigos],
+        ['versao_vinculex', projectedAst.versaoVinculex],
+        ['legal_status', projectedAst.legalStatus],
+        ['tags', projectedAst.tags ?? []],
+      ].map(([key, value]) => ({ key, value })) as PreviewDocumentDto['metadata'],
+      callouts: [
+        {
+          calloutKind: 'info',
+          title: 'Fonte oficial',
+          plainText: `${String(project.source.artifacts.length)} snapshot(s) verificado(s): ${project.source.summary.displayName}.`,
+        },
+        {
+          calloutKind: 'caution',
+          title: 'Aviso de segurança jurídica',
+          plainText: 'Confirme o conteúdo na fonte oficial antes de uso jurídico.',
+        },
+        ...(projectedAst.notasEditoriais ?? []).slice(0, 8).map((note) => ({
+          calloutKind: 'note' as const,
+          title: 'Nota editorial',
+          plainText: note,
+        })),
+      ],
+    };
+    const firstRoot = roots[0] === undefined ? undefined : nodes.get(roots[0]);
+    const diagnostics: DiagnosticDto[] = [
+      ...(firstRoot === undefined
+        ? []
+        : [
+            {
+              diagnosticId: randomUUID(),
+              severity: 'info' as const,
+              code: 'preview_projection_ready',
+              message: 'Snapshot verificado e projetado no preview sanitizado.',
+              blocksExport: false,
+              previewNodeId: firstRoot.dto.previewNodeId,
+              blockId: firstRoot.dto.blockId,
+              sourceRange: firstRoot.dto.sourceRange,
+            },
+          ]),
+      ...[...nodes.values()]
+        .filter(({ dto }) => dto.deviceStatus === 'revoked' || dto.deviceStatus === 'vetoed')
+        .slice(0, 500)
+        .map(({ dto }) => ({
+          diagnosticId: randomUUID(),
+          severity: 'info' as const,
+          code: `device_${dto.deviceStatus ?? 'unknown'}`,
+          message: `${dto.label}: estado jurídico ${dto.deviceStatus === 'revoked' ? 'revogado' : 'vetado'}.`,
+          blocksExport: false,
+          previewNodeId: dto.previewNodeId,
+          blockId: dto.blockId,
+          sourceRange: dto.sourceRange,
+        })),
+      ...[...nodes.values()].flatMap(({ dto }) =>
+        dto.legalReferences
+          .filter(
+            (reference) => reference.state === 'unresolved' || reference.state === 'ambiguous',
+          )
+          .slice(0, 100)
+          .map((reference) => ({
+            diagnosticId: randomUUID(),
+            severity: reference.severity,
+            code:
+              reference.state === 'ambiguous'
+                ? 'legal_reference_ambiguous'
+                : 'legal_reference_unresolved',
+            message:
+              reference.state === 'ambiguous'
+                ? `A referência “${reference.label}” possui mais de um destino possível.`
+                : `A referência “${reference.label}” ainda não possui destino importado.`,
+            blocksExport: false,
+            previewNodeId: dto.previewNodeId,
+            blockId: dto.blockId,
+            sourceRange: dto.sourceRange,
+          })),
+      ),
+    ];
+    project.markdown = canonical.valor;
+    project.nodes.clear();
+    for (const [previewNodeId, record] of nodes) project.nodes.set(previewNodeId, record);
+    project.roots.splice(0, project.roots.length, ...roots);
+    project.document = document;
+    project.diagnostics = diagnostics;
+    for (const [cursor, record] of cursors) {
+      if (record.projectId === project.projectId) cursors.delete(cursor);
+    }
+  };
+
+  const previewRecordForDomainNode = (
+    project: ProjectRecord,
+    nodeId: string,
+  ): PreviewRecord | undefined =>
+    [...project.nodes.values()].find((record) => record.domainNodeId === nodeId);
+
+  const refreshLegalReferences = (changedProjectId: string): void => {
+    const readyProjects = [...projects.values()].filter(
+      (project): project is ProjectRecord & { ast: IdentifiedNormaAST } =>
+        project.ast !== undefined,
+    );
+    const latestProjectByIdentity = new Map<string, (typeof readyProjects)[number]>();
+    for (const project of readyProjects) {
+      latestProjectByIdentity.set(
+        legalNormIdentityKey({
+          tipoNorma: project.ast.tipoNorma,
+          numero: project.ast.numero,
+          ano: project.ast.ano,
+        }),
+        project,
+      );
+    }
+    const catalogResult = createLegalNormCatalog(
+      [...latestProjectByIdentity.values()].map(({ ast }) => ({
+        ast,
+        aliases: conventionalLegalAliases(ast),
+      })),
+      { sha256 },
+    );
+    if (!catalogResult.ok) throw new Error('The local legal norm catalog is invalid.');
+
+    const changedProject = readyProjects.find(({ projectId }) => projectId === changedProjectId);
+    if (changedProject === undefined) throw new Error('Changed legal project is unavailable.');
+    const changedIdentityKey = legalNormIdentityKey({
+      tipoNorma: changedProject.ast.tipoNorma,
+      numero: changedProject.ast.numero,
+      ano: changedProject.ast.ano,
+    });
+    const changedAliases = new Set(
+      catalogResult.valor.entries
+        .find(({ canonicalKey }) => canonicalKey === changedIdentityKey)
+        ?.aliases.map(({ normalized }) => normalized) ?? [],
+    );
+
+    const changedProjects: (ProjectRecord & { ast: IdentifiedNormaAST })[] = [];
+    for (const project of readyProjects) {
+      const mustResolve =
+        project.projectId === changedProjectId ||
+        project.referenceIndex === undefined ||
+        project.referenceIndex.references.some((reference) =>
+          reference.state === 'resolved'
+            ? legalNormIdentityKey(reference.target.law) === changedIdentityKey
+            : reference.locator.scope === 'external_law' &&
+              changedAliases.has(normalizeLegalNormAlias(reference.locator.lawMention)),
+        );
+      if (!mustResolve) continue;
+      const revisionHash = calculateRevisionHash(project.ast, sha256);
+      if (project.detectedReferenceIndex?.revisionHash !== revisionHash) {
+        const detected = detectLegalReferences(project.ast, { sha256 });
+        if (!detected.ok) throw new Error('Legal references could not be detected.');
+        project.detectedReferenceIndex = detected.valor;
+      }
+      const resolved = resolveLegalReferences(
+        {
+          sourceAst: project.ast,
+          index: project.detectedReferenceIndex,
+          catalog: catalogResult.valor,
+        },
+        { sha256 },
+      );
+      if (!resolved.ok) throw new Error('Legal references could not be resolved.');
+      const nextDigest = sha256(JSON.stringify(resolved.valor.references));
+      if (project.referenceIndexDigest !== nextDigest) changedProjects.push(project);
+      project.referenceIndex = resolved.valor;
+      project.referenceIndexDigest = nextDigest;
+    }
+
+    if (changedProjects.length > 0) referencePreviewCache.clear();
+    for (const project of changedProjects) rebuildProjection(project, project.ast);
+  };
+
+  const resolvedReferenceOrThrow = (
+    projectId: string,
+    referenceId: string,
+  ): Readonly<{
+    sourceProject: ProjectRecord & { ast: IdentifiedNormaAST };
+    reference: Extract<LegalReference, { state: 'resolved' }>;
+    targetProject: ProjectRecord & { ast: IdentifiedNormaAST };
+    targetRecord: PreviewRecord;
+    external: boolean;
+  }> => {
+    const sourceProject = projectOrThrow(projectId);
+    if (sourceProject.ast === undefined || sourceProject.referenceIndex === undefined) {
+      throw new Error('Legal reference index is not ready.');
+    }
+    const reference = sourceProject.referenceIndex.references.find(
+      (candidate) => candidate.referenceId === referenceId,
+    );
+    if (reference?.state !== 'resolved') throw new Error('Legal reference is not resolved.');
+    const targetIdentityKey = legalNormIdentityKey(reference.target.law);
+    const targetProject = [...projects.values()].find(
+      (candidate): candidate is ProjectRecord & { ast: IdentifiedNormaAST } =>
+        candidate.ast !== undefined &&
+        legalNormIdentityKey({
+          tipoNorma: candidate.ast.tipoNorma,
+          numero: candidate.ast.numero,
+          ano: candidate.ast.ano,
+        }) === targetIdentityKey &&
+        calculateRevisionHash(candidate.ast, sha256) === reference.target.revisionHash,
+    );
+    if (targetProject === undefined) throw new Error('Legal reference target is unavailable.');
+    const targetRecord = [...targetProject.nodes.values()].find(
+      ({ dto }) => dto.blockId === reference.target.blockId,
+    );
+    if (targetRecord === undefined) {
+      throw new Error('Legal reference target is not available in the selected projection.');
+    }
+    const sourceIdentityKey = legalNormIdentityKey({
+      tipoNorma: sourceProject.ast.tipoNorma,
+      numero: sourceProject.ast.numero,
+      ano: sourceProject.ast.ano,
+    });
+    return {
+      sourceProject: sourceProject as ProjectRecord & { ast: IdentifiedNormaAST },
+      reference,
+      targetProject,
+      targetRecord,
+      external: sourceIdentityKey !== targetIdentityKey,
+    };
+  };
+
+  const legalPathFor = (project: ProjectRecord, record: PreviewRecord): string => {
+    const labels: string[] = [];
+    let current: PreviewRecord | undefined = record;
+    while (current !== undefined && labels.length <= DESKTOP_IMPORT_LIMITS.maxTreeDepth) {
+      labels.unshift(current.dto.label);
+      current =
+        current.dto.parentPreviewNodeId === null
+          ? undefined
+          : project.nodes.get(current.dto.parentPreviewNodeId);
+    }
+    return labels.join(' › ').slice(0, DESKTOP_IMPORT_LIMITS.maxLabelCharacters);
+  };
+
+  const legalReferencePreview = (
+    projectId: string,
+    referenceId: string,
+  ): LegalReferencePreviewDto => {
+    const resolved = resolvedReferenceOrThrow(projectId, referenceId);
+    const cacheKey = `${resolved.reference.target.revisionHash}:${resolved.reference.target.blockId}`;
+    let cached = referencePreviewCache.get(cacheKey);
+    if (cached === undefined) {
+      const document = resolved.targetProject.document;
+      if (document === undefined) throw new Error('Legal reference target preview is not ready.');
+      cached = {
+        targetTitle: document.title,
+        targetSigla: document.sigla,
+        targetLegalPath: legalPathFor(resolved.targetProject, resolved.targetRecord),
+        targetDeviceStatus: resolved.targetRecord.dto.deviceStatus,
+        targetPlainText: resolved.targetRecord.dto.plainText,
+      };
+      referencePreviewCache.set(cacheKey, cached);
+    }
+    return { referenceId, ...cached, external: resolved.external };
+  };
+
+  const legalReferenceNavigation = (
+    projectId: string,
+    referenceId: string,
+  ): LegalReferenceNavigationDto => {
+    const resolved = resolvedReferenceOrThrow(projectId, referenceId);
+    return {
+      targetProjectId: resolved.targetProject.projectId,
+      targetPreviewNodeId: resolved.targetRecord.dto.previewNodeId,
+      external: resolved.external,
+    };
+  };
+
+  const runValidation = (
+    project: ProjectRecord & { ast: IdentifiedNormaAST; journal: EditorialJournal },
+    mode: 'incremental' | 'full',
+    changedNodeIds: readonly string[] = [],
+  ): EditorialValidationReport => {
+    const revisionHash = calculateRevisionHash(project.ast, sha256);
+    const report = runEditorialValidation(project.ast, {
+      mode,
+      journalSequence: project.journal.entries.length,
+      validatedAt: now().toISOString(),
+      sha256,
+      changedNodeIds,
+      ...(project.markdown === undefined ? {} : { renderedMarkdown: project.markdown }),
+      confirmedWarningFingerprints: collectConfirmedWarningFingerprints(
+        project.journal,
+        revisionHash,
+      ),
+    });
+    project.validation = report;
+    return report;
+  };
+
+  const editorialState = (
+    project: ProjectRecord & { ast: IdentifiedNormaAST; journal: EditorialJournal },
+  ): EditorialStateDto => {
+    const revisionHash = calculateRevisionHash(project.ast, sha256);
+    const sequence = project.journal.entries.length;
+    const approvalCurrent =
+      project.approval?.revisionHash === revisionHash &&
+      project.approval.journalSequence === sequence;
+    const diagnostics: EditorialDiagnosticDto[] = (project.validation?.diagnostics ?? []).map(
+      (diagnostic) => {
+        let diagnosticId = project.editorialDiagnosticIds.get(diagnostic.fingerprint);
+        if (diagnosticId === undefined) {
+          diagnosticId = randomUUID();
+          project.editorialDiagnosticIds.set(diagnostic.fingerprint, diagnosticId);
+        }
+        const preview =
+          diagnostic.location.nodeId === null
+            ? undefined
+            : previewRecordForDomainNode(project, diagnostic.location.nodeId);
+        return {
+          diagnosticId,
+          severity: diagnostic.severity,
+          code: diagnostic.code,
+          message: diagnostic.message,
+          blocksApproval: diagnostic.blocksApproval,
+          blocksExport: diagnostic.blocksExport,
+          requiresConfirmation: diagnostic.severity === 'warning',
+          confirmed: diagnostic.confirmed,
+          previewNodeId: preview?.dto.previewNodeId ?? null,
+          blockId: diagnostic.location.blockId,
+          sourceRange: preview?.dto.sourceRange ?? null,
+        };
+      },
+    );
+    const domainNodes = new Map<string, Record<string, unknown>>();
+    percorrer(
+      project.ast,
+      ({ no }) => {
+        if (typeof no['id'] === 'string') domainNodes.set(no['id'], no);
+      },
+      () => undefined,
+    );
+    const reviewTargets: EditorialReviewTargetDto[] = [...project.nodes.values()].flatMap(
+      (preview) => {
+        const node = domainNodes.get(preview.domainNodeId);
+        if (node === undefined) return [];
+        const evidence = node['parseEvidence'];
+        if (typeof evidence !== 'object' || evidence === null) return [];
+        const record = evidence as Record<string, unknown>;
+        if (record['requiresHumanReview'] !== true) return [];
+        return [
+          {
+            previewNodeId: preview.dto.previewNodeId,
+            nodeKind: preview.dto.nodeKind,
+            label: preview.dto.label,
+            plainText: childText(node).slice(0, DESKTOP_EDITORIAL_LIMITS.maxTextCharacters),
+            deviceStatus: preview.dto.deviceStatus,
+            confidence:
+              record['confidence'] === 'low' || record['confidence'] === 'medium'
+                ? record['confidence']
+                : 'high',
+            confidenceReasons: Array.isArray(record['reasons'])
+              ? record['reasons'].filter((reason): reason is string => typeof reason === 'string')
+              : [],
+            requiresHumanReview: true,
+            sourceRange: preview.dto.sourceRange,
+          },
+        ];
+      },
+    );
+    const validationFresh =
+      project.validation?.revisionHash === revisionHash &&
+      project.validation.journalSequence === sequence;
+    const validationCanApprove = validationFresh && project.validation?.canApprove === true;
+    return {
+      projectId: project.projectId,
+      revisionHash,
+      journalSequence: sequence,
+      saveState: 'saved',
+      validatedAt: project.validation?.validatedAt ?? null,
+      validationMode: project.validation?.mode ?? 'not_run',
+      validationIsComplete: validationFresh && project.validation?.isComplete === true,
+      blockingCount: project.validation?.blockingCount ?? 0,
+      warningCount: project.validation?.warningCount ?? 0,
+      unconfirmedWarningCount: project.validation?.unconfirmedWarningCount ?? 0,
+      reviewApprovalStatus: approvalCurrent
+        ? 'approved'
+        : project.approvalWasInvalidated
+          ? 'invalidated'
+          : 'not_approved',
+      canApprove: validationCanApprove && !approvalCurrent,
+      canExport: validationCanApprove && approvalCurrent,
+      diagnostics,
+      reviewTargets,
+    };
+  };
+
+  const operationFieldFor = (
+    nodeKind: PreviewNodeDto['nodeKind'],
+  ): 'titulo' | 'caput' | 'texto' | 'caption' => {
+    if (nodeKind === 'artigo') return 'caput';
+    if (nodeKind === 'tabela') return 'caption';
+    if (
+      ['ato_transitorio', 'livro', 'titulo', 'capitulo', 'secao', 'subsecao', 'anexo'].includes(
+        nodeKind,
+      )
+    ) {
+      return 'titulo';
+    }
+    return 'texto';
+  };
+
+  const projectCanExport = (project: ProjectRecord | undefined): boolean =>
+    project?.ast !== undefined &&
+    project.journal !== undefined &&
+    project.validation?.isComplete === true &&
+    project.validation.canApprove &&
+    project.validation.revisionHash === calculateRevisionHash(project.ast, sha256) &&
+    project.validation.journalSequence === project.journal.entries.length &&
+    project.approval?.revisionHash === project.validation.revisionHash &&
+    project.approval.journalSequence === project.journal.entries.length;
+
+  const applyAndPersist = async (
+    project: ProjectRecord & { ast: IdentifiedNormaAST; journal: EditorialJournal },
+    command: EditorialCommand,
+    changedNodeIds: readonly string[],
+  ): Promise<EditorialStateDto> => {
+    const applied = applyEditorialCommand(project.ast, command, sha256);
+    if (!applied.ok) throw new Error(`Editorial command rejected: ${applied.error.code}`);
+    const formatted = formatar(applied.ast);
+    if (!formatted.ok || validarMarkdownCanonico(formatted.valor, applied.ast).length > 0) {
+      throw new Error('Editorial command produced noncanonical output.');
+    }
+    const journal = appendEditorialJournalEntry(
+      project.journal,
+      command,
+      applied.revisionHash,
+      sha256,
+    );
+    await editorialStore.saveJournal(journal);
+    if (project.approval !== undefined) project.approvalWasInvalidated = true;
+    delete project.approval;
+    project.ast = applied.ast;
+    delete project.detectedReferenceIndex;
+    delete project.referenceIndex;
+    delete project.referenceIndexDigest;
+    project.journal = journal;
+    refreshLegalReferences(project.projectId);
+    runValidation(project, 'incremental', changedNodeIds);
+    return editorialState(project);
+  };
+
   const run = async (job: JobRecord): Promise<void> => {
     const project = projectOrThrow(job.projectId);
     const failIfCancelled = (): void => {
@@ -642,6 +1303,7 @@ export const createLocalProjectService = ({
           },
           hashDaLinha: sha256,
           metadados: metadata,
+          permitirBaixaConfianca: true,
         });
       }
       emit(job, {
@@ -671,132 +1333,26 @@ export const createLocalProjectService = ({
         totalUnits: 6,
         message: 'Block IDs identificados',
       });
-      project.markdown = result.markdown;
-      const nodeByDomainId = new Map<string, string>();
-      const build = (
-        node: NormaChildNode<unknown, unknown>,
-        parent: string | null,
-        depth: number,
-        order: number,
-      ): string => {
-        const previewNodeId = randomUUID();
-        nodeByDomainId.set(node.id, previewNodeId);
-        const children = node.children.map((child, index) =>
-          build(child as NormaChildNode<unknown, unknown>, previewNodeId, depth + 1, index),
-        );
-        const record = node as unknown as Record<string, unknown>;
-        const source = node.sourceRef;
-        const dto: PreviewNodeDto = {
-          previewNodeId,
-          parentPreviewNodeId: parent,
-          nodeKind: node.tipo,
-          depth,
-          order,
-          label: childLabel(record).slice(0, DESKTOP_IMPORT_LIMITS.maxLabelCharacters),
-          plainText: childText(record).slice(0, DESKTOP_IMPORT_LIMITS.maxPlainTextCharacters),
-          blockId: typeof record['blockId'] === 'string' ? record['blockId'] : null,
-          deviceStatus:
-            typeof record['deviceStatus'] === 'string'
-              ? (record['deviceStatus'] as PreviewNodeDto['deviceStatus'])
-              : null,
-          hasChildren: children.length > 0,
-          childCount: children.length,
-          histories: Array.isArray(record['redacoesAnteriores'])
-            ? (record['redacoesAnteriores'] as { texto: string; nota?: string }[])
-                .slice(0, DESKTOP_IMPORT_LIMITS.maxHistoriesPerNode)
-                .map((history) => ({ plainText: history.texto, note: history.nota ?? null }))
-            : [],
-          sourceRange:
-            source.rawStartLine === undefined || source.rawEndLine === undefined
-              ? null
-              : {
-                  sourceArtifactId: project.source.primary.sourceArtifactId,
-                  startLine: source.rawStartLine,
-                  endLine: source.rawEndLine,
-                },
-        };
-        project.nodes.set(previewNodeId, { dto, children });
-        return previewNodeId;
-      };
-      project.roots.push(
-        ...result.arvore.children.map((node, index) => build(node, null, 0, index)),
-      );
-      const root = result.arvore;
-      project.document = {
+      const revisionHash = calculateRevisionHash(result.arvore, sha256);
+      const journal: EditorialJournal = {
+        schemaVersion: 1,
+        journalId: randomUUID(),
         projectId: project.projectId,
-        source: project.source.summary,
-        title: root.titulo.slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
-        sigla: root.sigla,
-        legalStatus: root.legalStatus,
-        totalArticles: root.totalArtigos,
-        totalPreviewNodes: project.nodes.size,
-        metadata: [
-          ['title', root.titulo],
-          ['sigla', root.sigla],
-          ['tipo', root.tipoNorma],
-          ['numero', root.numero],
-          ['ano', root.ano],
-          ['ramo', root.ramo],
-          ['fonte', root.fonte],
-          ['data_publicacao', root.dataPublicacao],
-          ['data_atualizacao_legal', root.dataAtualizacaoLegal],
-          ['data_formatacao_vinculex', root.dataFormatacaoVinculex],
-          ['total_artigos', root.totalArtigos],
-          ['versao_vinculex', root.versaoVinculex],
-          ['legal_status', root.legalStatus],
-          ['tags', root.tags ?? []],
-        ].map(([key, value]) => ({ key, value })) as PreviewDocumentDto['metadata'],
-        callouts: [
-          {
-            calloutKind: 'info',
-            title: 'Fonte oficial',
-            plainText: `${String(project.source.artifacts.length)} snapshot(s) verificado(s): ${project.source.summary.displayName}.`,
-          },
-          {
-            calloutKind: 'caution',
-            title: 'Aviso de segurança jurídica',
-            plainText: 'Confirme o conteúdo na fonte oficial antes de uso jurídico.',
-          },
-          ...(root.notasEditoriais ?? []).slice(0, 8).map((note) => ({
-            calloutKind: 'note' as const,
-            title: 'Nota editorial',
-            plainText: note,
-          })),
-        ],
+        createdAt: now().toISOString(),
+        base: { revisionHash, ast: result.arvore },
+        entries: [],
       };
-      const firstRoot =
-        project.roots[0] === undefined ? undefined : project.nodes.get(project.roots[0]);
-      const projectionDiagnostic: DiagnosticDto[] =
-        firstRoot === undefined
-          ? []
-          : [
-              {
-                diagnosticId: randomUUID(),
-                severity: 'info',
-                code: 'preview_projection_ready',
-                message: 'Snapshot verificado e projetado no preview sanitizado.',
-                blocksExport: false,
-                previewNodeId: firstRoot.dto.previewNodeId,
-                blockId: firstRoot.dto.blockId,
-                sourceRange: firstRoot.dto.sourceRange,
-              },
-            ];
-      project.diagnostics = [
-        ...projectionDiagnostic,
-        ...[...project.nodes.values()]
-          .filter(({ dto }) => dto.deviceStatus === 'revoked' || dto.deviceStatus === 'vetoed')
-          .slice(0, 500)
-          .map(({ dto }) => ({
-            diagnosticId: randomUUID(),
-            severity: 'info' as const,
-            code: `device_${dto.deviceStatus ?? 'unknown'}`,
-            message: `${dto.label}: estado jurídico ${dto.deviceStatus === 'revoked' ? 'revogado' : 'vetado'}.`,
-            blocksExport: false,
-            previewNodeId: dto.previewNodeId,
-            blockId: dto.blockId,
-            sourceRange: dto.sourceRange,
-          })),
-      ];
+      await editorialStore.saveJournal(journal);
+      project.ast = result.arvore;
+      delete project.detectedReferenceIndex;
+      delete project.referenceIndex;
+      delete project.referenceIndexDigest;
+      project.journal = journal;
+      refreshLegalReferences(project.projectId);
+      runValidation(
+        project as ProjectRecord & { ast: IdentifiedNormaAST; journal: EditorialJournal },
+        'full',
+      );
       emit(job, {
         jobStatus: 'running',
         phase: 'preview_projection',
@@ -935,9 +1491,12 @@ export const createLocalProjectService = ({
         projects.set(job.projectId, {
           projectId: job.projectId,
           source,
+          projectionProfile: 'complete_with_history',
           nodes: new Map(),
           roots: [],
           diagnostics: [],
+          approvalWasInvalidated: false,
+          editorialDiagnosticIds: new Map(),
         });
         setImmediate(() => void run(job));
         return { jobId: job.jobId, projectId: job.projectId };
@@ -987,6 +1546,41 @@ export const createLocalProjectService = ({
         return { items };
       },
     },
+    setPreviewProjectionProfile: {
+      authorize: ({ projectId }) => {
+        const project = projects.get(projectId);
+        return project?.ast !== undefined && project.document !== undefined;
+      },
+      handle: async ({ projectId, projectionProfile }): Promise<ProjectionPreferenceDto> => {
+        const project = editorialProjectOrThrow(projectId);
+        const preflight = projectContent(project.ast, projectionProfile);
+        if (!preflight.ok) {
+          throw new Error('The selected content projection is not available.');
+        }
+        const previousProfile = project.projectionProfile;
+        await editorialStore.saveProjectionPreference(projectId, projectionProfile);
+        if (previousProfile !== projectionProfile) {
+          project.projectionProfile = projectionProfile;
+          try {
+            rebuildProjection(project, project.ast);
+          } catch (error) {
+            project.projectionProfile = previousProfile;
+            rebuildProjection(project, project.ast);
+            await editorialStore.saveProjectionPreference(projectId, previousProfile);
+            throw error;
+          }
+        }
+        return { projectId, projectionProfile };
+      },
+    },
+    getLegalReference: {
+      authorize: ({ projectId }) => projects.has(projectId),
+      handle: ({ projectId, referenceId }) => legalReferencePreview(projectId, referenceId),
+    },
+    navigateLegalReference: {
+      authorize: ({ projectId }) => projects.has(projectId),
+      handle: ({ projectId, referenceId }) => legalReferenceNavigation(projectId, referenceId),
+    },
     getDiagnosticPage: {
       authorize: ({ projectId }) => projects.has(projectId),
       handle: ({ projectId, cursor, limit }): DiagnosticPageDto => {
@@ -1010,16 +1604,158 @@ export const createLocalProjectService = ({
         return { items, nextCursor, totalItems: project.diagnostics.length };
       },
     },
+    getEditorialState: {
+      authorize: ({ projectId }) => {
+        const project = projects.get(projectId);
+        return project?.ast !== undefined && project.journal !== undefined;
+      },
+      handle: ({ projectId }) => editorialState(editorialProjectOrThrow(projectId)),
+    },
+    correctEditorialText: {
+      authorize: ({ projectId, previewNodeId }) =>
+        projects.get(projectId)?.nodes.has(previewNodeId) === true,
+      handle: async ({ projectId, previewNodeId, value, reason }) => {
+        const project = editorialProjectOrThrow(projectId);
+        const preview = project.nodes.get(previewNodeId);
+        if (preview === undefined) throw new Error('Preview node is not authorized.');
+        const command: EditorialCommand = {
+          schemaVersion: 1,
+          commandId: randomUUID(),
+          localActorId: 'editor-local',
+          occurredAt: now().toISOString(),
+          expectedRevisionHash: calculateRevisionHash(project.ast, sha256),
+          operation: {
+            kind: 'replace_node_text',
+            targetNodeId: preview.domainNodeId,
+            field: operationFieldFor(preview.dto.nodeKind),
+            value,
+            reason,
+          },
+        };
+        return applyAndPersist(project, command, [preview.domainNodeId]);
+      },
+    },
+    confirmEditorialInterpretation: {
+      authorize: ({ projectId, previewNodeId }) =>
+        projects.get(projectId)?.nodes.has(previewNodeId) === true,
+      handle: async ({ projectId, previewNodeId, reason }) => {
+        const project = editorialProjectOrThrow(projectId);
+        const preview = project.nodes.get(previewNodeId);
+        if (preview === undefined) throw new Error('Preview node is not authorized.');
+        const command: EditorialCommand = {
+          schemaVersion: 1,
+          commandId: randomUUID(),
+          localActorId: 'editor-local',
+          occurredAt: now().toISOString(),
+          expectedRevisionHash: calculateRevisionHash(project.ast, sha256),
+          operation: {
+            kind: 'confirm_parse_interpretation',
+            targetNodeId: preview.domainNodeId,
+            reason,
+          },
+        };
+        return applyAndPersist(project, command, [preview.domainNodeId]);
+      },
+    },
+    confirmEditorialWarning: {
+      authorize: ({ projectId, diagnosticId }) => {
+        const project = projects.get(projectId);
+        return [...(project?.editorialDiagnosticIds.values() ?? [])].includes(diagnosticId);
+      },
+      handle: async ({ projectId, diagnosticId, note }) => {
+        const project = editorialProjectOrThrow(projectId);
+        const fingerprint = [...project.editorialDiagnosticIds.entries()].find(
+          ([, id]) => id === diagnosticId,
+        )?.[0];
+        const diagnostic = project.validation?.diagnostics.find(
+          (item) => item.fingerprint === fingerprint,
+        );
+        if (
+          fingerprint === undefined ||
+          diagnostic?.severity !== 'warning' ||
+          diagnostic.confirmed
+        ) {
+          throw new Error('Warning is not confirmable.');
+        }
+        const command: EditorialCommand = {
+          schemaVersion: 1,
+          commandId: randomUUID(),
+          localActorId: 'editor-local',
+          occurredAt: now().toISOString(),
+          expectedRevisionHash: calculateRevisionHash(project.ast, sha256),
+          operation: {
+            kind: 'confirm_warning',
+            warningCode: diagnostic.code,
+            warningFingerprint: diagnostic.fingerprint,
+            ...(note === undefined ? {} : { note }),
+          },
+        };
+        await applyAndPersist(
+          project,
+          command,
+          diagnostic.location.nodeId === null ? [] : [diagnostic.location.nodeId],
+        );
+        runValidation(project, 'full');
+        return editorialState(project);
+      },
+    },
+    validateEditorial: {
+      authorize: ({ projectId }) => {
+        const project = projects.get(projectId);
+        return project?.ast !== undefined && project.journal !== undefined;
+      },
+      handle: ({ projectId }) => {
+        const project = editorialProjectOrThrow(projectId);
+        runValidation(project, 'full');
+        return editorialState(project);
+      },
+    },
+    approveEditorial: {
+      authorize: ({ projectId }) => {
+        const project = projects.get(projectId);
+        return project?.ast !== undefined && project.journal !== undefined
+          ? editorialState(
+              project as ProjectRecord & {
+                ast: IdentifiedNormaAST;
+                journal: EditorialJournal;
+              },
+            ).canApprove
+          : false;
+      },
+      handle: ({ projectId }) => {
+        const project = editorialProjectOrThrow(projectId);
+        if (project.validation === undefined) throw new Error('Full validation is required.');
+        const approved = approveEditorialRevision(
+          project.validation,
+          randomUUID(),
+          'editor-local',
+          now().toISOString(),
+        );
+        if (!approved.ok) throw new Error(`Editorial approval rejected: ${approved.error.code}`);
+        project.approval = approved.approval;
+        project.approvalWasInvalidated = false;
+        return editorialState(project);
+      },
+    },
     chooseExportDestination: {
-      authorize: ({ projectId }) => projects.get(projectId)?.markdown !== undefined,
-      handle: async ({ projectId }) => {
+      authorize: ({ projectId }) => {
+        return projectCanExport(projects.get(projectId));
+      },
+      handle: async ({ projectId, projectionProfile }) => {
         const window = getMainWindow();
         const project = projectOrThrow(projectId);
-        if (window === null || project.document === undefined)
+        if (window === null || project.document === undefined || project.ast === undefined)
           throw new Error('Project is not ready.');
+        const formatted = formatar(project.ast, projectionProfile);
+        if (
+          !formatted.ok ||
+          validarMarkdownCanonico(formatted.valor, project.ast, projectionProfile).length > 0
+        ) {
+          throw new Error('The selected content projection cannot be exported.');
+        }
         const selected = await dialog.showSaveDialog(window, {
-          title: 'Exportar Markdown canônico',
-          defaultPath: `${project.document.sigla}.md`,
+          title: 'Exportar Markdown projetado',
+          defaultPath: `${project.document.sigla}-${projectionProfile === 'current_only' ? 'vigente' : 'completa'}.md`,
           filters: [{ name: 'Markdown', extensions: ['md'] }],
         });
         if (selected.canceled || selected.filePath === undefined) return null;
@@ -1027,7 +1763,7 @@ export const createLocalProjectService = ({
         const path = selected.filePath.toLocaleLowerCase('en-US').endsWith('.md')
           ? selected.filePath
           : `${selected.filePath}.md`;
-        destinations.set(destinationId, { projectId, path });
+        destinations.set(destinationId, { projectId, path, projectionProfile });
         return {
           destinationId,
           displayName: basename(path).slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
@@ -1037,13 +1773,21 @@ export const createLocalProjectService = ({
     writeExport: {
       authorize: ({ projectId, destinationId }) =>
         destinations.get(destinationId)?.projectId === projectId &&
-        projects.get(projectId)?.markdown !== undefined,
+        projectCanExport(projects.get(projectId)),
       handle: async ({ projectId, destinationId }): Promise<ExportResultDto> => {
         const project = projectOrThrow(projectId);
         const destination = destinations.get(destinationId);
-        if (destination === undefined || project.markdown === undefined)
+        if (destination === undefined || project.ast === undefined)
           throw new Error('Destination is not authorized.');
-        const bytes = Buffer.from(project.markdown, 'utf8');
+        const formatted = formatar(project.ast, destination.projectionProfile);
+        if (
+          !formatted.ok ||
+          validarMarkdownCanonico(formatted.valor, project.ast, destination.projectionProfile)
+            .length > 0
+        ) {
+          throw new Error('The selected content projection cannot be exported.');
+        }
+        const bytes = Buffer.from(formatted.valor, 'utf8');
         const tempPath = join(
           dirname(destination.path),
           `.${basename(destination.path)}.${randomUUID()}.tmp`,
@@ -1065,9 +1809,184 @@ export const createLocalProjectService = ({
         return {
           projectId,
           destinationId,
+          projectionProfile: destination.projectionProfile,
           fileName: basename(destination.path),
           byteLength: bytes.byteLength,
           markdownSha256: sha256(bytes),
+        };
+      },
+    },
+    chooseBatchExportDestination: {
+      authorize: ({ projectIds }) => projectIds.every((projectId) => projects.has(projectId)),
+      handle: async ({ projectIds }) => {
+        const window = getMainWindow();
+        if (window === null) throw new Error('Main window is not available.');
+        const selected = await dialog.showOpenDialog(window, {
+          title: 'Escolher pasta para exportação em lote',
+          properties: ['openDirectory'],
+        });
+        const selectedPath = selected.filePaths[0];
+        if (selected.canceled || selectedPath === undefined) return null;
+        const info = await lstat(selectedPath);
+        if (info.isSymbolicLink() || !info.isDirectory()) {
+          throw new Error('Batch destination must be a real directory.');
+        }
+        const rootPath = await realpath(selectedPath);
+        const destinationId = randomUUID();
+        batchDestinations.set(destinationId, { projectIds: [...projectIds], rootPath });
+        return {
+          destinationId,
+          displayName: basename(rootPath).slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
+        };
+      },
+    },
+    writeBatchExport: {
+      authorize: ({ destinationId }) => batchDestinations.has(destinationId),
+      handle: async ({ destinationId }): Promise<BatchExportResultDto> => {
+        const destination = batchDestinations.get(destinationId);
+        if (destination === undefined) throw new Error('Batch destination is not authorized.');
+        batchDestinations.delete(destinationId);
+
+        const rootInfo = await lstat(destination.rootPath);
+        if (rootInfo.isSymbolicLink() || !rootInfo.isDirectory()) {
+          throw new Error('Batch destination changed after authorization.');
+        }
+        const rootReal = await realpath(destination.rootPath);
+        if (rootReal !== destination.rootPath) {
+          throw new Error('Batch destination changed after authorization.');
+        }
+        const lawsRoot = join(rootReal, 'leis');
+        try {
+          await mkdir(lawsRoot, { mode: 0o700 });
+        } catch (error) {
+          const code = (error as NodeJS.ErrnoException).code;
+          if (code !== 'EEXIST') throw error;
+          const lawsInfo = await lstat(lawsRoot);
+          if (lawsInfo.isSymbolicLink() || !lawsInfo.isDirectory()) {
+            throw new Error('The laws export root is not a real directory.', { cause: error });
+          }
+          if ((await realpath(lawsRoot)) !== lawsRoot) {
+            throw new Error('The laws export root escapes the selected directory.', {
+              cause: error,
+            });
+          }
+        }
+
+        const identities = destination.projectIds.map((projectId) => {
+          const project = projects.get(projectId);
+          const fallback = `projeto-${projectId.slice(0, 8)}`;
+          return {
+            projectId,
+            project,
+            title: project?.document?.title ?? 'Projeto sem preview',
+            sigla: slugifyExportName(project?.document?.sigla ?? '', fallback),
+            directoryName: slugifyExportName(project?.document?.title ?? '', fallback),
+          };
+        });
+        const targetCounts = new Map<string, number>();
+        for (const identity of identities) {
+          targetCounts.set(
+            identity.directoryName,
+            (targetCounts.get(identity.directoryName) ?? 0) + 1,
+          );
+        }
+
+        const fail = (
+          identity: (typeof identities)[number],
+          errorCode: BatchExportFailureCode,
+        ): BatchExportItemResultDto => ({
+          projectId: identity.projectId,
+          title: identity.title.slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
+          sigla: identity.sigla,
+          batchExportStatus: 'failed',
+          errorCode,
+        });
+
+        const results = await Promise.all(
+          identities.map(async (identity): Promise<BatchExportItemResultDto> => {
+            const project = identity.project;
+            if (
+              project?.ast === undefined ||
+              project.markdown === undefined ||
+              project.document === undefined
+            ) {
+              return fail(identity, 'NOT_READY');
+            }
+            if (!projectCanExport(project)) return fail(identity, 'NOT_APPROVED');
+            if ((targetCounts.get(identity.directoryName) ?? 0) > 1) {
+              return fail(identity, 'DUPLICATE_TARGET');
+            }
+
+            const targetDirectory = join(lawsRoot, identity.directoryName);
+            try {
+              await lstat(targetDirectory);
+              return fail(identity, 'TARGET_CONFLICT');
+            } catch (error) {
+              if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+                return fail(identity, 'FILESYSTEM_FAILED');
+              }
+            }
+
+            const stageDirectory = join(lawsRoot, `.${identity.directoryName}.${randomUUID()}.tmp`);
+            try {
+              await mkdir(stageDirectory, { mode: 0o700 });
+              const markdownBytes = Buffer.from(project.markdown, 'utf8');
+              const updateMarkdown = generateUpdateMarkdown([
+                {
+                  publicationDate: now().toISOString().slice(0, 10),
+                  version: project.ast.versaoVinculex,
+                  publicationNumber: 1,
+                  kind: 'initial',
+                  sourceSummary: safeSourceSummary(
+                    `Importação de ${project.source.summary.displayName} conferida em fonte oficial.`,
+                  ),
+                  changes: deriveStructuredChanges(null, project.ast),
+                },
+              ]);
+              const updateBytes = Buffer.from(updateMarkdown, 'utf8');
+              const markdownFileName = `${identity.sigla}.md`;
+              const files = [
+                { path: join(stageDirectory, markdownFileName), bytes: markdownBytes },
+                { path: join(stageDirectory, 'UPDATE.md'), bytes: updateBytes },
+              ];
+              await Promise.all(
+                files.map(async ({ path, bytes }) => {
+                  const file = await open(path, 'wx', 0o600);
+                  try {
+                    await file.writeFile(bytes);
+                    await file.sync();
+                  } finally {
+                    await file.close();
+                  }
+                }),
+              );
+              await rename(stageDirectory, targetDirectory);
+              return {
+                projectId: identity.projectId,
+                title: identity.title.slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
+                sigla: identity.sigla,
+                batchExportStatus: 'succeeded',
+                directoryName: identity.directoryName,
+                markdownFileName,
+                updateFileName: 'UPDATE.md',
+                markdownSha256: sha256(markdownBytes),
+                updateSha256: sha256(updateBytes),
+              };
+            } catch {
+              await rm(stageDirectory, { recursive: true, force: true }).catch(() => undefined);
+              return fail(identity, 'FILESYSTEM_FAILED');
+            }
+          }),
+        );
+        const succeeded = results.filter(
+          (result) => result.batchExportStatus === 'succeeded',
+        ).length;
+        return {
+          destinationId,
+          total: results.length,
+          succeeded,
+          failed: results.length - succeeded,
+          results,
         };
       },
     },

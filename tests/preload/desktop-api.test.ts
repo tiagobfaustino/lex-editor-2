@@ -29,18 +29,29 @@ vi.mock('electron', () => ({
 import type { LexDesktopApiV1 } from '../../src/shared/ipc/desktop-api.js';
 import { APP_GET_VERSION_CHANNEL, DESKTOP_CAPABILITIES } from '../../src/shared/ipc/desktop-api.js';
 import {
+  EDITORIAL_GET_STATE_CHANNEL,
+  EDITORIAL_VALIDATE_CHANNEL,
+} from '../../src/shared/ipc/editorial.js';
+import {
+  EXPORT_CHOOSE_BATCH_DESTINATION_CHANNEL,
   EXPORT_CHOOSE_DESTINATION_CHANNEL,
+  EXPORT_WRITE_BATCH_CHANNEL,
   EXPORT_WRITE_CHANNEL,
   PIPELINE_START_CHANNEL,
+  PREVIEW_GET_LEGAL_REFERENCE_CHANNEL,
+  PREVIEW_NAVIGATE_LEGAL_REFERENCE_CHANNEL,
+  PREVIEW_SET_PROJECTION_PROFILE_CHANNEL,
   SOURCE_SELECT_LOCAL_CHANNEL,
   SOURCE_IMPORT_URL_CHANNEL,
 } from '../../src/shared/ipc/import.js';
+import { UPDATES_GET_COUNTS_CHANNEL, UPDATES_LIST_CHANNEL } from '../../src/shared/ipc/updates.js';
 import '../../src/preload/index.js';
 
 const SOURCE_ID = '11111111-1111-4111-8111-111111111111';
 const PROJECT_ID = '22222222-2222-4222-8222-222222222222';
 const JOB_ID = '33333333-3333-4333-8333-333333333333';
 const DESTINATION_ID = '44444444-4444-4444-8444-444444444444';
+const REFERENCE_ID = 'a'.repeat(64);
 
 const exposedApi = (): LexDesktopApiV1 => {
   if (electronMocks.exposed.name !== 'lexDesktop') {
@@ -83,6 +94,55 @@ describe('preload desktop API', () => {
           };
         case PIPELINE_START_CHANNEL:
           return { ok: true, value: { jobId: JOB_ID, projectId: PROJECT_ID } };
+        case EDITORIAL_GET_STATE_CHANNEL:
+        case EDITORIAL_VALIDATE_CHANNEL:
+          return {
+            ok: true,
+            value: {
+              projectId: PROJECT_ID,
+              revisionHash: 'c'.repeat(64),
+              journalSequence: 0,
+              saveState: 'saved',
+              validatedAt: '2026-08-10T13:00:00.000-03:00',
+              validationMode: 'full',
+              validationIsComplete: true,
+              blockingCount: 0,
+              warningCount: 0,
+              unconfirmedWarningCount: 0,
+              reviewApprovalStatus: 'not_approved',
+              canApprove: true,
+              canExport: false,
+              diagnostics: [],
+              reviewTargets: [],
+            },
+          };
+        case PREVIEW_SET_PROJECTION_PROFILE_CHANNEL:
+          return {
+            ok: true,
+            value: { projectId: PROJECT_ID, projectionProfile: 'current_only' },
+          };
+        case PREVIEW_GET_LEGAL_REFERENCE_CHANNEL:
+          return {
+            ok: true,
+            value: {
+              referenceId: REFERENCE_ID,
+              targetTitle: 'Constituição Federal de 1988',
+              targetSigla: 'cf88',
+              targetLegalPath: 'Art. 37',
+              targetDeviceStatus: 'active',
+              targetPlainText: 'A administração pública obedecerá aos princípios legais.',
+              external: true,
+            },
+          };
+        case PREVIEW_NAVIGATE_LEGAL_REFERENCE_CHANNEL:
+          return {
+            ok: true,
+            value: {
+              targetProjectId: PROJECT_ID,
+              targetPreviewNodeId: SOURCE_ID,
+              external: true,
+            },
+          };
         case EXPORT_CHOOSE_DESTINATION_CHANNEL:
           return {
             ok: true,
@@ -94,9 +154,52 @@ describe('preload desktop API', () => {
             value: {
               projectId: PROJECT_ID,
               destinationId: DESTINATION_ID,
+              projectionProfile: 'complete_with_history',
               fileName: 'codigo-penal.md',
               byteLength: 2_048,
               markdownSha256: 'b'.repeat(64),
+            },
+          };
+        case EXPORT_CHOOSE_BATCH_DESTINATION_CHANNEL:
+          return {
+            ok: true,
+            value: { destinationId: DESTINATION_ID, displayName: 'Documentos' },
+          };
+        case EXPORT_WRITE_BATCH_CHANNEL:
+          return {
+            ok: true,
+            value: {
+              destinationId: DESTINATION_ID,
+              total: 1,
+              succeeded: 1,
+              failed: 0,
+              results: [
+                {
+                  projectId: PROJECT_ID,
+                  title: 'Código Penal',
+                  sigla: 'cp',
+                  batchExportStatus: 'succeeded',
+                  directoryName: 'codigo-penal',
+                  markdownFileName: 'cp.md',
+                  updateFileName: 'UPDATE.md',
+                  markdownSha256: 'b'.repeat(64),
+                  updateSha256: 'd'.repeat(64),
+                },
+              ],
+            },
+          };
+        case UPDATES_LIST_CHANNEL:
+          return { ok: true, value: { items: [], nextCursor: null } };
+        case UPDATES_GET_COUNTS_CHANNEL:
+          return {
+            ok: true,
+            value: {
+              pending: 0,
+              approved: 0,
+              rejected: 0,
+              superseded: 0,
+              error: 0,
+              actionable: 0,
             },
           };
         default:
@@ -113,17 +216,57 @@ describe('preload desktop API', () => {
       'app',
       'capabilities',
       'diagnostics',
+      'editorial',
       'export',
       'pipeline',
       'preview',
+      'publication',
       'source',
+      'updates',
       'version',
     ]);
     expect(Object.keys(api.source)).toEqual(['selectLocal', 'importFromUrl']);
     expect(Object.keys(api.pipeline)).toEqual(['start', 'cancel', 'onProgress']);
-    expect(Object.keys(api.preview)).toEqual(['getDocument', 'getPage', 'revealNode']);
+    expect(Object.keys(api.preview)).toEqual([
+      'getDocument',
+      'getPage',
+      'revealNode',
+      'setProjectionProfile',
+      'getLegalReference',
+      'navigateLegalReference',
+    ]);
     expect(Object.keys(api.diagnostics)).toEqual(['getPage']);
-    expect(Object.keys(api.export).sort()).toEqual(['chooseDestination', 'write']);
+    expect(Object.keys(api.editorial)).toEqual([
+      'getState',
+      'correctText',
+      'confirmInterpretation',
+      'confirmWarning',
+      'validate',
+      'approve',
+    ]);
+    expect(Object.keys(api.export).sort()).toEqual([
+      'chooseBatchDestination',
+      'chooseDestination',
+      'write',
+      'writeBatch',
+    ]);
+    expect(Object.keys(api.publication)).toEqual([
+      'prepare',
+      'execute',
+      'getAttempt',
+      'retry',
+      'listHistory',
+      'getDiff',
+      'prepareRollback',
+    ]);
+    expect(Object.keys(api.updates)).toEqual([
+      'list',
+      'getDetail',
+      'getCounts',
+      'approve',
+      'reject',
+      'reprocess',
+    ]);
     expect(api).not.toHaveProperty('ipcRenderer');
     expect(api).not.toHaveProperty('invoke');
   });
@@ -142,12 +285,49 @@ describe('preload desktop API', () => {
       ok: true,
       value: { jobId: JOB_ID, projectId: PROJECT_ID },
     });
-    await expect(api.export.chooseDestination({ projectId: PROJECT_ID })).resolves.toMatchObject({
+    await expect(api.editorial.getState({ projectId: PROJECT_ID })).resolves.toMatchObject({
       ok: true,
+      value: { canApprove: true },
     });
+    await expect(api.editorial.validate({ projectId: PROJECT_ID })).resolves.toMatchObject({
+      ok: true,
+      value: { validationMode: 'full' },
+    });
+    await expect(
+      api.preview.setProjectionProfile({
+        projectId: PROJECT_ID,
+        projectionProfile: 'current_only',
+      }),
+    ).resolves.toMatchObject({ ok: true });
+    await expect(
+      api.preview.getLegalReference({ projectId: PROJECT_ID, referenceId: REFERENCE_ID }),
+    ).resolves.toMatchObject({ ok: true, value: { targetLegalPath: 'Art. 37' } });
+    await expect(
+      api.preview.navigateLegalReference({ projectId: PROJECT_ID, referenceId: REFERENCE_ID }),
+    ).resolves.toMatchObject({ ok: true, value: { targetPreviewNodeId: SOURCE_ID } });
+    await expect(
+      api.export.chooseDestination({
+        projectId: PROJECT_ID,
+        projectionProfile: 'complete_with_history',
+      }),
+    ).resolves.toMatchObject({ ok: true });
     await expect(
       api.export.write({ projectId: PROJECT_ID, destinationId: DESTINATION_ID }),
     ).resolves.toMatchObject({ ok: true, value: { fileName: 'codigo-penal.md' } });
+    await expect(
+      api.export.chooseBatchDestination({ projectIds: [PROJECT_ID] }),
+    ).resolves.toMatchObject({ ok: true });
+    await expect(api.export.writeBatch({ destinationId: DESTINATION_ID })).resolves.toMatchObject({
+      ok: true,
+      value: { succeeded: 1 },
+    });
+    await expect(
+      api.updates.list({ updateReviewStatus: null, cursor: null, limit: 100 }),
+    ).resolves.toMatchObject({ ok: true, value: { items: [] } });
+    await expect(api.updates.getCounts({})).resolves.toMatchObject({
+      ok: true,
+      value: { actionable: 0 },
+    });
 
     expect(electronMocks.invoke.mock.calls).toEqual([
       [APP_GET_VERSION_CHANNEL, {}],
@@ -157,8 +337,26 @@ describe('preload desktop API', () => {
         { url: 'https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm' },
       ],
       [PIPELINE_START_CHANNEL, { sourceId: SOURCE_ID }],
-      [EXPORT_CHOOSE_DESTINATION_CHANNEL, { projectId: PROJECT_ID }],
+      [EDITORIAL_GET_STATE_CHANNEL, { projectId: PROJECT_ID }],
+      [EDITORIAL_VALIDATE_CHANNEL, { projectId: PROJECT_ID }],
+      [
+        PREVIEW_SET_PROJECTION_PROFILE_CHANNEL,
+        { projectId: PROJECT_ID, projectionProfile: 'current_only' },
+      ],
+      [PREVIEW_GET_LEGAL_REFERENCE_CHANNEL, { projectId: PROJECT_ID, referenceId: REFERENCE_ID }],
+      [
+        PREVIEW_NAVIGATE_LEGAL_REFERENCE_CHANNEL,
+        { projectId: PROJECT_ID, referenceId: REFERENCE_ID },
+      ],
+      [
+        EXPORT_CHOOSE_DESTINATION_CHANNEL,
+        { projectId: PROJECT_ID, projectionProfile: 'complete_with_history' },
+      ],
       [EXPORT_WRITE_CHANNEL, { projectId: PROJECT_ID, destinationId: DESTINATION_ID }],
+      [EXPORT_CHOOSE_BATCH_DESTINATION_CHANNEL, { projectIds: [PROJECT_ID] }],
+      [EXPORT_WRITE_BATCH_CHANNEL, { destinationId: DESTINATION_ID }],
+      [UPDATES_LIST_CHANNEL, { updateReviewStatus: null, cursor: null, limit: 100 }],
+      [UPDATES_GET_COUNTS_CHANNEL, {}],
     ]);
   });
 
@@ -186,11 +384,15 @@ describe('preload desktop API', () => {
   it('rejeita payload forjado no preload sem alcançar o canal', async () => {
     const api = exposedApi();
     const forgedStart = api.pipeline.start as (input: unknown) => Promise<unknown>;
+    const forgedReference = api.preview.getLegalReference as (input: unknown) => Promise<unknown>;
 
     await expect(forgedStart({ sourceId: SOURCE_ID, path: '/etc/passwd' })).resolves.toMatchObject({
       ok: false,
       error: { code: 'INVALID_INPUT' },
     });
+    await expect(
+      forgedReference({ projectId: PROJECT_ID, referenceId: 'not-a-hash', path: '/etc/passwd' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
     expect(electronMocks.invoke).not.toHaveBeenCalled();
   });
 });

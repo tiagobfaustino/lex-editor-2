@@ -1,6 +1,9 @@
 import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
 
 import type {
+  BatchExportFailureCode,
+  BatchExportResultDto,
+  ContentProjectionProfileDto,
   DiagnosticDto,
   PreviewDocumentDto,
   PreviewNodeDto,
@@ -8,18 +11,56 @@ import type {
   ProgressDto,
   SourceSummaryDto,
 } from '../../shared/ipc/import.js';
+import type {
+  EditorialDiagnosticDto,
+  EditorialReviewTargetDto,
+  EditorialStateDto,
+} from '../../shared/ipc/editorial.js';
+import type { IpcResult } from '../../shared/ipc/desktop-api.js';
+import { PublicationPanel } from './features/publication/publication-panel.js';
+import { LegalReferenceText } from './features/preview/legal-reference-link.js';
+import { UpdatesPanel } from './features/updates/updates-panel.js';
 
 type DesktopIntegrationState =
   | Readonly<{ kind: 'loading' }>
   | Readonly<{ kind: 'ready'; version: string }>
   | Readonly<{ kind: 'unavailable' }>;
 
+type BatchProjectSummary = Readonly<{
+  projectId: string;
+  title: string;
+  sigla: string;
+  canExport: boolean;
+}>;
+
+type ReferenceNavigationOrigin = Readonly<{
+  projectId: string;
+  previewNodeId: string;
+  originElementId: string;
+}>;
+
 const ROOT_PAGE = 'root';
+
+const BATCH_EXPORT_FAILURE_LABELS: Readonly<Record<BatchExportFailureCode, string>> = Object.freeze(
+  {
+    NOT_READY: 'projeto ainda não processado',
+    NOT_APPROVED: 'revisão ainda não aprovada',
+    DUPLICATE_TARGET: 'duas leis apontam para a mesma pasta',
+    TARGET_CONFLICT: 'a pasta de destino já existe',
+    FILESYSTEM_FAILED: 'não foi possível gravar os arquivos',
+  },
+);
 
 const navigationItems = [
   { label: 'Importação', detail: 'Nova fonte', href: '#importacao', available: true },
   { label: 'Preview e edição', detail: 'Revisão jurídica', href: '#preview', available: true },
-  { label: 'Fila de atualizações', detail: 'Em breve', available: false },
+  { label: 'Publicação', detail: 'Release seguro', href: '#publicacao', available: true },
+  {
+    label: 'Fila de atualizações',
+    detail: 'Revisão legislativa',
+    href: '#atualizacoes',
+    available: true,
+  },
   { label: 'Configuração de fontes', detail: 'Em breve', available: false },
 ] as const;
 
@@ -165,19 +206,27 @@ const ImportPanel = ({
 };
 
 type TreeNodeProps = Readonly<{
+  projectId: string;
   node: PreviewNodeDto;
   pages: ReadonlyMap<string, PreviewPageDto>;
   selectedId: string | null;
   onToggle(node: PreviewNodeDto): void;
   onLoadMore(parentId: string, cursor: string): void;
+  onNavigateReference(
+    referenceId: string,
+    originPreviewNodeId: string,
+    originElementId: string,
+  ): void;
 }>;
 
 const TreeNode = ({
+  projectId,
   node,
   pages,
   selectedId,
   onToggle,
   onLoadMore,
+  onNavigateReference,
 }: TreeNodeProps): React.JSX.Element => {
   const page = pages.get(node.previewNodeId);
   const expanded = page !== undefined;
@@ -207,7 +256,15 @@ const TreeNode = ({
             <small>{node.deviceStatus}</small>
           )}
         </div>
-        {node.plainText.length > 0 && <p>{node.plainText}</p>}
+        {node.plainText.length > 0 && (
+          <p>
+            <LegalReferenceText
+              projectId={projectId}
+              node={node}
+              onNavigate={onNavigateReference}
+            />
+          </p>
+        )}
         {node.histories.map((history, index) => (
           <p className="preview-history" key={`${history.plainText}-${String(index)}`}>
             <s>{history.plainText}</s>
@@ -221,11 +278,13 @@ const TreeNode = ({
           {page.items.map((child) => (
             <TreeNode
               key={child.previewNodeId}
+              projectId={projectId}
               node={child}
               pages={pages}
               selectedId={selectedId}
               onToggle={onToggle}
               onLoadMore={onLoadMore}
+              onNavigateReference={onNavigateReference}
             />
           ))}
           {page.nextCursor !== null && (
@@ -252,9 +311,22 @@ type PreviewPanelProps = Readonly<{
   pages: ReadonlyMap<string, PreviewPageDto>;
   selectedId: string | null;
   exportMessage: string | null;
+  batchExportReport: BatchExportResultDto | null;
+  canExport: boolean;
+  projectionBusy: boolean;
+  batchProjectCount: number;
+  canReturnToReference: boolean;
   onToggle(node: PreviewNodeDto): void;
   onLoadMore(parentId: string | null, cursor: string): void;
+  onProjectionChange(profile: ContentProjectionProfileDto): void;
   onExport(): void;
+  onExportBatch(): void;
+  onNavigateReference(
+    referenceId: string,
+    originPreviewNodeId: string,
+    originElementId: string,
+  ): void;
+  onReturnToReference(): void;
 }>;
 
 const PreviewPanel = ({
@@ -262,9 +334,18 @@ const PreviewPanel = ({
   pages,
   selectedId,
   exportMessage,
+  batchExportReport,
+  canExport,
+  projectionBusy,
+  batchProjectCount,
+  canReturnToReference,
   onToggle,
   onLoadMore,
+  onProjectionChange,
   onExport,
+  onExportBatch,
+  onNavigateReference,
+  onReturnToReference,
 }: PreviewPanelProps): React.JSX.Element => {
   const root = pages.get(ROOT_PAGE);
   return (
@@ -301,10 +382,70 @@ const PreviewPanel = ({
               <h3>{document.title}</h3>
               <p>{String(document.totalPreviewNodes)} nós no preview sanitizado</p>
             </div>
-            <button type="button" onClick={onExport}>
-              Exportar Markdown
-            </button>
+            <div className="export-actions">
+              {canReturnToReference && (
+                <button className="secondary-button" type="button" onClick={onReturnToReference}>
+                  Voltar à referência
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onExport}
+                disabled={!canExport}
+                title={
+                  canExport
+                    ? 'Exportar revisão aprovada'
+                    : 'Valide e aprove a revisão para exportar'
+                }
+              >
+                Exportar Markdown
+              </button>
+              <button
+                type="button"
+                onClick={onExportBatch}
+                disabled={batchProjectCount < 2}
+                title="Exportar leis processadas nesta sessão com relatório independente"
+              >
+                Exportar lote ({String(batchProjectCount)})
+              </button>
+            </div>
           </div>
+          <fieldset className="projection-picker" disabled={projectionBusy}>
+            <legend>Conteúdo do preview e da exportação</legend>
+            <label>
+              <input
+                type="radio"
+                name="projection-profile"
+                value="complete_with_history"
+                checked={document.projectionProfile === 'complete_with_history'}
+                onChange={() => {
+                  onProjectionChange('complete_with_history');
+                }}
+              />
+              <span>
+                <strong>Lei completa</strong>
+                <small>Inclui redações anteriores e dispositivos sem eficácia.</small>
+              </span>
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="projection-profile"
+                value="current_only"
+                checked={document.projectionProfile === 'current_only'}
+                onChange={() => {
+                  onProjectionChange('current_only');
+                }}
+              />
+              <span>
+                <strong>Somente texto vigente</strong>
+                <small>Omite histórico e subárvores revogadas, vetadas ou suspensas.</small>
+              </span>
+            </label>
+            <p>
+              A publicação canônica permanece completa; esta preferência não cria revisão jurídica.
+            </p>
+          </fieldset>
           <dl className="metadata-grid">
             {document.metadata.map((entry) => (
               <div key={entry.key}>
@@ -328,6 +469,7 @@ const PreviewPanel = ({
             {root?.items.map((node) => (
               <TreeNode
                 key={node.previewNodeId}
+                projectId={document.projectId}
                 node={node}
                 pages={pages}
                 selectedId={selectedId}
@@ -335,6 +477,7 @@ const PreviewPanel = ({
                 onLoadMore={(parentId, cursor) => {
                   onLoadMore(parentId, cursor);
                 }}
+                onNavigateReference={onNavigateReference}
               />
             ))}
           </ul>
@@ -354,25 +497,155 @@ const PreviewPanel = ({
               {exportMessage}
             </p>
           )}
+          {batchExportReport !== null && (
+            <section className="batch-export-report" aria-label="Relatório da exportação em lote">
+              <strong>Resultado por lei</strong>
+              <ul>
+                {batchExportReport.results.map((result) => (
+                  <li key={result.projectId}>
+                    <span>
+                      {result.sigla} — {result.title}
+                    </span>
+                    <strong>
+                      {result.batchExportStatus === 'succeeded'
+                        ? 'Exportada'
+                        : `Falha: ${BATCH_EXPORT_FAILURE_LABELS[result.errorCode]}`}
+                    </strong>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       )}
     </section>
   );
 };
 
+type EditorialSaveState = 'idle' | 'saving' | 'saved' | 'error';
+
+type EditorialCorrectionFormProps = Readonly<{
+  target: EditorialReviewTargetDto;
+  busy: boolean;
+  onCorrect(target: EditorialReviewTargetDto, value: string, reason: string): void;
+  onConfirm(target: EditorialReviewTargetDto, reason: string): void;
+}>;
+
+const EditorialCorrectionForm = ({
+  target,
+  busy,
+  onCorrect,
+  onConfirm,
+}: EditorialCorrectionFormProps): React.JSX.Element => {
+  const [value, setValue] = useState(target.plainText);
+  const [reason, setReason] = useState('');
+  const reasonReady = reason.trim().length >= 2;
+  return (
+    <form
+      className="editorial-correction"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onCorrect(target, value, reason);
+      }}
+    >
+      <div className="editorial-correction-heading">
+        <div>
+          <strong>{target.label}</strong>
+          <small>
+            {target.nodeKind.replaceAll('_', ' ')} · confiança {target.confidence}
+          </small>
+        </div>
+        <span className="review-badge">Revisão obrigatória</span>
+      </div>
+      <p className="confidence-reasons">
+        Motivos:{' '}
+        {target.confidenceReasons.map((reasonCode) => reasonCode.replaceAll('_', ' ')).join(', ')}
+      </p>
+      <label htmlFor={`editorial-text-${target.previewNodeId}`}>Interpretação textual atual</label>
+      <textarea
+        id={`editorial-text-${target.previewNodeId}`}
+        value={value}
+        rows={5}
+        disabled={busy}
+        onChange={(event) => {
+          setValue(event.currentTarget.value);
+        }}
+      />
+      <label htmlFor={`editorial-reason-${target.previewNodeId}`}>Motivo editorial</label>
+      <textarea
+        id={`editorial-reason-${target.previewNodeId}`}
+        value={reason}
+        rows={3}
+        required
+        disabled={busy}
+        placeholder="Registre como a interpretação foi conferida na fonte oficial."
+        onChange={(event) => {
+          setReason(event.currentTarget.value);
+        }}
+      />
+      <div className="editorial-actions">
+        <button type="submit" disabled={busy || !reasonReady || value.trim().length === 0}>
+          Salvar correção
+        </button>
+        <button
+          className="secondary-action"
+          type="button"
+          disabled={busy || !reasonReady}
+          onClick={() => {
+            onConfirm(target, reason);
+          }}
+        >
+          Confirmar interpretação
+        </button>
+      </div>
+    </form>
+  );
+};
+
+type ValidationPanelProps = Readonly<{
+  diagnostics: readonly DiagnosticDto[];
+  editorial: EditorialStateDto | null;
+  saveState: EditorialSaveState;
+  onSelect(diagnostic: DiagnosticDto | EditorialDiagnosticDto): void;
+  onValidate(): void;
+  onApprove(): void;
+  onConfirmWarning(diagnostic: EditorialDiagnosticDto): void;
+  onCorrect(target: EditorialReviewTargetDto, value: string, reason: string): void;
+  onConfirmInterpretation(target: EditorialReviewTargetDto, reason: string): void;
+}>;
+
+const isEditorialDiagnostic = (
+  diagnostic: DiagnosticDto | EditorialDiagnosticDto,
+): diagnostic is EditorialDiagnosticDto => 'requiresConfirmation' in diagnostic;
+
 const ValidationPanel = ({
   diagnostics,
+  editorial,
+  saveState,
   onSelect,
-}: {
-  diagnostics: readonly DiagnosticDto[];
-  onSelect: (diagnostic: DiagnosticDto) => void;
-}): React.JSX.Element => {
+  onValidate,
+  onApprove,
+  onConfirmWarning,
+  onCorrect,
+  onConfirmInterpretation,
+}: ValidationPanelProps): React.JSX.Element => {
   const [expanded, setExpanded] = useState(true);
+  const editorialDiagnostics = editorial?.diagnostics ?? [];
+  const allDiagnostics = [...editorialDiagnostics, ...diagnostics];
   const counts = {
-    error: diagnostics.filter((item) => item.severity === 'error').length,
-    warning: diagnostics.filter((item) => item.severity === 'warning').length,
-    info: diagnostics.filter((item) => item.severity === 'info').length,
+    error: allDiagnostics.filter((item) => item.severity === 'error').length,
+    warning: allDiagnostics.filter((item) => item.severity === 'warning').length,
+    info: allDiagnostics.filter((item) => item.severity === 'info').length,
   };
+  const busy = saveState === 'saving';
+  const saveLabel =
+    saveState === 'saving'
+      ? 'Salvando…'
+      : saveState === 'error'
+        ? 'Falha ao salvar'
+        : saveState === 'saved'
+          ? 'Salvo no diário local'
+          : 'Aguardando projeto';
   return (
     <aside
       className={`panel validation-panel${expanded ? '' : ' is-collapsed'}`}
@@ -399,7 +672,48 @@ const ValidationPanel = ({
         </button>
       </header>
       <div id="validation-content" hidden={!expanded}>
-        {diagnostics.length === 0 ? (
+        <div className="editorial-toolbar" aria-live="polite">
+          <div>
+            <span className={`save-indicator save-${saveState}`} aria-hidden="true" />
+            <span>{saveLabel}</span>
+          </div>
+          <div className="editorial-actions">
+            <button type="button" disabled={editorial === null || busy} onClick={onValidate}>
+              Validar revisão
+            </button>
+            <button
+              type="button"
+              disabled={editorial?.canApprove !== true || busy}
+              onClick={onApprove}
+            >
+              {editorial?.reviewApprovalStatus === 'approved'
+                ? 'Preview aprovado'
+                : 'Aprovar preview'}
+            </button>
+          </div>
+          {editorial !== null ? (
+            <p>
+              {editorial.validationIsComplete ? 'Validação completa' : 'Validação incremental'} ·{' '}
+              {String(editorial.blockingCount)} bloqueante(s) ·{' '}
+              {String(editorial.unconfirmedWarningCount)} aviso(s) a confirmar
+            </p>
+          ) : null}
+          {editorial?.reviewApprovalStatus === 'invalidated' ? (
+            <p className="approval-invalidated" role="status">
+              A aprovação anterior foi invalidada por uma nova correção.
+            </p>
+          ) : null}
+        </div>
+        {editorial?.reviewTargets.map((target) => (
+          <EditorialCorrectionForm
+            key={target.previewNodeId}
+            target={target}
+            busy={busy}
+            onCorrect={onCorrect}
+            onConfirm={onConfirmInterpretation}
+          />
+        ))}
+        {allDiagnostics.length === 0 ? (
           <div className="validation-empty">
             <span className="validation-mark" aria-hidden="true">
               ✓
@@ -411,9 +725,10 @@ const ValidationPanel = ({
           </div>
         ) : (
           <ul className="diagnostic-list">
-            {diagnostics.map((item) => (
+            {allDiagnostics.map((item) => (
               <li key={item.diagnosticId}>
                 <button
+                  className="diagnostic-main"
                   type="button"
                   disabled={item.previewNodeId === null}
                   onClick={() => {
@@ -426,6 +741,18 @@ const ValidationPanel = ({
                     <small>{item.message}</small>
                   </span>
                 </button>
+                {isEditorialDiagnostic(item) && item.requiresConfirmation ? (
+                  <button
+                    className="confirm-warning"
+                    type="button"
+                    disabled={item.confirmed || busy}
+                    onClick={() => {
+                      onConfirmWarning(item);
+                    }}
+                  >
+                    {item.confirmed ? 'Aviso confirmado' : 'Confirmar aviso'}
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -454,14 +781,33 @@ export const App = (): React.JSX.Element => {
   const [document, setDocument] = useState<PreviewDocumentDto | null>(null);
   const [pages, setPages] = useState<ReadonlyMap<string, PreviewPageDto>>(() => new Map());
   const [diagnostics, setDiagnostics] = useState<readonly DiagnosticDto[]>([]);
+  const [editorial, setEditorial] = useState<EditorialStateDto | null>(null);
+  const [editorialSaveState, setEditorialSaveState] = useState<EditorialSaveState>('idle');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
+  const [batchExportReport, setBatchExportReport] = useState<BatchExportResultDto | null>(null);
+  const [batchProjects, setBatchProjects] = useState<readonly BatchProjectSummary[]>([]);
+  const [projectionBusy, setProjectionBusy] = useState(false);
+  const [referenceHistory, setReferenceHistory] = useState<readonly ReferenceNavigationOrigin[]>(
+    [],
+  );
   const hasValidDocument = useRef(false);
+  const pendingReferenceFocus = useRef<string | null>(null);
+
+  useEffect(() => {
+    const elementId = pendingReferenceFocus.current;
+    if (elementId === null) return;
+    const element = globalThis.document.getElementById(elementId);
+    if (element === null) return;
+    element.focus();
+    pendingReferenceFocus.current = null;
+  }, [document, pages]);
 
   const prepareImportAttempt = useCallback(() => {
     setError(null);
     setExportMessage(null);
+    setBatchExportReport(null);
     setProgress(null);
   }, []);
 
@@ -487,25 +833,73 @@ export const App = (): React.JSX.Element => {
     });
   }, []);
 
-  const loadProject = useCallback(async (projectId: string) => {
+  const loadProject = useCallback(async (projectId: string, revealPreviewNodeId?: string) => {
     const api = window.lexDesktop;
-    if (api === undefined) return;
-    const [documentResult, pageResult, diagnosticsResult] = await Promise.all([
-      api.preview.getDocument({ projectId }),
-      api.preview.getPage({ projectId, parentPreviewNodeId: null, cursor: null, limit: 25 }),
-      api.diagnostics.getPage({ projectId, cursor: null, limit: 100 }),
-    ]);
-    if (!documentResult.ok || !pageResult.ok || !diagnosticsResult.ok) {
+    if (api === undefined) return false;
+    const [documentResult, pageResult, diagnosticsResult, editorialResult, revealResult] =
+      await Promise.all([
+        api.preview.getDocument({ projectId }),
+        api.preview.getPage({ projectId, parentPreviewNodeId: null, cursor: null, limit: 25 }),
+        api.diagnostics.getPage({ projectId, cursor: null, limit: 100 }),
+        api.editorial.getState({ projectId }),
+        revealPreviewNodeId === undefined
+          ? Promise.resolve(null)
+          : api.preview.revealNode({ projectId, previewNodeId: revealPreviewNodeId }),
+      ]);
+    if (
+      !documentResult.ok ||
+      !pageResult.ok ||
+      !diagnosticsResult.ok ||
+      !editorialResult.ok ||
+      (revealPreviewNodeId !== undefined && revealResult?.ok !== true)
+    ) {
       setError('O processamento terminou sem um preview disponível. Consulte os diagnósticos.');
-      return;
+      return false;
+    }
+    const nextPages = new Map<string, PreviewPageDto>([[ROOT_PAGE, pageResult.value]]);
+    if (revealResult?.ok === true) {
+      for (const item of revealResult.value.items) {
+        const key = item.parentPreviewNodeId ?? ROOT_PAGE;
+        const page = nextPages.get(key);
+        if (page === undefined) {
+          nextPages.set(key, { items: [item], nextCursor: null, totalItems: 1 });
+        } else if (
+          !page.items.some((candidate) => candidate.previewNodeId === item.previewNodeId)
+        ) {
+          nextPages.set(key, {
+            ...page,
+            items: [...page.items, item].sort((left, right) => left.order - right.order),
+          });
+        }
+      }
     }
     hasValidDocument.current = true;
     startTransition(() => {
       setDocument(documentResult.value);
-      setPages(new Map([[ROOT_PAGE, pageResult.value]]));
+      setPages(nextPages);
       setDiagnostics(diagnosticsResult.value.items);
-      setSelectedId(null);
+      setEditorial(editorialResult.value);
+      setEditorialSaveState('saved');
+      setSelectedId(revealPreviewNodeId ?? null);
+      setBatchProjects((current) => {
+        const next = current.filter((item) => item.projectId !== projectId);
+        next.push({
+          projectId,
+          title: documentResult.value.title,
+          sigla: documentResult.value.sigla,
+          canExport: editorialResult.value.canExport,
+        });
+        return next;
+      });
     });
+    if (revealPreviewNodeId !== undefined) {
+      requestAnimationFrame(() =>
+        globalThis.document
+          .getElementById(`preview-${revealPreviewNodeId}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+      );
+    }
+    return true;
   }, []);
 
   useEffect(() => {
@@ -621,7 +1015,7 @@ export const App = (): React.JSX.Element => {
   );
 
   const selectDiagnostic = useCallback(
-    async (diagnostic: DiagnosticDto) => {
+    async (diagnostic: DiagnosticDto | EditorialDiagnosticDto) => {
       if (document === null || diagnostic.previewNodeId === null || window.lexDesktop === undefined)
         return;
       const result = await window.lexDesktop.preview.revealNode({
@@ -653,11 +1047,145 @@ export const App = (): React.JSX.Element => {
     [document],
   );
 
+  const navigateLegalReference = useCallback(
+    async (referenceId: string, originPreviewNodeId: string, originElementId: string) => {
+      const api = window.lexDesktop;
+      if (api === undefined || document === null) return;
+      setError(null);
+      const destination = await api.preview.navigateLegalReference({
+        projectId: document.projectId,
+        referenceId,
+      });
+      if (!destination.ok) {
+        setError(destination.error.message);
+        return;
+      }
+      const loaded = await loadProject(
+        destination.value.targetProjectId,
+        destination.value.targetPreviewNodeId,
+      );
+      if (!loaded) return;
+      setReferenceHistory((current) => [
+        ...current,
+        {
+          projectId: document.projectId,
+          previewNodeId: originPreviewNodeId,
+          originElementId,
+        },
+      ]);
+    },
+    [document, loadProject],
+  );
+
+  const returnToLegalReference = useCallback(async () => {
+    const origin = referenceHistory.at(-1);
+    if (origin === undefined) return;
+    pendingReferenceFocus.current = origin.originElementId;
+    const loaded = await loadProject(origin.projectId, origin.previewNodeId);
+    if (!loaded) {
+      pendingReferenceFocus.current = null;
+      return;
+    }
+    setReferenceHistory((current) => current.slice(0, -1));
+  }, [loadProject, referenceHistory]);
+
+  const runEditorialAction = useCallback(
+    async (
+      action: () => Promise<IpcResult<EditorialStateDto>>,
+      refreshPreview: boolean,
+    ): Promise<void> => {
+      setError(null);
+      setEditorialSaveState('saving');
+      const result = await action();
+      if (!result.ok) {
+        setEditorialSaveState('error');
+        setError(result.error.message);
+        return;
+      }
+      setEditorial(result.value);
+      setBatchProjects((current) =>
+        current.map((item) =>
+          item.projectId === result.value.projectId
+            ? { ...item, canExport: result.value.canExport }
+            : item,
+        ),
+      );
+      setEditorialSaveState('saved');
+      if (refreshPreview) await loadProject(result.value.projectId);
+    },
+    [loadProject],
+  );
+
+  const validateEditorial = useCallback(() => {
+    const api = window.lexDesktop;
+    if (document === null || api === undefined) return;
+    void runEditorialAction(() => api.editorial.validate({ projectId: document.projectId }), false);
+  }, [document, runEditorialAction]);
+
+  const approveEditorial = useCallback(() => {
+    const api = window.lexDesktop;
+    if (document === null || api === undefined) return;
+    void runEditorialAction(() => api.editorial.approve({ projectId: document.projectId }), false);
+  }, [document, runEditorialAction]);
+
+  const correctEditorialText = useCallback(
+    (target: EditorialReviewTargetDto, value: string, reason: string) => {
+      const api = window.lexDesktop;
+      if (document === null || api === undefined) return;
+      void runEditorialAction(
+        () =>
+          api.editorial.correctText({
+            projectId: document.projectId,
+            previewNodeId: target.previewNodeId,
+            value,
+            reason,
+          }),
+        true,
+      );
+    },
+    [document, runEditorialAction],
+  );
+
+  const confirmEditorialInterpretation = useCallback(
+    (target: EditorialReviewTargetDto, reason: string) => {
+      const api = window.lexDesktop;
+      if (document === null || api === undefined) return;
+      void runEditorialAction(
+        () =>
+          api.editorial.confirmInterpretation({
+            projectId: document.projectId,
+            previewNodeId: target.previewNodeId,
+            reason,
+          }),
+        true,
+      );
+    },
+    [document, runEditorialAction],
+  );
+
+  const confirmEditorialWarning = useCallback(
+    (diagnostic: EditorialDiagnosticDto) => {
+      const api = window.lexDesktop;
+      if (document === null || api === undefined) return;
+      void runEditorialAction(
+        () =>
+          api.editorial.confirmWarning({
+            projectId: document.projectId,
+            diagnosticId: diagnostic.diagnosticId,
+          }),
+        false,
+      );
+    },
+    [document, runEditorialAction],
+  );
+
   const exportMarkdown = useCallback(async () => {
     if (document === null || window.lexDesktop === undefined) return;
     setExportMessage(null);
+    setBatchExportReport(null);
     const destination = await window.lexDesktop.export.chooseDestination({
       projectId: document.projectId,
+      projectionProfile: document.projectionProfile,
     });
     if (!destination.ok || destination.value === null) return;
     const written = await window.lexDesktop.export.write({
@@ -666,10 +1194,60 @@ export const App = (): React.JSX.Element => {
     });
     setExportMessage(
       written.ok
-        ? `${written.value.fileName} exportado com integridade verificada.`
+        ? `${written.value.fileName} exportado no perfil ${written.value.projectionProfile === 'current_only' ? 'somente vigente' : 'lei completa'}, com integridade verificada.`
         : written.error.message,
     );
   }, [document]);
+
+  const changeProjection = useCallback(
+    async (projectionProfile: ContentProjectionProfileDto) => {
+      const api = window.lexDesktop;
+      if (
+        api === undefined ||
+        document === null ||
+        projectionBusy ||
+        document.projectionProfile === projectionProfile
+      ) {
+        return;
+      }
+      setProjectionBusy(true);
+      setError(null);
+      const result = await api.preview.setProjectionProfile({
+        projectId: document.projectId,
+        projectionProfile,
+      });
+      if (!result.ok) {
+        setError(result.error.message);
+        setProjectionBusy(false);
+        return;
+      }
+      await loadProject(document.projectId);
+      setProjectionBusy(false);
+    },
+    [document, loadProject, projectionBusy],
+  );
+
+  const exportBatch = useCallback(async () => {
+    const api = window.lexDesktop;
+    if (api === undefined || batchProjects.length < 2) return;
+    setExportMessage(null);
+    setBatchExportReport(null);
+    const destination = await api.export.chooseBatchDestination({
+      projectIds: batchProjects.map((project) => project.projectId),
+    });
+    if (!destination.ok || destination.value === null) return;
+    const written = await api.export.writeBatch({
+      destinationId: destination.value.destinationId,
+    });
+    if (!written.ok) {
+      setExportMessage(written.error.message);
+      return;
+    }
+    setBatchExportReport(written.value);
+    setExportMessage(
+      `${String(written.value.succeeded)} lei(s) exportada(s); ${String(written.value.failed)} falha(s).`,
+    );
+  }, [batchProjects]);
 
   const integrationLabel =
     desktopIntegration.kind === 'ready'
@@ -729,13 +1307,40 @@ export const App = (): React.JSX.Element => {
             pages={pages}
             selectedId={selectedId}
             exportMessage={exportMessage}
+            batchExportReport={batchExportReport}
+            canExport={editorial?.canExport === true}
+            projectionBusy={projectionBusy}
+            batchProjectCount={batchProjects.length}
+            canReturnToReference={referenceHistory.length > 0}
             onToggle={toggleNode}
             onLoadMore={(parent, cursor) => void loadPage(parent, cursor)}
+            onProjectionChange={(profile) => void changeProjection(profile)}
             onExport={() => void exportMarkdown()}
+            onExportBatch={() => void exportBatch()}
+            onNavigateReference={(referenceId, originPreviewNodeId, originElementId) =>
+              void navigateLegalReference(referenceId, originPreviewNodeId, originElementId)
+            }
+            onReturnToReference={() => void returnToLegalReference()}
           />
+          <PublicationPanel
+            key={document?.projectId ?? 'no-project'}
+            projectId={document?.projectId ?? null}
+            lawTitle={document?.title ?? null}
+            sigla={document?.sigla ?? null}
+            deviceCount={document?.totalPreviewNodes ?? 0}
+            canPublish={editorial?.canExport === true}
+          />
+          <UpdatesPanel />
           <ValidationPanel
             diagnostics={diagnostics}
+            editorial={editorial}
+            saveState={editorialSaveState}
             onSelect={(diagnostic) => void selectDiagnostic(diagnostic)}
+            onValidate={validateEditorial}
+            onApprove={approveEditorial}
+            onConfirmWarning={confirmEditorialWarning}
+            onCorrect={correctEditorialText}
+            onConfirmInterpretation={confirmEditorialInterpretation}
           />
         </main>
       </div>
