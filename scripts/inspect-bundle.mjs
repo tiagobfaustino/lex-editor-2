@@ -11,6 +11,8 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 
+import { PRIVATE_PATH_PATTERNS, SENSITIVE_CONTENT_PATTERNS } from './scan-sensitive-output.mjs';
+
 const unpackedDirectory = process.argv[2] ?? 'release/linux-unpacked';
 const asarPath = join(unpackedDirectory, 'resources', 'app.asar');
 
@@ -55,14 +57,7 @@ for (const entry of entries) {
 
 // --- Conteúdo proibido dentro dos arquivos ---------------------------------
 
-const forbiddenContent = [
-  { pattern: /\/home\/[a-z0-9_-]+\//i, rule: 'caminho absoluto da estação' },
-  {
-    pattern: /\b(SUPABASE_(SERVICE_ROLE|SECRET)|service_role|BEGIN [A-Z ]*PRIVATE KEY)\b/,
-    rule: 'credencial',
-  },
-  { pattern: /\bghp_[A-Za-z0-9]{20,}|\bsk-[A-Za-z0-9]{20,}/, rule: 'token' },
-];
+const forbiddenContent = [...SENSITIVE_CONTENT_PATTERNS, ...PRIVATE_PATH_PATTERNS];
 
 const extractionRoot = mkdtempSync(join(tmpdir(), 'lex-bundle-'));
 
@@ -96,7 +91,7 @@ try {
     for (const { pattern, rule } of forbiddenContent) {
       const match = pattern.exec(text);
       if (match) {
-        fail(rule, `${relative(extractionRoot, file)} → ${match[0].slice(0, 60)}`);
+        fail(rule, relative(extractionRoot, file));
       }
     }
   }

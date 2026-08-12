@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: draft
+- `implementation_status`: done
 - `priority`: P2
 - `owner`: não atribuído
 
@@ -74,12 +74,12 @@ quando solicitado, então o serviço nega sem promover ou trocar o ponteiro.
 
 ## Critérios de aceite
 
-- [ ] Fluxo completo real funciona em staging.
-- [ ] Falha em cada estágio é retomável sem duplicação.
-- [ ] Corrida publica somente uma tentativa.
-- [ ] Rollback para frente preserva versões anteriores.
-- [ ] Testes provam ausência de secrets e negação das identidades indevidas.
-- [ ] Auditoria liga aprovação, publicationId, SHA, versão e resultado.
+- [x] Fluxo completo real funciona em staging.
+- [x] Falha em cada estágio é retomável sem duplicação.
+- [x] Corrida publica somente uma tentativa.
+- [x] Rollback para frente preserva versões anteriores.
+- [x] Testes provam ausência de secrets e negação das identidades indevidas.
+- [x] Auditoria liga aprovação, publicationId, SHA, versão e resultado.
 
 ## Validação mínima
 
