@@ -40,10 +40,10 @@
     "typecheck:workspaces": "npm run typecheck --workspaces --if-present",
     "typecheck:node": "tsc --project tsconfig.node.json --noEmit",
     "typecheck:renderer": "tsc --project tsconfig.renderer.json --noEmit",
-    "test:e2e": "npm run build:app && playwright test",
+    "test:e2e": "npm run build:workspaces && npm run build:app && playwright test",
     "test:e2e:only": "playwright test",
     "build": "npm run build:workspaces && npm run build:app && electron-builder --config electron-builder.yml",
-    "build:unpacked": "npm run build:app && electron-builder --config electron-builder.yml --dir"
+    "build:unpacked": "npm run build:workspaces && npm run build:app && electron-builder --config electron-builder.yml --dir"
   },
   "devDependencies": {
     "@electron/asar": "3.4.1",

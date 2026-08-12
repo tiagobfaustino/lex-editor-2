@@ -82,9 +82,9 @@ navegáveis. Não há feature ativa nem tarefa parcial no índice atual.
   desligado, então o smoke roda sobre o app compilado com configuração
   equivalente à produção, conforme o `playwright.config.ts`. Detalhes e
   consequências no `review.md` da Feature 001.
-- **Ações de CI ainda em `@v4`.** O runner emite aviso de deprecação do Node
-  20 para `actions/checkout@v4` e `actions/setup-node@v4`; subir para `@v5`
-  em limpeza futura.
+- **Ações de CI em `@v4` (resolvido em 2026-08-12).** O workflow usa
+  `actions/checkout@v5` e `actions/setup-node@v5`, compatíveis com o runtime
+  atual dos runners hospedados.
 - **Tokens visuais são baseline.** Os valores oficiais de marca do Vinculex
   precisam substituir as cores atuais antes de a UI ser considerada pronta. A
   semântica dos nomes não muda.
