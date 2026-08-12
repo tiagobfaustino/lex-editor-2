@@ -1,5 +1,6 @@
 # Dependências
 node_modules/
+supabase/functions/publisher/generated/
 .pnpm-store/
 .npm/
 
@@ -72,10 +73,16 @@ temp/
 
 # Ferramentas locais de agentes e navegador
 .playwright-mcp/
-.claude/
+.codex/
 .kilocode/
 .kilo/
 .serena/
+
+# Configuração pessoal do Claude Code. Vale aqui a mesma regra de
+# .agents/rules/ abaixo: hooks e servidores MCP de quem opera o agente, com
+# caminhos absolutos de binários locais. O contrato compartilhado fica em
+# .claude/CLAUDE.md, .claude/settings.json e .claude/skills/, versionados.
+.claude/settings.local.json
 
 # Regras de ferramenta pessoal por plataforma de agente (RTK e similares).
 # São preferência de quem opera o agente, não contrato deste projeto, e
