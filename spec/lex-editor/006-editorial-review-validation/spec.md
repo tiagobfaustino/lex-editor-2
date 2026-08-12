@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: draft
+- `implementation_status`: done
 - `priority`: P1
 - `owner`: não atribuído
 
@@ -73,11 +73,11 @@ então a operação é negada com localização e motivo.
 
 ## Critérios de aceite
 
-- [ ] Editor corrige ao menos um erro real e preserva o resultado.
-- [ ] Cada regra bloqueante e aviso relevante possui caso automatizado.
-- [ ] Fechar/reabrir recupera a cópia de trabalho sem sucesso falso.
-- [ ] Exportação em lote isola resultados por lei.
-- [ ] `UPDATE.md` descreve corretamente mudanças estruturadas.
+- [x] Editor corrige ao menos um erro real e preserva o resultado.
+- [x] Cada regra bloqueante e aviso relevante possui caso automatizado.
+- [x] Fechar/reabrir recupera a cópia de trabalho sem sucesso falso.
+- [x] Exportação em lote isola resultados por lei.
+- [x] `UPDATE.md` descreve corretamente mudanças estruturadas.
 
 ## Validação mínima
 

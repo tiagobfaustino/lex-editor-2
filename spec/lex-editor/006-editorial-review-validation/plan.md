@@ -28,10 +28,47 @@ novo comando a invalida.
   imediatamente e a tela mostra estado.
 - Checkpoint reduz replay, mas o log continua auditável.
 - Avisos confirmados são ligados ao código e hash da revisão.
+- O hash de revisão é SHA-256 da forma JSON canônica produzida pelo schema da
+  `IdentifiedNormaAST`; a função criptográfica é injetada para manter o pacote
+  de domínio independente de Node e navegador.
+- Cada entrada do diário referencia o hash esperado da revisão anterior e o
+  hash resultante. Sequência, IDs de comando e cadeia de hashes são validados
+  antes do replay, impedindo reordenação, duplicação e comando obsoleto.
+- O checkpoint ancora uma sequência e um hash já registrados no diário. Se ele
+  estiver ausente, inválido ou corrompido, a recuperação refaz o diário desde o
+  snapshot-base; diário inválido falha fechado.
+- Diário e checkpoint são gravados pelo processo principal em arquivo temporário
+  restrito, sincronizados e promovidos por `rename` no mesmo diretório. Paths,
+  arquivos e diretórios redirecionados por symlink são recusados.
+- A validação incremental dá feedback somente aos nós afetados e nunca habilita
+  aprovação. Aprovação e exportação exigem relatório completo da mesma revisão
+  e da mesma sequência do diário.
+- A aprovação local referencia hash e sequência; qualquer comando posterior,
+  inclusive um comando sem mudança textual, torna a aprovação anterior inválida.
+- O desktop pode identificar provisoriamente um nó de baixa confiança para
+  exibi-lo no fluxo editorial, mas o diagnóstico `human_review_required`
+  continua bloqueando aprovação e exportação até decisão explícita.
+- O renderer recebe apenas projeções editoriais limitadas e IDs opacos. Correção,
+  confirmação, validação e aprovação são capacidades IPC distintas; a AST e o
+  diário permanecem no processo principal.
+- O `UPDATE.md` é gerado de mudanças estruturadas (`included`, `amended`,
+  `revoked`, `renumbered`), ordena publicações por `numero_publicacao` decrescente
+  e Block IDs de forma lexical, e recebe data/versão explicitamente para não
+  consultar relógio ou estado externo no domínio.
+- A exportação em lote recebe apenas IDs opacos, mantém o destino real no
+  processo principal e grava cada lei em staging próprio antes de promover a
+  pasta canônica `leis/<nome-da-lei>/`. Falha de validação, colisão ou filesystem
+  é devolvida por lei e não interrompe as demais.
+- Reprocessamento com base idêntica reaplica o diário; base alterada sem comandos
+  pode ser substituída. Se já houver correções, qualquer divergência da base
+  produz `editorial_reprocessing_conflict` e preserva todos os command IDs para
+  decisão explícita do editor.
 
 ## Erros e recuperação
 
 - Comando inválido não altera cópia.
+- O `main` confirma a escrita durável do comando antes de atualizar a projeção
+  exibida como salva.
 - Crash recupera até o último comando confirmado.
 - Conflito após reparse exige escolha explícita, nunca descarte automático.
 
