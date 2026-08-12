@@ -170,6 +170,22 @@ describe('regras estruturais do HTML', () => {
     expect(linhas).toEqual(['Pena - reclusão, de doze a trinta anos.']);
   });
 
+  it('preserva uma tabela jurídica simples com fronteiras de linha e célula', () => {
+    const linhas = extrair(
+      '<p>ANEXO</p><p>Tabela de taxas</p><table>' +
+        '<tr><th>Ato</th><th>R$</th></tr>' +
+        '<tr><td>Registro</td><td>60,00</td></tr>' +
+        '<tr><td>Renovação</td><td>30,00</td></tr>' +
+        '</table>',
+    );
+
+    expect(linhas).toEqual([
+      'ANEXO',
+      'Tabela de taxas',
+      'Tabela 1. Tabela oficial | Ato; R$ | Registro; 60,00 / Renovação; 30,00',
+    ]);
+  });
+
   it('parentético desconhecido continua contando como conteúdo', () => {
     // O extrator só conhece notas editoriais com prefixo explícito. Tratar
     // qualquer parêntese como nota apagaria conteúdo que deve chegar intacto

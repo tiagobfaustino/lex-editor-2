@@ -63,6 +63,20 @@ export const CODIGOS_PROBLEMA = [
   'decisao_editorial_invalida',
   /** Nota de estado contradiz o `deviceStatus` estruturado. */
   'estado_incompativel',
+
+  // --- Projeções de conteúdo (Feature 009) ---
+  /** Estado desconhecido impede afirmar que a saída contém somente texto vigente. */
+  'estado_desconhecido_bloqueia_vigente',
+
+  // --- Referências jurídicas resolvidas (Feature 010) ---
+  /** Catálogo contém identidade duplicada, revisão inválida ou entrada inconsistente. */
+  'catalogo_juridico_invalido',
+  /** Decisão humana não corresponde à menção ou viola o contrato versionado. */
+  'decisao_referencia_invalida',
+  /** Índice, span ou alvo de referência não pode ser materializado com segurança. */
+  'referencia_juridica_invalida',
+  /** Layout ou conteúdo do pacote VincuLex viola o contrato de exportação. */
+  'pacote_vinculex_invalido',
 ] as const;
 
 export type CodigoProblema = (typeof CODIGOS_PROBLEMA)[number];
@@ -78,6 +92,8 @@ export interface ProblemaValidacao {
   readonly mensagem: string;
   /** `id` interno do nó onde o problema foi detectado, quando conhecido. */
   readonly noId?: string;
+  /** Block ID canônico do nó, quando o diagnóstico precisa localizar a âncora pública. */
+  readonly blockId?: string;
 }
 
 export type ResultadoValidacao<T> =
@@ -96,8 +112,15 @@ export const criarProblema = (
   caminho: readonly SegmentoCaminho[],
   mensagem: string,
   noId?: string,
+  blockId?: string,
 ): ProblemaValidacao =>
-  Object.freeze({ codigo, caminho, mensagem, ...(noId === undefined ? {} : { noId }) });
+  Object.freeze({
+    codigo,
+    caminho,
+    mensagem,
+    ...(noId === undefined ? {} : { noId }),
+    ...(blockId === undefined ? {} : { blockId }),
+  });
 
 /**
  * O caminho do zod é `PropertyKey[]` e pode conter símbolos, que não são

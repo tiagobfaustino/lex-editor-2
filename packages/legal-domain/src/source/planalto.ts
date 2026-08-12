@@ -11,6 +11,62 @@
 
 import { varrerPedacos } from './pedacos.js';
 
+const decodificarEntidades = (texto: string): string =>
+  texto
+    .replace(/&#x([0-9a-f]+);/giu, (_, codigo: string) =>
+      String.fromCodePoint(Number.parseInt(codigo, 16)),
+    )
+    .replace(/&#(\d+);/gu, (_, codigo: string) => String.fromCodePoint(Number(codigo)))
+    .replace(/&nbsp;/giu, ' ')
+    .replace(/&amp;/giu, '&')
+    .replace(/&lt;/giu, '<')
+    .replace(/&gt;/giu, '>')
+    .replace(/&quot;/giu, '"')
+    .replace(/&#39;/giu, "'");
+
+const textoDaCelula = (html: string): string =>
+  decodificarEntidades(html.replace(/<br\s*\/?\s*>/giu, ' ').replace(/<[^>]+>/gu, ' '))
+    .replace(/\s+/gu, ' ')
+    .trim();
+
+const escaparHtml = (texto: string): string =>
+  texto.replace(/&/gu, '&amp;').replace(/</gu, '&lt;').replace(/>/gu, '&gt;');
+
+/**
+ * Preserva tabelas jurídicas simples antes que a varredura por blocos perca
+ * as fronteiras entre linha e célula. Tabelas de navegação com uma única
+ * linha continuam intocadas e são descartadas pelo fluxo normal.
+ */
+const normalizarTabelasSimples = (html: string): string => {
+  let proximoNumero = 1;
+
+  return html.replace(/<table\b[^>]*>[\s\S]*?<\/table>/giu, (tabela) => {
+    const linhas = [...tabela.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/giu)].map((linha) =>
+      [...(linha[1] ?? '').matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/giu)].map((celula) => ({
+        texto: textoDaCelula(celula[1] ?? ''),
+        riscada: /<(?:strike|s|del)\b/iu.test(celula[1] ?? ''),
+      })),
+    );
+    const colunas = linhas[0]?.length ?? 0;
+    if (linhas.length < 2 || colunas === 0 || linhas.some((linha) => linha.length !== colunas)) {
+      return tabela;
+    }
+
+    const celulas = linhas.flat();
+    const historica = celulas.filter(({ riscada }) => riscada).length * 2 > celulas.length;
+    const numero = proximoNumero;
+    if (!historica) proximoNumero += 1;
+    const [cabecalho, ...corpo] = linhas;
+    const serializada = `Tabela ${String(numero)}. Tabela oficial | ${(cabecalho ?? [])
+      .map(({ texto }) => texto)
+      .join('; ')} | ${corpo
+      .map((linha) => linha.map(({ texto }) => texto).join('; '))
+      .join(' / ')}`;
+    const conteudo = escaparHtml(serializada);
+    return historica ? `<p><strike>${conteudo}</strike></p>` : `<p>${conteudo}</p>`;
+  });
+};
+
 /**
  * Notas de vigência e links de navegação que o Planalto intercala. São
  * referência da página, não texto normativo — mas a nota entre parênteses **é**
@@ -92,7 +148,7 @@ export const extrairLinhas = (html: string, opcoes: OpcoesDeExtracao = {}): read
   let anteriorEsperaEmenta = false;
   let emRodapeDeAssinaturas = false;
 
-  for (const pedaco of varrerPedacos(html)) {
+  for (const pedaco of varrerPedacos(normalizarTabelasSimples(html))) {
     const texto = semRodapeDeAssinaturas(pedaco.texto);
     const reconhecido = reconhecer(texto);
 

@@ -1,4 +1,4 @@
-// As catorze verificações da MARKDOWN_SPEC §9 (Feature 004, T004-06).
+// As quinze verificações da MARKDOWN_SPEC §9 (Features 004 e 009).
 //
 // Cada caso corrompe o Markdown já serializado e confere que a validação
 // acusa. Uma verificação que nunca reprova nada não é defesa em profundidade,
@@ -62,7 +62,7 @@ const BASE = 'Art. 1. Caput:\nI - primeiro inciso;\nII - segundo inciso;';
 const codigos = (markdown: string, arvore: IdentifiedNormaAST): string[] =>
   validarMarkdownCanonico(markdown, arvore).map((p) => p.codigo);
 
-describe('o Markdown gerado passa nas catorze verificações', () => {
+describe('o Markdown gerado passa nas quinze verificações', () => {
   it('não acusa nada num documento válido', () => {
     const { markdown, arvore } = pipeline(BASE);
 

@@ -77,6 +77,20 @@ export const REGRAS: readonly Regra[] = [
   regraDeDivisao('subsecao', 'SUBSE[ÇC][ÃA]O'),
   regraDeDivisao('secao', 'SE[ÇC][ÃA]O'),
   {
+    // Algumas normas possuem um único anexo sem numeral expresso. A
+    // identidade canônica é `único`, não uma numeração inventada.
+    tipo: 'anexo',
+    padrao: /^ANEXO$/iu,
+    extrair: () => semTitulo('único', ''),
+  },
+  {
+    // No anexo único, o Word pode concatenar a nota de alteração e o título:
+    // `ANEXO (Redação dada...) TABELA DE TAXAS`.
+    tipo: 'anexo',
+    padrao: /^ANEXO\s+\((?:Inclu|Reda[çc]|Renumerad)[^)]*\)\.?\s+(.+)$/iu,
+    extrair: (m) => ({ numero: 'único', texto: (m[1] ?? '').trim() }),
+  },
+  {
     // `ANEXO I` com título na linha seguinte, ou `Anexo I - Tabela Oficial`.
     // É dispositivo referenciável, não divisão: recebe Block ID `anx-{n}`.
     tipo: 'anexo',

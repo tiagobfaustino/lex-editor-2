@@ -72,6 +72,23 @@ describe('mesclagem de fontes compilada e anotada (ADR-009)', () => {
     expect(resultado.problemas.map((p) => p.codigo)).toContain('conflito_de_fontes');
   });
 
+  it('mantém a primária e ignora somente o caminho de conflito já revisado', () => {
+    const arvore = auxiliar();
+    (arvore.children[0] as unknown as Record<string, unknown>)['caput'] = 'Texto conflitante.';
+    const resultado = mesclarFontes(parsedMinima, [arvore], {
+      conflitosRevisados: ['lei/artigo:1'],
+    });
+
+    expect(resultado.ok).toBe(true);
+    if (!resultado.ok) return;
+    expect((resultado.valor.children[0] as unknown as Record<string, unknown>)['caput']).toBe(
+      (parsedMinima.children[0] as unknown as Record<string, unknown>)['caput'],
+    );
+    expect(
+      (resultado.valor.children[0] as unknown as Record<string, unknown>)['supportingSourceRefs'],
+    ).toBeUndefined();
+  });
+
   it('aceita a fonte anotada como primária quando não há compilada', () => {
     const anotada = auxiliar();
     visitar(anotada as unknown as Record<string, unknown>, (no) => {

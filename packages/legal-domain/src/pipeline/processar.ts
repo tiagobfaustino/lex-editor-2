@@ -79,7 +79,11 @@ const contar = (
 };
 
 export const processar = (
-  entrada: EntradaDoParser & { readonly decisoesEditoriais?: readonly DecisaoEditorial[] },
+  entrada: EntradaDoParser & {
+    readonly decisoesEditoriais?: readonly DecisaoEditorial[];
+    /** Preview editorial explícito; publicação continua bloqueada pela validação. */
+    readonly permitirBaixaConfianca?: boolean;
+  },
 ): ResultadoDoPipeline => {
   const linhasLidas = entrada.conteudo.split('\n').length;
 
@@ -109,7 +113,11 @@ export const processar = (
   }
 
   // --- identificação ---
-  const identificada = identificar(revisada.valor, entrada.metadados.sigla);
+  const identificada = identificar(revisada.valor, entrada.metadados.sigla, {
+    ...(entrada.permitirBaixaConfianca === undefined
+      ? {}
+      : { permitirBaixaConfianca: entrada.permitirBaixaConfianca }),
+  });
 
   if (!identificada.ok) {
     return {
@@ -147,7 +155,7 @@ export const processar = (
     };
   }
 
-  // §9: as catorze verificações rodam sobre o Markdown serializado, como
+  // §9: as quinze verificações rodam sobre o Markdown serializado, como
   // defesa em profundidade contra um bug do próprio Formatter.
   const canonicas = validarMarkdownCanonico(markdown.valor, validada.valor);
 

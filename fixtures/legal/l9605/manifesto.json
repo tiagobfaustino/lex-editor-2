@@ -1,0 +1,25 @@
+{
+  "sourceType": "planalto_html",
+  "sourceRole": "primary_current",
+  "sourceVariant": "annotated",
+  "dataFormatacaoVinculex": "2026-08-11",
+  "dataVerificacaoIntegridade": "2026-08-11",
+  "versaoVinculex": "1.0.0",
+  "legalStatus": "vigente",
+  "publicationStatus": "draft",
+  "descricao": "Lei de Crimes Ambientais, página oficial anotada completa.",
+  "sigla": "l9605",
+  "titulo": "Lei de Crimes Ambientais",
+  "tipoNorma": "lei ordinária",
+  "numero": "9.605",
+  "ano": 1998,
+  "ramo": "penal",
+  "fonte": "https://www.planalto.gov.br/ccivil_03/leis/l9605.htm",
+  "dataPublicacao": "1998-02-12",
+  "dataAtualizacaoLegal": "2026-08-11",
+  "tags": ["ambiental", "penal", "fixture", "projeções"],
+  "snapshotSha256": {
+    "snapshot.html": "1aba936bce2fa1859d4f2b846a4d55a4dceee89dc2f19b7962557d7f41121967",
+    "entrada.txt": "221a852a171a7a0094d945043c6af49439ac7dcf23f0a08f33dec74b50e6ded4"
+  }
+}

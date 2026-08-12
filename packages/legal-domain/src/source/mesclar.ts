@@ -74,6 +74,14 @@ const redacoesUnicas = (valores: readonly unknown[]): unknown[] => {
   });
 };
 
+export interface OpcoesDeMesclagem {
+  /**
+   * Caminhos cuja divergência foi revisada fora do parser. A fonte primária é
+   * mantida e o nó auxiliar conflitante não contribui histórico nem estado.
+   */
+  readonly conflitosRevisados?: readonly string[];
+}
+
 /**
  * Preserva integralmente a árvore primária e agrega somente evidência e
  * histórico de nós estruturalmente correspondentes nas fontes auxiliares.
@@ -81,6 +89,7 @@ const redacoesUnicas = (valores: readonly unknown[]): unknown[] => {
 export const mesclarFontes = (
   primaria: ParsedNormaAST,
   auxiliares: readonly ParsedNormaAST[],
+  opcoes: OpcoesDeMesclagem = {},
 ): ResultadoValidacao<ParsedNormaAST> => {
   const primariaValida = validarParsedNormaAst(primaria);
   if (!primariaValida.ok) return primariaValida;
@@ -103,6 +112,7 @@ export const mesclarFontes = (
       const atual = textoVigente(alvo);
       const complementar = textoVigente(origem);
       if (atual !== undefined && complementar !== undefined && atual !== complementar) {
+        if (opcoes.conflitosRevisados?.includes(caminho) === true) continue;
         problemas.push(
           criarProblema(
             'conflito_de_fontes',

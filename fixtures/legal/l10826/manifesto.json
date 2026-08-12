@@ -1,0 +1,43 @@
+{
+  "sourceType": "planalto_html",
+  "sourceRole": "primary_current",
+  "sourceVariant": "compiled",
+  "dataFormatacaoVinculex": "2026-08-11",
+  "dataVerificacaoIntegridade": "2026-08-11",
+  "versaoVinculex": "1.0.0",
+  "legalStatus": "vigente",
+  "publicationStatus": "draft",
+  "descricao": "Estatuto do Desarmamento, com página compilada primária e página anotada histórica auxiliar.",
+  "sigla": "l10826",
+  "titulo": "Estatuto do Desarmamento",
+  "tipoNorma": "lei ordinária",
+  "numero": "10.826",
+  "ano": 2003,
+  "ramo": "penal",
+  "fonte": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826compilado.htm",
+  "fontesSecundarias": ["https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826.htm"],
+  "dataPublicacao": "2003-12-22",
+  "dataAtualizacaoLegal": "2026-08-11",
+  "tags": ["armas", "penal", "fixture", "projeções"],
+  "mergeDecisions": "decisoes-mesclagem.json",
+  "sources": [
+    {
+      "path": "compiled/snapshot.html",
+      "entrada": "compiled/entrada.txt",
+      "url": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826compilado.htm",
+      "sourceRole": "primary_current",
+      "sourceVariant": "compiled",
+      "snapshotSha256": "0648288b446666f48e9ff0bdc0ccd92761ead2fbaac5d4186ba7f8eca5012722",
+      "entradaSha256": "89b59ca2e29a36360eade51ac3223edda0baded3eb6eb2d43616fdd645d89aa4"
+    },
+    {
+      "path": "annotated/snapshot.html",
+      "entrada": "annotated/entrada.txt",
+      "url": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826.htm",
+      "sourceRole": "historical_auxiliary",
+      "sourceVariant": "annotated",
+      "snapshotSha256": "d7381d1b3c376b0f7b94cb15c323137771e2f592af5675156482876bd2baaa67",
+      "entradaSha256": "8fb91ca4cd3fd0bb9ac5403a3217d2a0cc62d5f44fd0be9907028b5938eb900f"
+    }
+  ]
+}

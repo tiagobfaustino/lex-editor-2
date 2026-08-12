@@ -22,15 +22,17 @@ export interface NotaDeEstado {
   readonly redacaoAtualDadaPor?: string;
 }
 
-/** Parentético ao final da linha, ex.: `(Redação dada pela Lei nº 9.318, de 1996)`. */
-const NOTA_FINAL = /\s*(\((?:Revogad|Vetad|Inclu|Reda[çc]|Renumerad|Suspens)[^)]*\))\s*$/u;
+/** Estados sem eficácia prevalecem mesmo quando outra anotação vem depois. */
+const NOTA_SEM_EFICACIA = /\((?:Revogad|Vetad|Suspens)[^)]*\)/giu;
+
+/** As demais notas só são extraídas quando encerram a linha, como no contrato original. */
+const NOTA_FINAL = /\s*(\((?:Inclu|Reda[çc]|Renumerad)[^)]*\))\s*$/iu;
 
 const REVOGACAO = /^\(Revogad/iu;
 const VETO = /^\(Vetad/iu;
 const INCLUSAO = /^\(Inclu/iu;
 const REDACAO = /^\(Reda[çc]/iu;
 const RENUMERACAO = /^\(Renumerad/iu;
-const SUSPENSAO = /^\(Suspens/iu;
 
 /** Conteúdo do parentético sem os delimitadores, para `notaStatus`. */
 const semParenteses = (nota: string): string => nota.replace(/^\(|\)$/gu, '').trim();
@@ -45,9 +47,49 @@ const semParenteses = (nota: string): string => nota.replace(/^\(|\)$/gu, '').tr
  * tratado antes, no percurso do parser.
  */
 export const interpretarNota = (bruto: string, riscado: boolean): NotaDeEstado => {
+  const semEficacia = [...bruto.matchAll(NOTA_SEM_EFICACIA)]
+    .map((match) => match[0])
+    .sort((a, b) => {
+      const prioridade = (nota: string): number =>
+        REVOGACAO.test(nota) ? 0 : VETO.test(nota) ? 1 : 2;
+      return prioridade(a) - prioridade(b);
+    })[0];
+
+  if (semEficacia !== undefined) {
+    if (REVOGACAO.test(semEficacia)) {
+      return riscado
+        ? {
+            texto: bruto.replace(semEficacia, '').replace(/\s+/gu, ' ').trim(),
+            deviceStatus: 'revoked',
+            preservarTextoRevogado: true,
+            notaStatus: semParenteses(semEficacia),
+          }
+        : {
+            texto: bruto.trim(),
+            deviceStatus: 'revoked',
+            preservarTextoRevogado: false,
+            notaStatus: semParenteses(semEficacia),
+          };
+    }
+
+    if (VETO.test(semEficacia)) {
+      return {
+        texto: bruto.trim(),
+        deviceStatus: 'vetoed',
+        notaStatus: semParenteses(semEficacia),
+      };
+    }
+
+    return {
+      texto: bruto.trim(),
+      deviceStatus: 'suspended',
+      notaStatus: semParenteses(semEficacia),
+    };
+  }
+
   const casamento = NOTA_FINAL.exec(bruto);
   const nota = casamento?.[1];
-  const texto = nota === undefined ? bruto.trim() : bruto.slice(0, casamento?.index).trim();
+  const texto = casamento === null ? bruto.trim() : bruto.slice(0, casamento.index).trim();
 
   if (nota === undefined) {
     // Sem nota: o dispositivo é ativo, salvo se estiver riscado — riscado sem
@@ -56,39 +98,6 @@ export const interpretarNota = (bruto: string, riscado: boolean): NotaDeEstado =
     return riscado
       ? { texto, deviceStatus: 'revoked', preservarTextoRevogado: true }
       : { texto, deviceStatus: 'active' };
-  }
-
-  if (REVOGACAO.test(nota)) {
-    // §5.3: o riscado só existe quando o texto anterior foi preservado. Sem
-    // texto preservado, o que resta é o próprio residual oficial.
-    return riscado
-      ? {
-          texto,
-          deviceStatus: 'revoked',
-          preservarTextoRevogado: true,
-          notaStatus: semParenteses(nota),
-        }
-      : {
-          texto: texto.length > 0 ? `${texto} ${nota}`.trim() : nota,
-          deviceStatus: 'revoked',
-          preservarTextoRevogado: false,
-          notaStatus: nota,
-        };
-  }
-
-  if (VETO.test(nota)) {
-    // Um dispositivo vetado nunca vigorou: a nota é tudo o que existe de texto.
-    // Mantê-la no campo de texto — além de em `notaStatus` — é o que permite ao
-    // nó satisfazer o contrato, que exige texto normativo não vazio.
-    return {
-      texto: texto.length > 0 ? `${texto} ${nota}`.trim() : nota,
-      deviceStatus: 'vetoed',
-      notaStatus: semParenteses(nota),
-    };
-  }
-
-  if (SUSPENSAO.test(nota)) {
-    return { texto, deviceStatus: 'suspended', notaStatus: semParenteses(nota) };
   }
 
   if (RENUMERACAO.test(nota)) {

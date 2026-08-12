@@ -318,6 +318,20 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
       return;
     }
 
+    // O Planalto às vezes põe a nota de uma tabela/anexo histórico num bloco
+    // próprio, logo após o trecho riscado. Ela pertence à última redação
+    // pendente e não é um dispositivo autônomo.
+    const notaHistoricaIsolada =
+      /^\((?:Revogad|Vetad|Inclu|Reda[çc]|Renumerad|Suspens)[^)]*\)\.?$/iu.exec(linha);
+    const ultimaRedacao = historicoPendente.at(-1);
+    if (notaHistoricaIsolada !== null && ultimaRedacao !== undefined) {
+      historicoPendente[historicoPendente.length - 1] = {
+        ...ultimaRedacao,
+        nota: notaHistoricaIsolada[0].replace(/\.$/u, ''),
+      };
+      return;
+    }
+
     // Desembrulha o riscado antes de reconhecer: `~~SEÇÃO II~~` é uma divisão
     // riscada, não uma linha desconhecida. O estado vem depois, da nota.
     const envolvida = /^~~(.*?)~~\s*(\(.*\))?\s*$/u.exec(linha);
@@ -382,7 +396,13 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
       // segmento `anx-` antes do `art-` (BID §2.3.10).
       const anexoAberto = abertos.find((aberto) => aberto.tipo === 'anexo');
 
-      if (reconhecido.tipo === 'artigo' && anexoAberto !== undefined) {
+      if (reconhecido.tipo === 'anexo') {
+        // Anexo pertence à lei, não ao último capítulo/seção que ficou aberto
+        // no corpo permanente.
+        raizes.push(no);
+        divisoes = [];
+        abertos = [no];
+      } else if (reconhecido.tipo === 'artigo' && anexoAberto !== undefined) {
         anexoAberto.filhos.push(no);
         abertos = [anexoAberto, no];
       } else {

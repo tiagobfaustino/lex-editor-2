@@ -1,0 +1,25 @@
+{
+  "sourceType": "planalto_html",
+  "sourceRole": "primary_current",
+  "sourceVariant": "annotated",
+  "dataFormatacaoVinculex": "2026-08-11",
+  "dataVerificacaoIntegridade": "2026-08-11",
+  "versaoVinculex": "1.0.0",
+  "legalStatus": "vigente",
+  "publicationStatus": "draft",
+  "descricao": "Lei dos Juizados Especiais, página oficial anotada completa.",
+  "sigla": "l9099",
+  "titulo": "Lei dos Juizados Especiais Cíveis e Criminais",
+  "tipoNorma": "lei ordinária",
+  "numero": "9.099",
+  "ano": 1995,
+  "ramo": "processual penal",
+  "fonte": "https://www.planalto.gov.br/ccivil_03/leis/l9099.htm",
+  "dataPublicacao": "1995-09-26",
+  "dataAtualizacaoLegal": "2026-08-11",
+  "tags": ["juizados especiais", "fixture", "projeções"],
+  "snapshotSha256": {
+    "snapshot.html": "90b5fbe09395ee53b8231a6d5f11ccaf678f9103aa62f55c15160bf1ee4d656f",
+    "entrada.txt": "a7f3923349f3eb297228815edaa162dbe151519518e3da3d21edfcddb29cea54"
+  }
+}

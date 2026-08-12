@@ -12,6 +12,12 @@
 import { criarProblema, falha, type ResultadoValidacao, sucesso } from '../ast/errors.js';
 import type { IdentifiedNormaAST } from '../ast/nodes.js';
 import { identifiedNormaAstSchema } from '../ast/schemas.js';
+import { projectContent, type ContentProjectionProfile } from '../content-projection/index.js';
+import {
+  prepareLegalReferenceFormatting,
+  type FormatLegalReferencesOptions,
+  type LegalReferenceFormattingContext,
+} from './legal-references.js';
 
 /** Dois espaços por nível, conforme §3.1. */
 const INDENTACAO = '  ';
@@ -62,7 +68,10 @@ const serializarTabela = (no: Record<string, unknown>): string => {
  * Reconstrói o designador oficial a partir do nó. O parser guardou o número e
  * o texto separados; a serialização é responsabilidade daqui.
  */
-const designador = (no: Record<string, unknown>): string => {
+const designador = (
+  no: Record<string, unknown>,
+  references?: LegalReferenceFormattingContext,
+): string => {
   const numero = typeof no['numero'] === 'string' ? no['numero'] : '';
   const texto = typeof no['texto'] === 'string' ? no['texto'] : '';
 
@@ -70,21 +79,30 @@ const designador = (no: Record<string, unknown>): string => {
     case 'artigo': {
       const caput = typeof no['caput'] === 'string' ? no['caput'] : '';
 
-      return `Art. ${numero}. ${caput}`;
+      const materialized = references?.materialize(no, 'caput', caput) ?? caput;
+      return `Art. ${numero}. ${materialized}`;
     }
-    case 'paragrafo':
-      return numero === 'unico' ? `Parágrafo único. ${texto}` : `§ ${numero}º ${texto}`;
-    case 'inciso':
-      return `${numero.toUpperCase()} - ${texto}`;
+    case 'paragrafo': {
+      const materialized = references?.materialize(no, 'texto', texto) ?? texto;
+      return numero === 'unico'
+        ? `Parágrafo único. ${materialized}`
+        : `§ ${numero}º ${materialized}`;
+    }
+    case 'inciso': {
+      const materialized = references?.materialize(no, 'texto', texto) ?? texto;
+      return `${numero.toUpperCase()} - ${materialized}`;
+    }
     case 'alinea': {
       const letra = typeof no['letra'] === 'string' ? no['letra'] : '';
-
-      return `${letra}) ${texto}`;
+      const materialized = references?.materialize(no, 'texto', texto) ?? texto;
+      return `${letra}) ${materialized}`;
     }
-    case 'item':
-      return `${numero}. ${texto}`;
+    case 'item': {
+      const materialized = references?.materialize(no, 'texto', texto) ?? texto;
+      return `${numero}. ${materialized}`;
+    }
     case 'pena':
-      return texto;
+      return references?.materialize(no, 'texto', texto) ?? texto;
     case 'tabela':
       return serializarTabela(no);
     default:
@@ -112,10 +130,9 @@ const comSinalizacao = (no: Record<string, unknown>, linha: string): string => {
 
   if (estado === 'vetoed') {
     // §5.1.3: a nota de veto é emitida em itálico. Ela já está no texto — é o
-    // único conteúdo que um dispositivo vetado tem —, então o que falta é
-    // envolvê-la.
-    return /\([^)]*\)\s*$/u.test(linha)
-      ? linha.replace(/(\([^)]*\))\s*$/u, '*$1*')
+    // conteúdo juridicamente decisivo, embora outra nota possa vir depois.
+    return /\(Vetad[^)]*\)/iu.test(linha)
+      ? linha.replace(/(\(Vetad[^)]*\))/iu, '*$1*')
       : `${linha} *(Vetado)*`;
   }
 
@@ -142,7 +159,11 @@ const historico = (no: Record<string, unknown>, recuo: string): string[] => {
   });
 };
 
-const serializarNo = (no: Record<string, unknown>, nivelDoPai: number): string[] => {
+const serializarNo = (
+  no: Record<string, unknown>,
+  nivelDoPai: number,
+  references?: LegalReferenceFormattingContext,
+): string[] => {
   const tipo = typeof no['tipo'] === 'string' ? no['tipo'] : '';
   const filhos = Array.isArray(no['children']) ? (no['children'] as Record<string, unknown>[]) : [];
 
@@ -154,9 +175,10 @@ const serializarNo = (no: Record<string, unknown>, nivelDoPai: number): string[]
     const blockId = typeof no['blockId'] === 'string' ? ` ^${no['blockId']}` : '';
 
     return [
+      ...historico(no, ''),
       `## Anexo ${numero} - ${titulo}${blockId}`,
       '',
-      ...filhos.flatMap((filho) => serializarNo(filho, -1)),
+      ...filhos.flatMap((filho) => serializarNo(filho, -1, references)),
     ];
   }
 
@@ -175,7 +197,7 @@ const serializarNo = (no: Record<string, unknown>, nivelDoPai: number): string[]
 
     // Headings não ocupam nível na lista. O primeiro dispositivo abaixo de
     // qualquer cadeia de divisões sempre reinicia no nível zero (§3.1).
-    return [cabecalho, '', ...filhos.flatMap((filho) => serializarNo(filho, -1))];
+    return [cabecalho, '', ...filhos.flatMap((filho) => serializarNo(filho, -1, references))];
   }
 
   // A indentação representa a árvore efetiva, não uma profundidade presumida
@@ -185,15 +207,23 @@ const serializarNo = (no: Record<string, unknown>, nivelDoPai: number): string[]
   const nivel = Math.max(0, nivelDoPai + 1);
   const recuo = INDENTACAO.repeat(nivel);
   const blockId = typeof no['blockId'] === 'string' ? no['blockId'] : '';
-  const corpo = comSinalizacao(no, designador(no));
+  const corpo = comSinalizacao(no, designador(no, references));
 
   // §4: exatamente um espaço antes do `^id`, que é o último token da linha.
   const linha = `${recuo}- ${corpo} ^${blockId}`;
 
-  return [...historico(no, recuo), linha, ...filhos.flatMap((filho) => serializarNo(filho, nivel))];
+  return [
+    ...historico(no, recuo),
+    linha,
+    ...filhos.flatMap((filho) => serializarNo(filho, nivel, references)),
+  ];
 };
 
-const frontmatter = (raiz: IdentifiedNormaAST): string[] => {
+const frontmatter = (
+  raiz: IdentifiedNormaAST,
+  profile: ContentProjectionProfile,
+  aliases: readonly string[] = [],
+): string[] => {
   const linhas = [
     '---',
     `title: ${aspas(raiz.titulo)}`,
@@ -210,6 +240,16 @@ const frontmatter = (raiz: IdentifiedNormaAST): string[] => {
     `versao_vinculex: ${aspas(raiz.versaoVinculex)}`,
     `legal_status: ${aspas(raiz.legalStatus)}`,
   ];
+
+  // ADR-012 §6: a publicação completa permanece byte a byte retrocompatível;
+  // somente o artefato derivado precisa declarar que não contém o histórico.
+  if (profile === 'current_only') {
+    linhas.push(`projection_profile: ${aspas(profile)}`);
+  }
+
+  if (aliases.length > 0) {
+    linhas.push(`aliases: ${listaEmLinha(aliases)}`);
+  }
 
   // §2.4 regra 2: os opcionais vêm depois, na ordem da §2.2.
   if (raiz.tags !== undefined) {
@@ -294,7 +334,11 @@ const callouts = (raiz: IdentifiedNormaAST): string[] => {
  * estágio anterior — uma `ParsedNormaAST` serializada seria um arquivo sem
  * Block ID nenhum, publicável e irreferenciável.
  */
-export const formatar = (arvore: unknown): ResultadoValidacao<string> => {
+export const formatar = (
+  arvore: unknown,
+  profile: unknown = 'complete_with_history',
+  referenceOptions?: FormatLegalReferencesOptions,
+): ResultadoValidacao<string> => {
   const analise = identifiedNormaAstSchema.safeParse(arvore);
 
   if (!analise.success) {
@@ -307,8 +351,31 @@ export const formatar = (arvore: unknown): ResultadoValidacao<string> => {
     ]);
   }
 
-  const raiz = analise.data;
+  const projection = projectContent(analise.data, profile);
+  if (!projection.ok) return projection;
+
+  const raiz = projection.valor.ast;
   const filhos = raiz.children as unknown as Record<string, unknown>[];
+  const references =
+    referenceOptions === undefined
+      ? undefined
+      : prepareLegalReferenceFormatting(analise.data, raiz, referenceOptions);
+  if (references !== undefined && !references.ok) return references;
+  if (
+    referenceOptions !== undefined &&
+    referenceOptions.layout !== null &&
+    typeof referenceOptions.layout === 'object' &&
+    (referenceOptions.layout as { profile?: unknown }).profile !== projection.valor.profile
+  ) {
+    return falha([
+      criarProblema(
+        'referencia_juridica_invalida',
+        ['layout', 'profile'],
+        'O perfil do layout não corresponde ao perfil solicitado ao Formatter.',
+      ),
+    ]);
+  }
+  const referenceContext = references?.ok === true ? references.valor : undefined;
 
   const corpo: string[] = [];
 
@@ -317,10 +384,15 @@ export const formatar = (arvore: unknown): ResultadoValidacao<string> => {
       corpo.push('');
     }
 
-    corpo.push(...serializarNo(filho, -1));
+    corpo.push(...serializarNo(filho, -1, referenceContext));
   });
 
-  const linhas = [...frontmatter(raiz), '', ...callouts(raiz), ...corpo];
+  const linhas = [
+    ...frontmatter(raiz, projection.valor.profile, referenceContext?.aliases),
+    '',
+    ...callouts(raiz),
+    ...corpo,
+  ];
 
   // §2.4 regras 6 e 7: sem espaço ao final de linha, LF, exatamente uma newline
   // no fim do documento.

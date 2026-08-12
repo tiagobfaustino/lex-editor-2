@@ -1,4 +1,4 @@
-// As catorze verificações da MARKDOWN_SPEC §9 (Feature 004, T004-06).
+// As quinze verificações da MARKDOWN_SPEC §9 (Features 004 e 009).
 //
 // Rodam sobre o Markdown **já serializado**, não sobre a AST. Isso é
 // deliberado: a §9.2 chama a reconferência de "defesa em profundidade contra
@@ -10,6 +10,9 @@
 
 import { criarProblema, type ProblemaValidacao } from '../ast/errors.js';
 import type { IdentifiedNormaAST } from '../ast/nodes.js';
+import { projectContent } from '../content-projection/index.js';
+import { formatar } from './index.js';
+import type { FormatLegalReferencesOptions } from './legal-references.js';
 
 const BLOCK_ID_CANONICO = /^[a-z0-9]+(-[a-z0-9]+)*$/u;
 
@@ -74,7 +77,26 @@ const contarArtigos = (raiz: IdentifiedNormaAST): number => {
 export const validarMarkdownCanonico = (
   markdown: string,
   arvore: IdentifiedNormaAST,
+  profile: unknown = 'complete_with_history',
+  referenceOptions?: FormatLegalReferencesOptions,
 ): readonly ProblemaValidacao[] => {
+  // Preserva o diagnóstico específico da §9.13 antes que o schema da projeção
+  // converta a fase incorreta em um erro genérico de forma.
+  const faseDeclarada = (arvore as unknown as Record<string, unknown>)['astPhase'];
+  if (faseDeclarada !== 'identified') {
+    return [
+      criarProblema(
+        'fase_incompativel',
+        ['markdown', 0],
+        'Só uma IdentifiedNormaAST pode ser serializada (§9.13).',
+      ),
+    ];
+  }
+
+  const projection = projectContent(arvore, profile);
+  if (!projection.ok) return projection.problemas;
+
+  const raiz = projection.valor.ast;
   const problemas: ProblemaValidacao[] = [];
   const linhas = markdown.split('\n');
   const registrar = (
@@ -89,10 +111,22 @@ export const validarMarkdownCanonico = (
   // Lida como valor desconhecido de propósito: o tipo já promete `identified`,
   // mas esta camada é defesa em profundidade e recebe árvore de outras origens.
   // Confiar no tipo aqui tornaria a verificação decorativa.
-  const fase = (arvore as unknown as Record<string, unknown>)['astPhase'];
+  const linhasDePerfil = linhas.filter((linha) => linha.startsWith('projection_profile:'));
 
-  if (fase !== 'identified') {
-    registrar('fase_incompativel', 0, 'Só uma IdentifiedNormaAST pode ser serializada (§9.13).');
+  if (projection.valor.profile === 'current_only') {
+    if (linhasDePerfil.length !== 1 || linhasDePerfil[0] !== 'projection_profile: "current_only"') {
+      registrar(
+        'schema_invalido',
+        0,
+        'A projeção vigente precisa declarar projection_profile: "current_only" exatamente uma vez.',
+      );
+    }
+  } else if (linhasDePerfil.length > 0) {
+    registrar(
+      'schema_invalido',
+      0,
+      'A publicação canônica completa não declara projection_profile no frontmatter.',
+    );
   }
 
   const inicioDoCorpo = linhas.findIndex((linha) => ITEM_SEM_ID.test(linha) || HEADING.test(linha));
@@ -185,13 +219,13 @@ export const validarMarkdownCanonico = (
   });
 
   // --- §9.4: contagem de artigos vem da AST ---
-  const artigos = contarArtigos(arvore);
+  const artigos = contarArtigos(raiz);
 
-  if (artigos !== arvore.totalArtigos) {
+  if (artigos !== raiz.totalArtigos) {
     registrar(
       'total_artigos_divergente',
       0,
-      `O frontmatter declara ${String(arvore.totalArtigos)} artigo(s); a AST tem ${String(artigos)} (§9.4).`,
+      `O frontmatter declara ${String(raiz.totalArtigos)} artigo(s); a AST tem ${String(artigos)} (§9.4).`,
     );
   }
 
@@ -204,18 +238,18 @@ export const validarMarkdownCanonico = (
     registrar('schema_invalido', 0, 'Falta o callout [!caution] obrigatório (§9.8).');
   }
 
-  if (arvore.legalStatus !== 'vigente' && !markdown.includes('> [!warning]')) {
+  if (raiz.legalStatus !== 'vigente' && !markdown.includes('> [!warning]')) {
     registrar(
       'schema_invalido',
       0,
-      `legal_status é "${arvore.legalStatus}", o que torna o callout [!warning] obrigatório (§6.5).`,
+      `legal_status é "${raiz.legalStatus}", o que torna o callout [!warning] obrigatório (§6.5).`,
     );
   }
 
   // --- §9.11: referências cruzadas resolvem ---
-  const idsPresentes = idsDaArvore(arvore);
+  const idsPresentes = idsDaArvore(raiz);
 
-  for (const referencia of arvore.redacoesDadasPor ?? []) {
+  for (const referencia of raiz.redacoesDadasPor ?? []) {
     if (!idsPresentes.has(referencia.blockId)) {
       registrar(
         'block_id_ausente',
@@ -225,7 +259,7 @@ export const validarMarkdownCanonico = (
     }
   }
 
-  for (const alias of arvore.idsDepreciados ?? []) {
+  for (const alias of raiz.idsDepreciados ?? []) {
     // A §9.11 exige que o destino exista; a origem vive no registro histórico e
     // não precisa estar materializada no corpo atual.
     if (!idsPresentes.has(alias.novo)) {
@@ -233,6 +267,22 @@ export const validarMarkdownCanonico = (
         'block_id_ausente',
         0,
         `ids_depreciados aponta para "${alias.novo}", que não existe no corpo vigente (§9.11).`,
+      );
+    }
+  }
+
+  // ADR-013: com um índice disponível, o resultado canônico é conferido byte
+  // a byte. Isso prova aliases, spans e targets sem tentar reinterpretar a
+  // gramática de wikilink por uma segunda implementação divergente.
+  if (referenceOptions !== undefined) {
+    const expected = formatar(arvore, profile, referenceOptions);
+    if (!expected.ok) {
+      problemas.push(...expected.problemas);
+    } else if (expected.valor !== markdown) {
+      registrar(
+        'referencia_juridica_invalida',
+        0,
+        'Aliases ou wikilinks não correspondem à materialização canônica do índice.',
       );
     }
   }

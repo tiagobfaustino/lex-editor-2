@@ -118,12 +118,20 @@ Os testes essenciais devem cobrir:
 |---|---|---|---|
 | LINDB | [Texto compilado](https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657compilado.htm) e [página anotada](https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657.htm) | [`exemplos/LINDB - DL-4657--1942.md`](<../../exemplos/LINDB - DL-4657--1942.md>) | Validar mesclagem entre texto vigente e evidência histórica |
 | Código Penal, Decreto-Lei nº 2.848/1940 | [Texto compilado](https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm) | [`exemplos/Decreto-Lei n° 2.848 (CP).md`](<../../exemplos/Decreto-Lei n° 2.848 (CP).md>) | Validar uma norma extensa, hierarquia profunda, alterações e revogações |
+| Lei nº 9.099/1995 | [Página anotada](https://www.planalto.gov.br/ccivil_03/leis/l9099.htm) | `L.9099-95_Juizados-Especiais.md` (referência externa) | Validar redações anteriores e atuais dos arts. 61 e 62 sem classificar o artigo inteiro como revogado |
+| Lei nº 9.605/1998 | [Página anotada](https://www.planalto.gov.br/ccivil_03/leis/l9605.htm) | `L9605.md` (referência externa) | Validar fonte única anotada, alterações e dispositivo parcialmente revogado |
+| Lei nº 10.826/2003 | [Página anotada](https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826.htm) e [texto compilado](https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826compilado.htm) | `Estatuto do Desarmamento - L.10826-2006.md` (referência externa; o ano oficial da lei é 2003) | Validar precedência da compilada, enriquecimento histórico e anexos/tabelas superados |
 
 Os arquivos em `exemplos/` são referências editoriais legadas. Eles ajudam a
 identificar estrutura, recursos úteis ao estudo e casos jurídicos relevantes,
 mas não são fonte normativa, golden file nem saída canônica do Formatter. O
 teste deve conferir o resultado contra o snapshot oficial capturado e contra os
 contratos atuais de NormaAST, Block IDs e Markdown.
+
+As referências externas adicionadas em 2026-08-11 seguem a mesma regra. Tags
+HTML, negrito, realces, Block IDs e outras marcações pessoais devem ser
+ignorados na comparação. Um tachado só é tratado como evidência histórica
+quando também estiver presente no snapshot oficial.
 
 ## Referências
 
@@ -132,5 +140,6 @@ contratos atuais de NormaAST, Block IDs e Markdown.
 - [Código Penal, texto compilado](https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm)
 - `./ADR-001-block-ids-imutaveis.md`
 - `./ADR-006-historico-redacoes-no-corpo.md`
+- `./ADR-012-projecoes-completa-e-vigente.md`
 - `./DATA_MODEL.md`
 - `./UPDATE_PIPELINE.md`

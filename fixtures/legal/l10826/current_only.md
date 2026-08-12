@@ -1,0 +1,213 @@
+---
+title: "Estatuto do Desarmamento"
+sigla: "l10826"
+tipo: "lei ordinária"
+numero: "10.826"
+ano: 2003
+ramo: "penal"
+fonte: "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826compilado.htm"
+data_publicacao: 2003-12-22
+data_atualizacao_legal: 2026-08-11
+data_formatacao_vinculex: 2026-08-11
+total_artigos: 41
+versao_vinculex: "1.0.0"
+legal_status: "vigente"
+projection_profile: "current_only"
+tags: ["armas", "penal", "fixture", "projeções"]
+fonte_secundaria: ["https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826.htm"]
+---
+
+> [!info] Fonte Oficial
+> Texto compilado a partir de https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826compilado.htm. Última verificação de integridade em 2026-08-11.
+
+> [!caution] Aviso de Segurança Jurídica
+> Este material é destinado a fins de estudo. O texto pode ter sofrido alterações após a publicação desta versão. Não deve ser utilizado como fonte para peticionamento ou decisão jurídica sem confirmação na fonte oficial.
+
+- Art. 1. O Sistema Nacional de Armas  Sinarm, instituído no Ministério da Justiça, no âmbito da Polícia Federal, tem circunscrição em todo o território nacional. ^l10826-art-1
+
+- Art. 2. Ao Sinarm compete: ^l10826-art-2
+  - I - identificar as características e a propriedade de armas de fogo, mediante cadastro; ^l10826-art-2-inc-i
+  - II - cadastrar as armas de fogo produzidas, importadas e vendidas no País; ^l10826-art-2-inc-ii
+  - III - cadastrar as autorizações de porte de arma de fogo e as renovações expedidas pela Polícia Federal; ^l10826-art-2-inc-iii
+  - IV - cadastrar as transferências de propriedade, extravio, furto, roubo e outras ocorrências suscetíveis de alterar os dados cadastrais, inclusive as decorrentes de fechamento de empresas de segurança privada e de transporte de valores; ^l10826-art-2-inc-iv
+  - V - identificar as modificações que alterem as características ou o funcionamento de arma de fogo; ^l10826-art-2-inc-v
+  - VI - integrar no cadastro os acervos policiais já existentes; ^l10826-art-2-inc-vi
+  - VII - cadastrar as apreensões de armas de fogo, inclusive as vinculadas a procedimentos policiais e judiciais; ^l10826-art-2-inc-vii
+  - VIII - cadastrar os armeiros em atividade no País, bem como conceder licença para exercer a atividade; ^l10826-art-2-inc-viii
+  - IX - cadastrar mediante registro os produtores, atacadistas, varejistas, exportadores e importadores autorizados de armas de fogo, acessórios e munições; ^l10826-art-2-inc-ix
+  - X - cadastrar a identificação do cano da arma, as características das impressões de raiamento e de microestriamento de projétil disparado, conforme marcação e testes obrigatoriamente realizados pelo fabricante; ^l10826-art-2-inc-x
+  - XI - informar às Secretarias de Segurança Pública dos Estados e do Distrito Federal os registros e autorizações de porte de armas de fogo nos respectivos territórios, bem como manter o cadastro atualizado para consulta. ^l10826-art-2-inc-xi
+  - Parágrafo único. As disposições deste artigo não alcançam as armas de fogo das Forças Armadas e Auxiliares, bem como as demais que constem dos seus registros próprios. ^l10826-art-2-par-unico
+
+### Capítulo II - DO REGISTRO
+
+- Art. 3. É obrigatório o registro de arma de fogo no órgão competente. ^l10826-art-3
+  - Parágrafo único. As armas de fogo de uso restrito serão registradas no Comando do Exército, na forma do regulamento desta Lei. ^l10826-art-3-par-unico
+- Art. 4. Para adquirir arma de fogo de uso permitido o interessado deverá, além de declarar a efetiva necessidade, atender aos seguintes requisitos: ^l10826-art-4
+  - I - comprovação de idoneidade, com a apresentação de certidões negativas de antecedentes criminais fornecidas pela Justiça Federal, Estadual, Militar e Eleitoral e de não estar respondendo a inquérito policial ou a processo criminal, que poderão ser fornecidas por meios eletrônicos; ^l10826-art-4-inc-i
+  - II - apresentação de documento comprobatório de ocupação lícita e de residência certa; ^l10826-art-4-inc-ii
+  - III - comprovação de capacidade técnica e de aptidão psicológica para o manuseio de arma de fogo, atestadas na forma disposta no regulamento desta Lei. ^l10826-art-4-inc-iii
+  - § 1º O Sinarm expedirá autorização de compra de arma de fogo após atendidos os requisitos anteriormente estabelecidos, em nome do requerente e para a arma indicada, sendo intransferível esta autorização. ^l10826-art-4-par-1
+  - § 2º A aquisição de munição somente poderá ser feita no calibre correspondente à arma registrada e na quantidade estabelecida no regulamento desta Lei. (Redação dada pela Lei nº 11.706, de 2008) (Vide ADI 6466) (Vide ADI 6139) ^l10826-art-4-par-2
+  - § 3º A empresa que comercializar arma de fogo em território nacional é obrigada a comunicar a venda à autoridade competente, como também a manter banco de dados com todas as características da arma e cópia dos documentos previstos neste artigo. ^l10826-art-4-par-3
+  - § 4º A empresa que comercializa armas de fogo, acessórios e munições responde legalmente por essas mercadorias, ficando registradas como de sua propriedade enquanto não forem vendidas. ^l10826-art-4-par-4
+  - § 5º A comercialização de armas de fogo, acessórios e munições entre pessoas físicas somente será efetivada mediante autorização do Sinarm. ^l10826-art-4-par-5
+  - § 6º A expedição da autorização a que se refere o § 1o será concedida, ou recusada com a devida fundamentação, no prazo de 30 (trinta) dias úteis, a contar da data do requerimento do interessado. ^l10826-art-4-par-6
+  - § 7º O registro precário a que se refere o § 4o prescinde do cumprimento dos requisitos dos incisos I, II e III deste artigo. ^l10826-art-4-par-7
+  - § 8º Estará dispensado das exigências constantes do inciso III do caput deste artigo, na forma do regulamento, o interessado em adquirir arma de fogo de uso permitido que comprove estar autorizado a portar arma com as mesmas características daquela a ser adquirida. ^l10826-art-4-par-8
+- Art. 5. O certificado de Registro de Arma de Fogo, com validade em todo o território nacional, autoriza o seu proprietário a manter a arma de fogo exclusivamente no interior de sua residência ou domicílio, ou dependência desses, ou, ainda, no seu local de trabalho, desde que seja ele o titular ou o responsável legal pelo estabelecimento ou empresa. ^l10826-art-5
+  - § 1º O certificado de registro de arma de fogo será expedido pela Polícia Federal e será precedido de autorização do Sinarm. ^l10826-art-5-par-1
+  - § 2º Os requisitos de que tratam os incisos I, II e III do art. 4o deverão ser comprovados periodicamente, em período não inferior a 3 (três) anos, na conformidade do estabelecido no regulamento desta Lei, para a renovação do Certificado de Registro de Arma de Fogo. ^l10826-art-5-par-2
+  - § 3º O proprietário de arma de fogo com certificados de registro de propriedade expedido por órgão estadual ou do Distrito Federal até a data da publicação desta Lei que não optar pela entrega espontânea prevista no art. 32 desta Lei deverá renová-lo mediante o pertinente registro federal, até o dia 31 de dezembro de 2008, ante a apresentação de documento de identificação pessoal e comprovante de residência fixa, ficando dispensado do pagamento de taxas e do cumprimento das demais exigências constantes dos incisos I a III do caput do art. 4o desta Lei. (Redação dada pela Lei nº 11.706, de 2008) (Prorrogação de prazo) ^l10826-art-5-par-3
+  - § 4º Para fins do cumprimento do disposto no § 3o deste artigo, o proprietário de arma de fogo poderá obter, no Departamento de Polícia Federal, certificado de registro provisório, expedido na rede mundial de computadores - internet, na forma do regulamento e obedecidos os procedimentos a seguir: ^l10826-art-5-par-4
+    - I - emissão de certificado de registro provisório pela internet, com validade inicial de 90 (noventa) dias; e ^l10826-art-5-par-4-inc-i
+    - II - revalidação pela unidade do Departamento de Polícia Federal do certificado de registro provisório pelo prazo que estimar como necessário para a emissão definitiva do certificado de registro de propriedade. ^l10826-art-5-par-4-inc-ii
+  - § 5º Aos residentes em área rural, para os fins do disposto no caput deste artigo, considera-se residência ou domicílio toda a extensão do respectivo imóvel rural. ^l10826-art-5-par-5
+
+### Capítulo III - DO PORTE
+
+- Art. 6. É proibido o porte de arma de fogo em todo o território nacional, salvo para os casos previstos em legislação própria e para: ^l10826-art-6
+  - I - os integrantes das Forças Armadas; ^l10826-art-6-inc-i
+  - II - os integrantes de órgãos referidos nos incisos I, II, III, IV e V do caput do art. 144 da Constituição Federal e os da Força Nacional de Segurança Pública (FNSP); ^l10826-art-6-inc-ii
+  - III - os integrantes das guardas municipais e dos Municípios, nas condições estabelecidas no regulamento desta Lei; (Expressões declaradas inconstitucionais pela ADIN 5538) (Vide ADIN 5948) (Vide ADC 38) (Vide expressões declaradas inconstitucionais) ^l10826-art-6-inc-iii
+  - IV - (Declarado inconstitucional pela ADIN 5538) (Vide ADIN 5948) (Vide ADC 38) (Vide expressões deckaradas inconstitucionais) ^l10826-art-6-inc-iv
+  - V - os agentes operacionais da Agência Brasileira de Inteligência e os agentes do Departamento de Segurança do Gabinete de Segurança Institucional da Presidência da República; (Vide Decreto nº 9.685, de 2019) ^l10826-art-6-inc-v
+  - VI - os integrantes das polícias legislativas referidas no art. 27, § 3º, no art. 51, inciso IV, e no art. 52, inciso XIII, da Constituição Federal; ^l10826-art-6-inc-vi
+  - VII - os integrantes do quadro efetivo dos agentes e guardas prisionais, os integrantes das escoltas de presos e as guardas portuárias; ^l10826-art-6-inc-vii
+  - VIII - as empresas de segurança privada e de transporte de valores constituídas, nos termos desta Lei; ^l10826-art-6-inc-viii
+  - IX - para os integrantes das entidades de desporto legalmente constituídas, cujas atividades esportivas demandem o uso de armas de fogo, na forma do regulamento desta Lei, observando-se, no que couber, a legislação ambiental. ^l10826-art-6-inc-ix
+  - X - integrantes das Carreiras de Auditoria da Receita Federal do Brasil e de Auditoria-Fiscal do Trabalho, cargos de Auditor-Fiscal e Analista Tributário. ^l10826-art-6-inc-x
+  - XI - os tribunais do Poder Judiciário descritos no art. 92 da Constituição Federal e os Ministérios Públicos da União e dos Estados, para uso exclusivo de servidores de seus quadros pessoais que efetivamente estejam no exercício de funções de segurança, na forma de regulamento a ser emitido pelo Conselho Nacional de Justiça - CNJ e pelo Conselho Nacional do Ministério Público - CNMP. ^l10826-art-6-inc-xi
+  - § 1º As pessoas previstas nos incisos I, II, III, V e VI do caput deste artigo terão direito de portar arma de fogo de propriedade particular ou fornecida pela respectiva corporação ou instituição, mesmo fora de serviço, nos termos do regulamento desta Lei, com validade em âmbito nacional para aquelas constantes dos incisos I, II, V e VI. ^l10826-art-6-par-1
+  - § 1-Bº Os integrantes do quadro efetivo de agentes e guardas prisionais poderão portar arma de fogo de propriedade particular ou fornecida pela respectiva corporação ou instituição, mesmo fora de serviço, desde que estejam: ^l10826-art-6-par-1-b
+    - I - submetidos a regime de dedicação exclusiva; ^l10826-art-6-par-1-b-inc-i
+    - II - sujeitos à formação funcional, nos termos do regulamento; e ^l10826-art-6-par-1-b-inc-ii
+    - III - subordinados a mecanismos de fiscalização e de controle interno. ^l10826-art-6-par-1-b-inc-iii
+  - § 2º A autorização para o porte de arma de fogo aos integrantes das instituições descritas nos incisos V, VI, VII e X do caput deste artigo está condicionada à comprovação do requisito a que se refere o inciso III do caput do art. 4o desta Lei nas condições estabelecidas no regulamento desta Lei. ^l10826-art-6-par-2
+  - § 3º A autorização para o porte de arma de fogo das guardas municipais está condicionada à formação funcional de seus integrantes em estabelecimentos de ensino de atividade policial, à existência de mecanismos de fiscalização e de controle interno, nas condições estabelecidas no regulamento desta Lei, observada a supervisão do Ministério da Justiça. ^l10826-art-6-par-3
+  - § 4º Os integrantes das Forças Armadas, das polícias federais e estaduais e do Distrito Federal, bem como os militares dos Estados e do Distrito Federal, ao exercerem o direito descrito no art. 4o, ficam dispensados do cumprimento do disposto nos incisos I, II e III do mesmo artigo, na forma do regulamento desta Lei. ^l10826-art-6-par-4
+  - § 5º Aos residentes em áreas rurais, maiores de 25 (vinte e cinco) anos que comprovem depender do emprego de arma de fogo para prover sua subsistência alimentar familiar será concedido pela Polícia Federal o porte de arma de fogo, na categoria caçador para subsistência, de uma arma de uso permitido, de tiro simples, com 1 (um) ou 2 (dois) canos, de alma lisa e de calibre igual ou inferior a 16 (dezesseis), desde que o interessado comprove a efetiva necessidade em requerimento ao qual deverão ser anexados os seguintes documentos: ^l10826-art-6-par-5
+    - I - documento de identificação pessoal; ^l10826-art-6-par-5-inc-i
+    - II - comprovante de residência em área rural; e ^l10826-art-6-par-5-inc-ii
+    - III - atestado de bons antecedentes. ^l10826-art-6-par-5-inc-iii
+  - § 6º O caçador para subsistência que der outro uso à sua arma de fogo, independentemente de outras tipificações penais, responderá, conforme o caso, por porte ilegal ou por disparo de arma de fogo de uso permitido. ^l10826-art-6-par-6
+  - § 7º Aos integrantes das guardas municipais dos Municípios que integram regiões metropolitanas será autorizado porte de arma de fogo, quando em serviço. ^l10826-art-6-par-7
+- Art. 7. As armas de fogo utilizadas pelos profissionais de segurança privada dos prestadores de serviços de segurança privada e das empresas e dos condomínios edilícios possuidores de serviços orgânicos de segurança privada, constituídas na forma da lei, serão de propriedade, responsabilidade e guarda das respectivas empresas, somente podendo ser utilizadas quando em serviço, devendo essas observarem as condições de uso e de armazenagem estabelecidas pelo órgão competente, sendo o certificado de registro e a autorização de porte expedidos pela Polícia Federal em nome da empresa. ^l10826-art-7
+  - § 1º O proprietário ou diretor responsável de empresa de segurança privada e de transporte de valores responderá pelo crime previsto no parágrafo único do art. 13 desta Lei, sem prejuízo das demais sanções administrativas e civis, se deixar de registrar ocorrência policial e de comunicar à Polícia Federal perda, furto, roubo ou outras formas de extravio de armas de fogo, acessórios e munições que estejam sob sua guarda, nas primeiras 24 (vinte e quatro) horas depois de ocorrido o fato. ^l10826-art-7-par-1
+  - § 2º A empresa de segurança e de transporte de valores deverá apresentar documentação comprobatória do preenchimento dos requisitos constantes do art. 4o desta Lei quanto aos empregados que portarão arma de fogo. ^l10826-art-7-par-2
+  - § 3º A listagem dos empregados das empresas referidas neste artigo deverá ser atualizada semestralmente junto ao Sinarm. ^l10826-art-7-par-3
+- Art. 7-A. As armas de fogo utilizadas pelos servidores das instituições descritas no inciso XI do art. 6o serão de propriedade, responsabilidade e guarda das respectivas instituições, somente podendo ser utilizadas quando em serviço, devendo estas observar as condições de uso e de armazenagem estabelecidas pelo órgão competente, sendo o certificado de registro e a autorização de porte expedidos pela Polícia Federal em nome da instituição. ^l10826-art-7-a
+  - § 1º A autorização para o porte de arma de fogo de que trata este artigo independe do pagamento de taxa. ^l10826-art-7-a-par-1
+  - § 2º O presidente do tribunal ou o chefe do Ministério Público designará os servidores de seus quadros pessoais no exercício de funções de segurança que poderão portar arma de fogo, respeitado o limite máximo de 50% (cinquenta por cento) do número de servidores que exerçam funções de segurança. (Incluído pela Lei nº 12.694, de 2012) (Vide ADI 5157) ^l10826-art-7-a-par-2
+  - § 3º O porte de arma pelos servidores das instituições de que trata este artigo fica condicionado à apresentação de documentação comprobatória do preenchimento dos requisitos constantes do art. 4o desta Lei, bem como à formação funcional em estabelecimentos de ensino de atividade policial e à existência de mecanismos de fiscalização e de controle interno, nas condições estabelecidas no regulamento desta Lei. ^l10826-art-7-a-par-3
+  - § 4º A listagem dos servidores das instituições de que trata este artigo deverá ser atualizada semestralmente no Sinarm. ^l10826-art-7-a-par-4
+  - § 5º As instituições de que trata este artigo são obrigadas a registrar ocorrência policial e a comunicar à Polícia Federal eventual perda, furto, roubo ou outras formas de extravio de armas de fogo, acessórios e munições que estejam sob sua guarda, nas primeiras 24 (vinte e quatro) horas depois de ocorrido o fato. ^l10826-art-7-a-par-5
+- Art. 8. As armas de fogo utilizadas em entidades desportivas legalmente constituídas devem obedecer às condições de uso e de armazenagem estabelecidas pelo órgão competente, respondendo o possuidor ou o autorizado a portar a arma pela sua guarda na forma do regulamento desta Lei. ^l10826-art-8
+- Art. 9. Compete ao Ministério da Justiça a autorização do porte de arma para os responsáveis pela segurança de cidadãos estrangeiros em visita ou sediados no Brasil e, ao Comando do Exército, nos termos do regulamento desta Lei, o registro e a concessão de porte de trânsito de arma de fogo para colecionadores, atiradores e caçadores e de representantes estrangeiros em competição internacional oficial de tiro realizada no território nacional. ^l10826-art-9
+- Art. 10. A autorização para o porte de arma de fogo de uso permitido, em todo o território nacional, é de competência da Polícia Federal e somente será concedida após autorização do Sinarm. ^l10826-art-10
+  - § 1º A autorização prevista neste artigo poderá ser concedida com eficácia temporária e territorial limitada, nos termos de atos regulamentares, e dependerá de o requerente: ^l10826-art-10-par-1
+    - I - demonstrar a sua efetiva necessidade por exercício de atividade profissional de risco ou de ameaça à sua integridade física; (Vide ADI 6139) ^l10826-art-10-par-1-inc-i
+    - II - atender às exigências previstas no art. 4o desta Lei; ^l10826-art-10-par-1-inc-ii
+    - III - apresentar documentação de propriedade de arma de fogo, bem como o seu devido registro no órgão competente. ^l10826-art-10-par-1-inc-iii
+  - § 2º A autorização de porte de arma de fogo, prevista neste artigo, perderá automaticamente sua eficácia caso o portador dela seja detido ou abordado em estado de embriaguez ou sob efeito de substâncias químicas ou alucinógenas. ^l10826-art-10-par-2
+- Art. 11. Fica instituída a cobrança de taxas, nos valores constantes do Anexo desta Lei, pela prestação de serviços relativos: ^l10826-art-11
+  - I - ao registro de arma de fogo; ^l10826-art-11-inc-i
+  - II - à renovação de registro de arma de fogo; ^l10826-art-11-inc-ii
+  - III - à expedição de segunda via de registro de arma de fogo; ^l10826-art-11-inc-iii
+  - IV - à expedição de porte federal de arma de fogo; ^l10826-art-11-inc-iv
+  - V - à renovação de porte de arma de fogo; ^l10826-art-11-inc-v
+  - VI - à expedição de segunda via de porte federal de arma de fogo. ^l10826-art-11-inc-vi
+  - § 1º Os valores arrecadados destinam-se ao custeio e à manutenção das atividades do Sinarm, da Polícia Federal e do Comando do Exército, no âmbito de suas respectivas responsabilidades. ^l10826-art-11-par-1
+  - § 2º São isentas do pagamento das taxas previstas neste artigo as pessoas e as instituições a que se referem os incisos I a VII e X e o § 5o do art. 6o desta Lei. ^l10826-art-11-par-2
+- Art. 11-A. O Ministério da Justiça disciplinará a forma e as condições do credenciamento de profissionais pela Polícia Federal para comprovação da aptidão psicológica e da capacidade técnica para o manuseio de arma de fogo. ^l10826-art-11-a
+  - § 1º Na comprovação da aptidão psicológica, o valor cobrado pelo psicólogo não poderá exceder ao valor médio dos honorários profissionais para realização de avaliação psicológica constante do item 1.16 da tabela do Conselho Federal de Psicologia. ^l10826-art-11-a-par-1
+  - § 2º Na comprovação da capacidade técnica, o valor cobrado pelo instrutor de armamento e tiro não poderá exceder R$ 80,00 (oitenta reais), acrescido do custo da munição. ^l10826-art-11-a-par-2
+  - § 3º A cobrança de valores superiores aos previstos nos §§ 1o e 2o deste artigo implicará o descredenciamento do profissional pela Polícia Federal. ^l10826-art-11-a-par-3
+
+### Capítulo IV - DOS CRIMES E DAS PENAS
+
+- Art. 12. Possuir ou manter sob sua guarda arma de fogo, acessório ou munição, de uso permitido, em desacordo com determinação legal ou regulamentar, no interior de sua residência ou dependência desta, ou, ainda no seu local de trabalho, desde que seja o titular ou o responsável legal do estabelecimento ou empresa: ^l10826-art-12
+  - Pena - detenção, de 1 (um) a 3 (três) anos, e multa. ^l10826-art-12-pena
+- Art. 13. Deixar de observar as cautelas necessárias para impedir que menor de 18 (dezoito) anos ou pessoa portadora de deficiência mental se apodere de arma de fogo que esteja sob sua posse ou que seja de sua propriedade: ^l10826-art-13
+  - Pena - detenção, de 1 (um) a 2 (dois) anos, e multa. ^l10826-art-13-pena
+  - Parágrafo único. Nas mesmas penas incorrem o proprietário ou diretor responsável de empresa de segurança e transporte de valores que deixarem de registrar ocorrência policial e de comunicar à Polícia Federal perda, furto, roubo ou outras formas de extravio de arma de fogo, acessório ou munição que estejam sob sua guarda, nas primeiras 24 (vinte quatro) horas depois de ocorrido o fato. ^l10826-art-13-par-unico
+- Art. 14. Portar, deter, adquirir, fornecer, receber, ter em depósito, transportar, ceder, ainda que gratuitamente, emprestar, remeter, empregar, manter sob guarda ou ocultar arma de fogo, acessório ou munição, de uso permitido, sem autorização e em desacordo com determinação legal ou regulamentar: ^l10826-art-14
+  - Pena - reclusão, de 2 (dois) a 4 (quatro) anos, e multa. ^l10826-art-14-pena
+  - Parágrafo único. O crime previsto neste artigo é inafiançável, salvo quando a arma de fogo estiver registrada em nome do agente. (Vide Adin 3.112-1) ^l10826-art-14-par-unico
+- Art. 15. Disparar arma de fogo ou acionar munição em lugar habitado ou em suas adjacências, em via pública ou em direção a ela, desde que essa conduta não tenha como finalidade a prática de outro crime: ^l10826-art-15
+  - Pena - reclusão, de 2 (dois) a 4 (quatro) anos, e multa. ^l10826-art-15-pena
+  - Parágrafo único. O crime previsto neste artigo é inafiançável. (Vide Adin 3.112-1) ^l10826-art-15-par-unico
+- Art. 16. Possuir, deter, portar, adquirir, fornecer, receber, ter em depósito, transportar, ceder, ainda que gratuitamente, emprestar, remeter, empregar, manter sob sua guarda ou ocultar arma de fogo, acessório ou munição de uso restrito, sem autorização e em desacordo com determinação legal ou regulamentar: ^l10826-art-16
+  - Pena - reclusão, de 3 (três) a 6 (seis) anos, e multa. ^l10826-art-16-pena
+  - § 1º Nas mesmas penas incorre quem: ^l10826-art-16-par-1
+    - I - suprimir ou alterar marca, numeração ou qualquer sinal de identificação de arma de fogo ou artefato; ^l10826-art-16-par-1-inc-i
+    - II - modificar as características de arma de fogo, de forma a torná-la equivalente a arma de fogo de uso proibido ou restrito ou para fins de dificultar ou de qualquer modo induzir a erro autoridade policial, perito ou juiz; ^l10826-art-16-par-1-inc-ii
+    - III - possuir, detiver, fabricar ou empregar artefato explosivo ou incendiário, sem autorização ou em desacordo com determinação legal ou regulamentar; ^l10826-art-16-par-1-inc-iii
+    - IV - portar, possuir, adquirir, transportar ou fornecer arma de fogo com numeração, marca ou qualquer outro sinal de identificação raspado, suprimido ou adulterado; ^l10826-art-16-par-1-inc-iv
+    - V - vender, entregar ou fornecer, ainda que gratuitamente, arma de fogo, acessório, munição ou explosivo a criança ou adolescente; e ^l10826-art-16-par-1-inc-v
+    - VI - produzir, recarregar ou reciclar, sem autorização legal, ou adulterar, de qualquer forma, munição ou explosivo. ^l10826-art-16-par-1-inc-vi
+  - § 2º Se as condutas descritas no caput e no § 1º deste artigo envolverem arma de fogo de uso proibido, a pena é de reclusão, de 4 (quatro) a 12 (doze) anos. ^l10826-art-16-par-2
+- Art. 17. Adquirir, alugar, receber, transportar, conduzir, ocultar, ter em depósito, desmontar, montar, remontar, adulterar, vender, expor à venda, ou de qualquer forma utilizar, em proveito próprio ou alheio, no exercício de atividade comercial ou industrial, arma de fogo, acessório ou munição, sem autorização ou em desacordo com determinação legal ou regulamentar: ^l10826-art-17
+  - Pena - reclusão, de 6 (seis) a 12 (doze) anos, e multa. ^l10826-art-17-pena
+  - § 1º Equipara-se à atividade comercial ou industrial, para efeito deste artigo, qualquer forma de prestação de serviços, fabricação ou comércio irregular ou clandestino, inclusive o exercido em residência. ^l10826-art-17-par-1
+  - § 2º Incorre na mesma pena quem vende ou entrega arma de fogo, acessório ou munição, sem autorização ou em desacordo com a determinação legal ou regulamentar, a agente policial disfarçado, quando presentes elementos probatórios razoáveis de conduta criminal preexistente. ^l10826-art-17-par-2
+- Art. 18. Importar, exportar, favorecer a entrada ou saída do território nacional, a qualquer título, de arma de fogo, acessório ou munição, sem autorização da autoridade competente: ^l10826-art-18
+  - Pena - reclusão, de 8 (oito) a 16 (dezesseis) anos, e multa. ^l10826-art-18-pena
+  - Parágrafo único. Incorre na mesma pena quem vende ou entrega arma de fogo, acessório ou munição, em operação de importação, sem autorização da autoridade competente, a agente policial disfarçado, quando presentes elementos probatórios razoáveis de conduta criminal preexistente. ^l10826-art-18-par-unico
+- Art. 19. Nos crimes previstos nos arts. 17 e 18, a pena é aumentada da metade se a arma de fogo, acessório ou munição forem de uso proibido ou restrito. ^l10826-art-19
+- Art. 20. Nos crimes previstos nos arts. 14, 15, 16, 17 e 18, a pena é aumentada da metade se: ^l10826-art-20
+  - I - forem praticados por integrante dos órgãos e empresas referidas nos arts. 6º, 7º e 8º desta Lei; ou ^l10826-art-20-inc-i
+  - II - o agente for reincidente específico em crimes dessa natureza. ^l10826-art-20-inc-ii
+- Art. 21. Os crimes previstos nos arts. 16, 17 e 18 são insuscetíveis de liberdade provisória. (Vide Adin 3.112-1) ^l10826-art-21
+- Art. 21-A. Nos crimes previstos nos arts. 12, 14 e 16 desta Lei, a pena é aumentada de 2/3 (dois terços) se o crime for praticado em concurso com crime previsto na Lei nº 11.343, de 23 de agosto de 2006, estiver diretamente ligado ao comércio ilícito de entorpecentes ou o artefato tiver sido utilizado para assegurar o sucesso da mercancia. ^l10826-art-21-a
+
+### Capítulo V - DISPOSIÇÕES GERAIS
+
+- Art. 22. O Ministério da Justiça poderá celebrar convênios com os Estados e o Distrito Federal para o cumprimento do disposto nesta Lei. ^l10826-art-22
+- Art. 23. A classificação legal, técnica e geral bem como a definição das armas de fogo e demais produtos controlados, de usos proibidos, restritos, permitidos ou obsoletos e de valor histórico serão disciplinadas em ato do chefe do Poder Executivo Federal, mediante proposta do Comando do Exército. ^l10826-art-23
+  - § 1º Todas as munições comercializadas no País deverão estar acondicionadas em embalagens com sistema de código de barras, gravado na caixa, visando possibilitar a identificação do fabricante e do adquirente, entre outras informações definidas pelo regulamento desta Lei. ^l10826-art-23-par-1
+  - § 2º Para os órgãos referidos no art. 6o, somente serão expedidas autorizações de compra de munição com identificação do lote e do adquirente no culote dos projéteis, na forma do regulamento desta Lei. ^l10826-art-23-par-2
+  - § 3º As armas de fogo fabricadas a partir de 1 (um) ano da data de publicação desta Lei conterão dispositivo intrínseco de segurança e de identificação, gravado no corpo da arma, definido pelo regulamento desta Lei, exclusive para os órgãos previstos no art. 6o. ^l10826-art-23-par-3
+  - § 4º As instituições de ensino policial, as guardas municipais referidas no inciso III do caput do art. 6º e no seu § 7º e as escolas de formação de profissionais de segurança privada poderão adquirir insumos e máquinas de recarga de munição para o fim exclusivo de suprimento de suas atividades, mediante autorização concedida nos termos do regulamento. ^l10826-art-23-par-4
+- Art. 24. Excetuadas as atribuições a que se refere o art. 2º desta Lei, compete ao Comando do Exército autorizar e fiscalizar a produção, exportação, importação, desembaraço alfandegário e o comércio de armas de fogo e demais produtos controlados, inclusive o registro e o porte de trânsito de arma de fogo de colecionadores, atiradores e caçadores. ^l10826-art-24
+- Art. 25. As armas de fogo apreendidas, após a elaboração do laudo pericial e sua juntada aos autos, quando não mais interessarem à persecução penal serão encaminhadas pelo juiz competente ao Comando do Exército, no prazo de até 48 (quarenta e oito) horas, para destruição ou doação aos órgãos de segurança pública ou às Forças Armadas, na forma do regulamento desta Lei. ^l10826-art-25
+  - § 1º As armas de fogo encaminhadas ao Comando do Exército que receberem parecer favorável à doação, obedecidos o padrão e a dotação de cada Força Armada ou órgão de segurança pública, atendidos os critérios de prioridade estabelecidos pelo Ministério da Justiça e ouvido o Comando do Exército, serão arroladas em relatório reservado trimestral a ser encaminhado àquelas instituições, abrindo-se-lhes prazo para manifestação de interesse. ^l10826-art-25-par-1
+  - § 1-Aº As armas de fogo e munições apreendidas em decorrência do tráfico de drogas de abuso, ou de qualquer forma utilizadas em atividades ilícitas de produção ou comercialização de drogas abusivas, ou, ainda, que tenham sido adquiridas com recursos provenientes do tráfico de drogas de abuso, perdidas em favor da União e encaminhadas para o Comando do Exército, devem ser, após perícia ou vistoria que atestem seu bom estado, destinadas com prioridade para os órgãos de segurança pública e do sistema penitenciário da unidade da federação responsável pela apreensão. ^l10826-art-25-par-1-a
+  - § 2º O Comando do Exército encaminhará a relação das armas a serem doadas ao juiz competente, que determinará o seu perdimento em favor da instituição beneficiada. ^l10826-art-25-par-2
+  - § 3º O transporte das armas de fogo doadas será de responsabilidade da instituição beneficiada, que procederá ao seu cadastramento no Sinarm ou no Sigma. ^l10826-art-25-par-3
+  - § 5º O Poder Judiciário instituirá instrumentos para o encaminhamento ao Sinarm ou ao Sigma, conforme se trate de arma de uso permitido ou de uso restrito, semestralmente, da relação de armas acauteladas em juízo, mencionando suas características e o local onde se encontram. ^l10826-art-25-par-5
+- Art. 26. São vedadas a fabricação, a venda, a comercialização e a importação de brinquedos, réplicas e simulacros de armas de fogo, que com estas se possam confundir. ^l10826-art-26
+  - Parágrafo único. Excetuam-se da proibição as réplicas e os simulacros destinados à instrução, ao adestramento, ou à coleção de usuário autorizado, nas condições fixadas pelo Comando do Exército. ^l10826-art-26-par-unico
+- Art. 27. Caberá ao Comando do Exército autorizar, excepcionalmente, a aquisição de armas de fogo de uso restrito. (Vide ADI 6139) ^l10826-art-27
+  - Parágrafo único. O disposto neste artigo não se aplica às aquisições dos Comandos Militares. ^l10826-art-27-par-unico
+- Art. 28. É vedado ao menor de 25 (vinte e cinco) anos adquirir arma de fogo, ressalvados os integrantes das entidades constantes dos incisos I, II, III, V, VI, VII e X do caput do art. 6o desta Lei. ^l10826-art-28
+- Art. 29. As autorizações de porte de armas de fogo já concedidas expirar-se-ão 90 (noventa) dias após a publicação desta Lei. (Vide Lei nº 10.884, de 2004) ^l10826-art-29
+  - Parágrafo único. O detentor de autorização com prazo de validade superior a 90 (noventa) dias poderá renová-la, perante a Polícia Federal, nas condições dos arts. 4o, 6o e 10 desta Lei, no prazo de 90 (noventa) dias após sua publicação, sem ônus para o requerente. ^l10826-art-29-par-unico
+- Art. 30. Os possuidores e proprietários de arma de fogo de uso permitido ainda não registrada deverão solicitar seu registro até o dia 31 de dezembro de 2008, mediante apresentação de documento de identificação pessoal e comprovante de residência fixa, acompanhados de nota fiscal de compra ou comprovação da origem lícita da posse, pelos meios de prova admitidos em direito, ou declaração firmada na qual constem as características da arma e a sua condição de proprietário, ficando este dispensado do pagamento de taxas e do cumprimento das demais exigências constantes dos incisos I a III do caput do art. 4o desta Lei. (Redação dada pela Lei nº 11.706, de 2008) (Prorrogação de prazo) ^l10826-art-30
+  - Parágrafo único. Para fins do cumprimento do disposto no caput deste artigo, o proprietário de arma de fogo poderá obter, no Departamento de Polícia Federal, certificado de registro provisório, expedido na forma do § 4o do art. 5o desta Lei. ^l10826-art-30-par-unico
+- Art. 31. Os possuidores e proprietários de armas de fogo adquiridas regularmente poderão, a qualquer tempo, entregá-las à Polícia Federal, mediante recibo e indenização, nos termos do regulamento desta Lei. ^l10826-art-31
+- Art. 32. Os possuidores e proprietários de arma de fogo poderão entregá-la, espontaneamente, mediante recibo, e, presumindo-se de boa-fé, serão indenizados, na forma do regulamento, ficando extinta a punibilidade de eventual posse irregular da referida arma. ^l10826-art-32
+- Art. 33. Será aplicada multa de R$ 100.000,00 (cem mil reais) a R$ 300.000,00 (trezentos mil reais), conforme especificar o regulamento desta Lei: ^l10826-art-33
+  - I - à empresa de transporte aéreo, rodoviário, ferroviário, marítimo, fluvial ou lacustre que deliberadamente, por qualquer meio, faça, promova, facilite ou permita o transporte de arma ou munição sem a devida autorização ou com inobservância das normas de segurança; ^l10826-art-33-inc-i
+  - II - à empresa de produção ou comércio de armamentos que realize publicidade para venda, estimulando o uso indiscriminado de armas de fogo, exceto nas publicações especializadas. ^l10826-art-33-inc-ii
+- Art. 34. Os promotores de eventos em locais fechados, com aglomeração superior a 1000 (um mil) pessoas, adotarão, sob pena de responsabilidade, as providências necessárias para evitar o ingresso de pessoas armadas, ressalvados os eventos garantidos pelo inciso VI do art. 5o da Constituição Federal. ^l10826-art-34
+  - Parágrafo único. As empresas responsáveis pela prestação dos serviços de transporte internacional e interestadual de passageiros adotarão as providências necessárias para evitar o embarque de passageiros armados. ^l10826-art-34-par-unico
+- Art. 34-A. Os dados relacionados à coleta de registros balísticos serão armazenados no Banco Nacional de Perfis Balísticos. ^l10826-art-34-a
+  - § 1º O Banco Nacional de Perfis Balísticos tem como objetivo cadastrar armas de fogo e armazenar características de classe e individualizadoras de projéteis e de estojos de munição deflagrados por arma de fogo. ^l10826-art-34-a-par-1
+  - § 2º O Banco Nacional de Perfis Balísticos será constituído pelos registros de elementos de munição deflagrados por armas de fogo relacionados a crimes, para subsidiar ações destinadas às apurações criminais federais, estaduais e distritais. ^l10826-art-34-a-par-2
+  - § 3º O Banco Nacional de Perfis Balísticos será gerido pela unidade oficial de perícia criminal. ^l10826-art-34-a-par-3
+  - § 4º Os dados constantes do Banco Nacional de Perfis Balísticos terão caráter sigiloso, e aquele que permitir ou promover sua utilização para fins diversos dos previstos nesta Lei ou em decisão judicial responderá civil, penal e administrativamente. ^l10826-art-34-a-par-4
+  - § 5º É vedada a comercialização, total ou parcial, da base de dados do Banco Nacional de Perfis Balísticos. ^l10826-art-34-a-par-5
+  - § 6º A formação, a gestão e o acesso ao Banco Nacional de Perfis Balísticos serão regulamentados em ato do Poder Executivo federal. ^l10826-art-34-a-par-6
+
+### Capítulo VI - DISPOSIÇÕES FINAIS
+
+- Art. 35. É proibida a comercialização de arma de fogo e munição em todo o território nacional, salvo para as entidades previstas no art. 6o desta Lei. ^l10826-art-35
+  - § 1º Este dispositivo, para entrar em vigor, dependerá de aprovação mediante referendo popular, a ser realizado em outubro de 2005. ^l10826-art-35-par-1
+  - § 2º Em caso de aprovação do referendo popular, o disposto neste artigo entrará em vigor na data de publicação de seu resultado pelo Tribunal Superior Eleitoral. ^l10826-art-35-par-2
+- Art. 36. É revogada a Lei no 9.437, de 20 de fevereiro de 1997. ^l10826-art-36
+- Art. 37. Esta Lei entra em vigor na data de sua publicação. ^l10826-art-37
+
+## Anexo único - TABELA DE TAXAS ^l10826-anx-unico
+
+- Tabela 1. Tabela oficial | ATO ADMINISTRATIVO; R$ | I - Registro de arma de fogo:;  / - até 31 de dezembro de 2008; Gratuito / ; (art. 30) / - a partir de 1 o de janeiro de 2009; 60,00 / II - Renovação do certificado de registro de arma de fogo:;  / ; Gratuito / - até 31 de dezembro de 2008; (art. 5 o , § 3 o ) / ;  / - a partir de 1 o de janeiro de 2009; 60,00 / III - Registro de arma de fogo para empresa de segurança privada e de transporte; 60,00 / de valores;  / IV - Renovação do certificado de registro de arma de fogo para empresa de;  / segurança privada e de transporte de valores:;  / ;  / - até 30 de junho de 2008; 30,00 / ;  / ;  / - de 1 o de julho de 2008 a 31 de outubro de 2008; 45,00 / ;  / - a partir de 1 o de novembro de 2008; 60,00 / V - Expedição de porte de arma de fogo; 1.000,00 / VI - Renovação de porte de arma de fogo; 1.000,00 / VII - Expedição de segunda via de certificado de registro de arma de fogo; 60,00 / VIII - Expedição de segunda via de porte de arma de fogo; 60,00 * ^l10826-anx-unico-tab-1

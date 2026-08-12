@@ -112,33 +112,33 @@ tags: ["civil", "fixture"]
   - § 3º As sanções aplicadas ao agente serão levadas em conta na dosimetria das demais sanções de mesma natureza e relativas ao mesmo fato. ^lindb-art-22-par-3
 
 - Art. 23. A decisão administrativa, controladora ou judicial que estabelecer interpretação ou orientação nova sobre norma de conteúdo indeterminado, impondo novo dever ou novo condicionamento de direito, deverá prever regime de transição quando indispensável para que o novo dever ou condicionamento de direito seja cumprido de modo proporcional, equânime e eficiente e sem prejuízo aos interesses gerais. (Regulamento) ^lindb-art-23
-  - Parágrafo único. (VETADO). ^lindb-art-23-par-unico
+  - Parágrafo único. *(VETADO)*. (Incluído pela Lei nº 13.655, de 2018) ^lindb-art-23-par-unico
 
 - Art. 24. A revisão, nas esferas administrativa, controladora ou judicial, quanto à validade de ato, contrato, ajuste, processo ou norma administrativa cuja produção já se houver completado levará em conta as orientações gerais da época, sendo vedado que, com base em mudança posterior de orientação geral, se declarem inválidas situações plenamente constituídas. (Incluído pela Lei nº 13.655, de 2018) (Regulamento) ^lindb-art-24
   - Parágrafo único. Consideram-se orientações gerais as interpretações e especificações contidas em atos públicos de caráter geral ou em jurisprudência judicial ou administrativa majoritária, e ainda as adotadas por prática administrativa reiterada e de amplo conhecimento público. ^lindb-art-24-par-unico
 
-- Art. 25. (VETADO). ^lindb-art-25
+- Art. 25. *(VETADO)*. (Incluído pela Lei nº 13.655, de 2018) ^lindb-art-25
 
 - Art. 26. Para eliminar irregularidade, incerteza jurídica ou situação contenciosa na aplicação do direito público, inclusive no caso de expedição de licença, a autoridade administrativa poderá, após oitiva do órgão jurídico e, quando for o caso, após realização de consulta pública, e presentes razões de relevante interesse geral, celebrar compromisso com os interessados, observada a legislação aplicável, o qual só produzirá efeitos a partir de sua publicação oficial. (Incluído pela Lei nº 13.655, de 2018) (Regulamento) ^lindb-art-26
   - § 1º O compromisso referido no caput deste artigo: ^lindb-art-26-par-1
     - I - buscará solução jurídica proporcional, equânime, eficiente e compatível com os interesses gerais; ^lindb-art-26-par-1-inc-i
-    - II - (VETADO); ^lindb-art-26-par-1-inc-ii
+    - II - *(VETADO)*; (Incluído pela Lei nº 13.655, de 2018) ^lindb-art-26-par-1-inc-ii
     - III - não poderá conferir desoneração permanente de dever ou condicionamento de direito reconhecidos por orientação geral; ^lindb-art-26-par-1-inc-iii
     - IV - deverá prever com clareza as obrigações das partes, o prazo para seu cumprimento e as sanções aplicáveis em caso de descumprimento. ^lindb-art-26-par-1-inc-iv
-  - § 2º (VETADO). ^lindb-art-26-par-2
+  - § 2º *(VETADO)*. (Incluído pela Lei nº 13.655, de 2018) ^lindb-art-26-par-2
 
 - Art. 27. A decisão do processo, nas esferas administrativa, controladora ou judicial, poderá impor compensação por benefícios indevidos ou prejuízos anormais ou injustos resultantes do processo ou da conduta dos envolvidos. (Incluído pela Lei nº 13.655, de 2018) (Regulamento) ^lindb-art-27
   - § 1º A decisão sobre a compensação será motivada, ouvidas previamente as partes sobre seu cabimento, sua forma e, se for o caso, seu valor. ^lindb-art-27-par-1
   - § 2º Para prevenir ou regular a compensação, poderá ser celebrado compromisso processual entre os envolvidos. ^lindb-art-27-par-2
 
 - Art. 28. O agente público responderá pessoalmente por suas decisões ou opiniões técnicas em caso de dolo ou erro grosseiro. (Incluído pela Lei nº 13.655, de 2018) (Regulamento) ^lindb-art-28
-  - § 1º (VETADO). ^lindb-art-28-par-1
-  - § 2º (VETADO). ^lindb-art-28-par-2
-  - § 3º (VETADO). ^lindb-art-28-par-3
+  - § 1º *(VETADO)*. (Incluído pela Lei nº 13.655, de 2018) ^lindb-art-28-par-1
+  - § 2º *(VETADO)*. (Incluído pela Lei nº 13.655, de 2018) ^lindb-art-28-par-2
+  - § 3º *(VETADO)*. (Incluído pela Lei nº 13.655, de 2018) ^lindb-art-28-par-3
 
 - Art. 29. Em qualquer órgão ou Poder, a edição de atos normativos por autoridade administrativa, salvo os de mera organização interna, poderá ser precedida de consulta pública para manifestação de interessados, preferencialmente por meio eletrônico, a qual será considerada na decisão. (Incluído pela Lei nº 13.655, de 2018) (Vigência) (Regulamento) ^lindb-art-29
   - § 1º A convocação conterá a minuta do ato normativo e fixará o prazo e demais condições da consulta pública, observadas as normas legais e regulamentares específicas, se houver. (Incluído pela Lei nº 13.655, de 2018) (Vigência) ^lindb-art-29-par-1
-  - § 2º (VETADO). (Incluído pela Lei nº 13.655, de 2018) (Vigência) ^lindb-art-29-par-2
+  - § 2º *(VETADO)*. (Incluído pela Lei nº 13.655, de 2018) (Vigência) ^lindb-art-29-par-2
 
 - Art. 30. As autoridades públicas devem atuar para aumentar a segurança jurídica na aplicação das normas, inclusive por meio de regulamentos, súmulas administrativas e respostas a consultas. (Incluído pela Lei nº 13.655, de 2018) (Regulamento) ^lindb-art-30
   - Parágrafo único. Os instrumentos previstos no caput deste artigo terão caráter vinculante em relação ao órgão ou entidade a que se destinam, até ulterior revisão. (Incluído pela Lei nº 13.655, de 2018) Rio de Janeiro, 4 de setembro de 1942, 121o da Independência e 54o da República. GETULIO VARGAS Alexandre Marcondes Filho Oswaldo Aranha. Este texto não substitui o publicado no DOU de 9.9.1942, retificado em 8.10.1942 e retificado em 17.6.1943 * ^lindb-art-30-par-unico

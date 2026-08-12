@@ -120,6 +120,20 @@ describe('estados do dispositivo (ADR-005, MD §5)', () => {
     expect(no['deviceStatus']).toBe('vetoed');
   });
 
+  it('prioriza veto ou revogação em caixa alta mesmo com outra anotação posterior', () => {
+    const vetado = noComId(
+      'Art. 1. Caput.\n§ 4º (VETADO) (Incluído pela Lei nº 8.888, de 2026)',
+      'ldem-art-1-par-4',
+    );
+    const revogado = noComId(
+      'Art. 1. Caput.\n§ 5º (Revogado). (Redação dada pela Lei nº 8.888, de 2026) Vigência',
+      'ldem-art-1-par-5',
+    );
+
+    expect(vetado['deviceStatus']).toBe('vetoed');
+    expect(revogado['deviceStatus']).toBe('revoked');
+  });
+
   it('reconhece inclusão e alteração pela nota oficial', () => {
     const incluido = noComId(
       'Art. 1. Caput.\n§ 2º Texto novo. (Incluído pela Lei nº 8.888, de 2026)',
@@ -253,6 +267,27 @@ describe('anexos e tabelas (DM §Anexos, MD §3.3)', () => {
 
   it('serializa o anexo como heading de nível 2 com Block ID (§3.3)', () => {
     expect(markdownDe(comAnexo)).toContain('## Anexo I - Tabela Oficial ^ldem-anx-i');
+  });
+
+  it('normaliza anexo único sem inventar numeração', () => {
+    const markdown = markdownDe(
+      'Art. 1. Corpo da lei.\n' +
+        'ANEXO\nTabela Oficial\nTabela 1. Demonstrativo | Código; Valor | A; 1',
+    );
+
+    expect(markdown).toContain('## Anexo único - Tabela Oficial ^ldem-anx-unico');
+    expect(markdown).toContain('^ldem-anx-unico-tab-1');
+  });
+
+  it('reconhece anexo único quando nota e título vêm concatenados pelo HTML', () => {
+    const markdown = markdownDe(
+      'Art. 1. Corpo da lei.\n' +
+        'ANEXO (Redação dada pela Lei nº 2, de 2026) TABELA DE TAXAS\n' +
+        'Tabela 1. Demonstrativo | Código; Valor | A; 1',
+    );
+
+    expect(markdown).toContain('## Anexo único - TABELA DE TAXAS ^ldem-anx-unico');
+    expect(markdown).toContain('^ldem-anx-unico-tab-1');
   });
 
   it('faz o artigo dentro do anexo carregar o segmento (BID §2.3.10)', () => {

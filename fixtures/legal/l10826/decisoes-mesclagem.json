@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "primarySnapshotSha256": "0648288b446666f48e9ff0bdc0ccd92761ead2fbaac5d4186ba7f8eca5012722",
+  "auxiliarySnapshotSha256": "d7381d1b3c376b0f7b94cb15c323137771e2f592af5675156482876bd2baaa67",
+  "action": "keep_primary_skip_auxiliary_node",
+  "reviewedConflicts": [
+    "lei/capitulo:III/artigo:6/inciso:III",
+    "lei/capitulo:III/artigo:6/inciso:V",
+    "lei/capitulo:III/artigo:11/paragrafo:1",
+    "lei/capitulo:III/artigo:11/paragrafo:2"
+  ],
+  "rationale": "A página compilada é primary_current. Os quatro caminhos divergem ou estão estruturalmente deslocados na página anotada e, conforme ADR-009, não podem substituir nem enriquecer silenciosamente o nó primário."
+}
