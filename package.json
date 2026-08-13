@@ -21,6 +21,8 @@
     "postinstall": "install-electron",
     "preview": "electron-vite preview",
     "prepare": "node scripts/configure-git-hooks.mjs",
+    "headroom:proxy": "headroom proxy --port 8787 --budget 10",
+    "headroom:quickstart": "node scripts/headroom-quickstart.mjs",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "npm run lint -- --fix",
     "format": "prettier . --write",
@@ -74,6 +76,7 @@
     "defuddle": "0.19.2",
     "headroom-ai": "^0.22.4",
     "linkedom": "0.18.13",
+    "openai": "^7.4.0",
     "postgres": "3.4.7",
     "zod": "4.4.3"
   }
