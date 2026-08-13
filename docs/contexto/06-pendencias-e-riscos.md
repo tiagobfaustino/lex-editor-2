@@ -4,9 +4,10 @@
 > dívida é algo que já está no repositório e precisa de correção; risco é o que
 > pode dar errado adiante.
 
-> Atualização em 2026-08-12: as Features 001–010 estão concluídas. As seções
-> datadas abaixo permanecem como histórico; o estado operacional atual está no
-> `spec/FEATURE_INDEX.md` e nos `review.md` de cada feature.
+> Atualização em 2026-08-13: as Features 001–010 estão concluídas e a Feature
+> 011 está planejada como `ready`. As seções datadas abaixo permanecem como
+> histórico; o estado operacional atual está no `spec/FEATURE_INDEX.md` e nos
+> `review.md` das features encerradas.
 
 ## Resolvido em 2026-08-04
 
@@ -47,11 +48,30 @@ renderer deste app é servido por `file://` dentro do asar e o fuse precisa
 ficar ligado (`electron-builder.yml` já estava correto; o `inspect-bundle.mjs`
 é que tinha a expectativa errada e foi corrigido).
 
-## Feature 001 — o que falta para fechar
+## Feature 001 — encerramento histórico
 
 Nada. T001-08 a T001-10 estão concluídas, os cinco critérios de aceite estão
 marcados no `spec.md` e a feature está `done` no `FEATURE_INDEX.md`. O que
 ficou em aberto não bloqueava o fechamento e está no `review.md` da feature.
+
+## Resolvido até 2026-08-12 — Features 002–010
+
+O roadmap que este documento originalmente apresentava como futuro foi
+implementado e validado. Em particular:
+
+- **Feature 006 — revisão editorial e validação:** correções tipadas, diário e
+  replay, validações bloqueantes, aprovação vinculada à revisão, exportação em
+  lote e `UPDATE.md` determinístico;
+- **Feature 007 — publicação segura:** release candidate, autoridade
+  server-side, promoção por SHA, sincronização transacional, idempotência,
+  recuperação e rollback para frente;
+- **Feature 008 — atualizações legislativas:** worker sem autoridade de
+  publicação, projeção e diff normativos, fila deduplicada e decisão editorial
+  antes de encaminhar uma nova revisão à publicação.
+
+As evidências e decisões permanentes estão nos respectivos `review.md`. As
+Features 009–010 acrescentaram as projeções completa/vigente e as referências
+jurídicas navegáveis.
 
 ## Escopo concluído desde o levantamento
 
@@ -59,6 +79,7 @@ As Features 002–010 implementaram o domínio jurídico, parser, Block IDs,
 Formatter, importação/preview/exportação, revisão editorial, publicação segura,
 atualizações legislativas, projeções completa/vigente e referências jurídicas
 navegáveis. Não há feature ativa nem tarefa parcial no índice atual.
+A Feature 011 está planejada e ainda não foi ativada para implementação.
 
 ## Dívidas menores
 
@@ -117,11 +138,12 @@ quebra links do Obsidian, notas e favoritos já ancorados no SaaS.
 
 ### Fronteira de segurança do Electron (alto)
 
-Hoje a fronteira é mínima porque só existe uma capacidade. O risco cresce a
-cada capacidade nova — importação por URL (SSRF, redirect), arquivo local
-(traversal, symlink), Git (injeção de argumento). O contrato de validação
-comum já está pronto para recebê-las; o risco é alguém contorná-lo criando um
-canal genérico.
+A fronteira agora inclui importação por URL e arquivo, estado editorial,
+publicação, atualizações e navegação jurídica. As capacidades usam contratos
+nomeados, validação runtime, remetente/frame autorizado e DTOs mínimos; os
+testes cobrem SSRF/redirect, traversal/symlink, argumentos Git e ausência de
+paths, AST e secrets no renderer. O risco residual é uma nova integração
+contornar esse padrão criando canal ou executor genérico.
 
 ### Overengineering visual (baixo, já mitigado)
 
@@ -132,5 +154,5 @@ necessário.
 
 1. Manter a suíte e as fixtures reais das Features 001–010 verdes.
 2. Tratar as dívidas menores acima sem misturá-las a uma nova feature.
-3. Especificar e ativar a Feature 011 somente após definir seu resultado
-   verificável e dependências no `FEATURE_INDEX.md`.
+3. Revisar e ativar a Feature 011 quando o usuário autorizar sua implementação;
+   até lá, ela permanece `ready` e sem tarefas iniciadas.
