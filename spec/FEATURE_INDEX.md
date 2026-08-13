@@ -23,6 +23,7 @@
 | 008 | [Atualizações legislativas](./lex-editor/008-legislative-updates/spec.md) | P3 | done | 007 | Worker gera proposta revisável sem publicar automaticamente |
 | 009 | [Projeções completa e vigente](./lex-editor/009-complete-current-projections/spec.md) | P1 | done | 008 | Uma revisão gera Markdown completo ou somente vigente sem perder histórico |
 | 010 | [Referências jurídicas e navegação por dispositivo](./lex-editor/010-legal-reference-navigation/spec.md) | P1 | done | 004, 005, 006, 009 | Menções resolvidas abrem e pré-visualizam o bloco interno ou de outra lei importada |
+| 011 | [Configuração e catálogo de fontes oficiais](./lex-editor/011-official-source-catalog/spec.md) | P3 | ready | 005, 008, 009 | Administrador cadastra, testa e ativa uma fonte compatível; importador e worker usam a mesma revisão |
 
 ## Regra de ativação
 
@@ -48,6 +49,7 @@ Antes de alterar uma feature para `in_progress`:
 | 008 | Fase 8 |
 | 009 | Extensão das Fases 4–6 |
 | 010 | Extensão das Fases 4–6 |
+| 011 | Fases 6 e 8 |
 
 Esse mapeamento não altera o roadmap. Ele reorganiza sua execução para obter
 feedback ponta a ponta antes de generalizar todos os casos jurídicos.
