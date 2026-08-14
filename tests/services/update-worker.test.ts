@@ -19,6 +19,7 @@ import {
   type LegislativeUpdateJob,
   type UpdateSchedule,
 } from '../../services/update-worker/src/index.js';
+import type { ActiveSourceImportConfiguration } from '@lex-editor/source-ingestion';
 
 const sha256 = (value: string): string => createHash('sha256').update(value, 'utf8').digest('hex');
 const clone = <T>(value: T): T => structuredClone(value);
@@ -28,6 +29,49 @@ const BASE_ID = '10000000-0000-4000-8000-000000000002';
 const ACTOR_ID = '10000000-0000-4000-8000-000000000003';
 const PUBLICATION_ID = '10000000-0000-4000-8000-000000000004';
 const ARTIFACT_ID = '10000000-0000-4000-8000-000000000005';
+const PROVIDER_ID = '10000000-0000-4000-8000-000000000006';
+const PROVIDER_REVISION_ID = '10000000-0000-4000-8000-000000000007';
+const BINDING_ID = '10000000-0000-4000-8000-000000000008';
+const BINDING_REVISION_ID = '10000000-0000-4000-8000-000000000009';
+
+const sourceConfiguration = (): ActiveSourceImportConfiguration => ({
+  providerRevision: {
+    schemaVersion: 1,
+    providerRevisionId: PROVIDER_REVISION_ID,
+    providerId: PROVIDER_ID,
+    revisionNumber: 1,
+    providerKey: 'planalto-oficial',
+    providerName: 'Portal da Legislação do Planalto',
+    sourceType: 'planalto_html',
+    adapterId: 'planalto.html',
+    adapterContractVersion: 1,
+    origin: { scheme: 'https', host: 'www.planalto.gov.br', port: null, pathPrefix: '/' },
+    detectionParameters: { requireLegalHeader: true },
+    configDigest: 'a'.repeat(64),
+    createdByUserId: ACTOR_ID,
+    createdAt: NOW.toISOString(),
+  },
+  bindingRevision: {
+    schemaVersion: 1,
+    bindingRevisionId: BINDING_REVISION_ID,
+    bindingId: BINDING_ID,
+    lawId: LAW_ID,
+    providerRevisionId: PROVIDER_REVISION_ID,
+    revisionNumber: 1,
+    artifacts: [
+      {
+        order: 0,
+        sourceRole: 'primary_current',
+        sourceVariant: 'annotated',
+        sourceUrl: 'https://www.planalto.gov.br/ccivil_03/leis/l123.htm',
+      },
+    ],
+    monitoringIntervalMs: 86_400_000,
+    configDigest: 'b'.repeat(64),
+    createdByUserId: ACTOR_ID,
+    createdAt: NOW.toISOString(),
+  },
+});
 
 const snapshot = (content: string): SourceSnapshot => {
   const digest = sha256(content);
@@ -52,7 +96,7 @@ const job = (overrides: Partial<LegislativeUpdateJob> = {}): LegislativeUpdateJo
   lawId: LAW_ID,
   lawSigla: identifiedMinima.sigla,
   lawTitle: identifiedMinima.titulo,
-  sourceUrl: identifiedMinima.fonte,
+  sourceConfiguration: sourceConfiguration(),
   baseVersionId: BASE_ID,
   baseNormativeSha256: calculateNormativeHash(identifiedMinima, sha256),
   publishedAst: identifiedMinima,

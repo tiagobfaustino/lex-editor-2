@@ -10,6 +10,9 @@
     },
     {
       "path": "./packages/legal-domain"
+    },
+    {
+      "path": "./packages/source-ingestion"
     }
   ]
 }

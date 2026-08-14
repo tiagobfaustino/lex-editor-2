@@ -1,4 +1,8 @@
-import { z } from 'zod';
+import {
+  activeSourceImportConfigurationSchema,
+  installedSourceAdapterRegistry,
+  type ActiveSourceImportConfiguration,
+} from '@lex-editor/source-ingestion';
 
 import {
   createLegislativeDetectionHashes,
@@ -29,7 +33,7 @@ export type LegislativeUpdateJob = Readonly<{
   lawId: string;
   lawSigla: string;
   lawTitle: string;
-  sourceUrl: string;
+  sourceConfiguration: ActiveSourceImportConfiguration;
   baseVersionId: string;
   baseNormativeSha256: string;
   publishedAst: IdentifiedNormaAST;
@@ -91,9 +95,20 @@ export const createLegislativeUpdateWorker = (options: {
       lawId: updateUuidSchema.parse(rawJob.lawId),
       baseVersionId: updateUuidSchema.parse(rawJob.baseVersionId),
       baseNormativeSha256: updateDigestSchema.parse(rawJob.baseNormativeSha256),
-      sourceUrl: z.url().parse(rawJob.sourceUrl),
+      sourceConfiguration: activeSourceImportConfigurationSchema.parse(rawJob.sourceConfiguration),
       schedule: updateScheduleSchema.parse(rawJob.schedule),
     };
+    installedSourceAdapterRegistry.validateBindingRevision(
+      job.sourceConfiguration.providerRevision,
+      job.sourceConfiguration.bindingRevision,
+    );
+    if (job.sourceConfiguration.bindingRevision.lawId !== job.lawId) {
+      throw new Error('UPDATE_SOURCE_BINDING_MISMATCH');
+    }
+    const sourceUrl = job.sourceConfiguration.bindingRevision.artifacts.find(
+      ({ sourceRole }) => sourceRole === 'primary_current',
+    )?.sourceUrl;
+    if (sourceUrl === undefined) throw new Error('UPDATE_PRIMARY_SOURCE_MISSING');
     const now = options.now();
     if (
       job.schedule.suspendedUntil !== null &&
@@ -147,7 +162,7 @@ export const createLegislativeUpdateWorker = (options: {
           lawId: job.lawId,
           lawSigla: job.lawSigla,
           lawTitle: job.lawTitle,
-          sourceUrl: job.sourceUrl,
+          sourceUrl,
           baseVersionId: job.baseVersionId,
           baseNormativeSha256: job.baseNormativeSha256,
           candidateNormativeSha256: hashes.valor.normativeSha256,
@@ -180,7 +195,7 @@ export const createLegislativeUpdateWorker = (options: {
         lawId: job.lawId,
         lawSigla: job.lawSigla,
         lawTitle: job.lawTitle,
-        sourceUrl: job.sourceUrl,
+        sourceUrl,
         baseVersionId: job.baseVersionId,
         baseNormativeSha256: job.baseNormativeSha256,
         failureKey,

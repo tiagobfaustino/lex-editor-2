@@ -101,6 +101,71 @@ export default defineConfig([
     },
   },
   {
+    files: ['packages/source-ingestion/src/*.{js,ts}'],
+    rules: {
+      'no-restricted-imports': boundaryRule({
+        paths: [
+          ...nodePaths,
+          restrictedPath('electron', 'Os contratos de ingestão não podem depender de Electron.'),
+          restrictedPath('react', 'Os contratos de ingestão não podem depender de React.'),
+          restrictedPath('react-dom', 'Os contratos de ingestão não podem depender de React DOM.'),
+          restrictedPath(
+            '@supabase/supabase-js',
+            'Os contratos de ingestão não podem acessar banco ou rede.',
+          ),
+        ],
+        patterns: [
+          {
+            group: [
+              'electron/**',
+              'react/**',
+              'react-dom/**',
+              '@supabase/**',
+              ...layerPatterns('main', 'preload', 'renderer'),
+              '**/services',
+              '**/services/**',
+            ],
+            message: 'O pacote de ingestão aceita somente dependências puras aprovadas.',
+          },
+        ],
+      }),
+    },
+  },
+  {
+    files: ['packages/source-ingestion/src/node/**/*.{js,ts}'],
+    languageOptions: {
+      globals: globals.node,
+    },
+    rules: {
+      'no-restricted-imports': boundaryRule({
+        paths: [
+          restrictedPath(
+            'electron',
+            'A ingestão Node compartilhada não pode depender de Electron.',
+          ),
+          restrictedPath('react', 'A ingestão Node compartilhada não pode depender de React.'),
+          restrictedPath(
+            'react-dom',
+            'A ingestão Node compartilhada não pode depender de React DOM.',
+          ),
+        ],
+        patterns: [
+          {
+            group: [
+              'electron/**',
+              'react/**',
+              'react-dom/**',
+              ...layerPatterns('main', 'preload', 'renderer'),
+              '**/services',
+              '**/services/**',
+            ],
+            message: 'A implementação Node compartilhada não atravessa camadas consumidoras.',
+          },
+        ],
+      }),
+    },
+  },
+  {
     files: ['src/shared/ipc/**/*.{js,ts}'],
     rules: {
       'no-restricted-imports': boundaryRule({
@@ -165,6 +230,32 @@ export default defineConfig([
               ...layerPatterns('main', 'preload', 'renderer'),
             ],
             message: 'A autoridade server-side não pode importar camadas do aplicativo desktop.',
+          },
+        ],
+      }),
+    },
+  },
+  {
+    files: ['services/source-catalog/src/**/*.{js,ts}'],
+    languageOptions: {
+      globals: globals.node,
+    },
+    rules: {
+      'no-restricted-imports': boundaryRule({
+        paths: [
+          restrictedPath('electron', 'O catálogo server-side não pode depender de Electron.'),
+          restrictedPath('react', 'O catálogo server-side não pode depender da apresentação.'),
+          restrictedPath('react-dom', 'O catálogo server-side não pode depender da apresentação.'),
+        ],
+        patterns: [
+          {
+            group: [
+              'electron/**',
+              'react/**',
+              'react-dom/**',
+              ...layerPatterns('main', 'preload', 'renderer'),
+            ],
+            message: 'A autoridade do catálogo não pode importar camadas do aplicativo desktop.',
           },
         ],
       }),

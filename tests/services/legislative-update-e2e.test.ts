@@ -16,6 +16,7 @@ import {
   type IdentifiedNormaAST,
   type SourceSnapshot,
 } from '@lex-editor/legal-domain';
+import type { ActiveSourceImportConfiguration } from '@lex-editor/source-ingestion';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
@@ -65,6 +66,54 @@ const APPROVAL_ID = '20000000-0000-4000-8000-000000000003';
 const TOKEN = 'editor-access-token-for-legislative-e2e';
 const DIRECTORY_NAME = 'lei-de-atualizacao';
 const SIGLA = 'lat';
+const SOURCE_PROVIDER_ID = '10000000-0000-4000-8000-000000000009';
+const SOURCE_PROVIDER_REVISION_ID = '10000000-0000-4000-8000-000000000010';
+const SOURCE_BINDING_ID = '10000000-0000-4000-8000-000000000011';
+const SOURCE_BINDING_REVISION_ID = '10000000-0000-4000-8000-000000000012';
+
+const sourceConfiguration = (): ActiveSourceImportConfiguration => ({
+  providerRevision: {
+    schemaVersion: 1,
+    providerRevisionId: SOURCE_PROVIDER_REVISION_ID,
+    providerId: SOURCE_PROVIDER_ID,
+    revisionNumber: 1,
+    providerKey: 'planalto-oficial',
+    providerName: 'Portal da Legislação do Planalto',
+    sourceType: 'planalto_html',
+    adapterId: 'planalto.html',
+    adapterContractVersion: 1,
+    origin: {
+      scheme: 'https',
+      host: 'www.planalto.gov.br',
+      port: null,
+      pathPrefix: '/ccivil_03/',
+    },
+    detectionParameters: { requireLegalHeader: true },
+    configDigest: 'a'.repeat(64),
+    createdByUserId: ACTOR_ID,
+    createdAt: NOW.toISOString(),
+  },
+  bindingRevision: {
+    schemaVersion: 1,
+    bindingRevisionId: SOURCE_BINDING_REVISION_ID,
+    bindingId: SOURCE_BINDING_ID,
+    lawId: LAW_ID,
+    providerRevisionId: SOURCE_PROVIDER_REVISION_ID,
+    revisionNumber: 1,
+    artifacts: [
+      {
+        order: 0,
+        sourceRole: 'primary_current',
+        sourceVariant: 'annotated',
+        sourceUrl: 'https://www.planalto.gov.br/ccivil_03/leis/lat.htm',
+      },
+    ],
+    monitoringIntervalMs: 86_400_000,
+    configDigest: 'b'.repeat(64),
+    createdByUserId: ACTOR_ID,
+    createdAt: NOW.toISOString(),
+  },
+});
 
 afterEach(async () => {
   await Promise.all(roots.splice(0).map((path) => rm(path, { recursive: true })));
@@ -147,7 +196,7 @@ const updateJob = (options: {
   lawId: LAW_ID,
   lawSigla: SIGLA,
   lawTitle: 'Lei de atualização legislativa',
-  sourceUrl: 'https://www.planalto.gov.br/ccivil_03/leis/lat.htm',
+  sourceConfiguration: sourceConfiguration(),
   baseVersionId: options.baseVersionId,
   baseNormativeSha256: calculateNormativeHash(options.publishedAst, sha256),
   publishedAst: options.publishedAst,

@@ -10,6 +10,16 @@ const deniedCases = [
     code: "import fs from 'node:fs';\nvoid fs;\n",
   },
   {
+    name: 'source-ingestion -> Node',
+    filePath: 'packages/source-ingestion/src/boundary-check.js',
+    code: "import fs from 'node:fs';\nvoid fs;\n",
+  },
+  {
+    name: 'source-ingestion Node -> main',
+    filePath: 'packages/source-ingestion/src/node/boundary-check.js',
+    code: "import * as main from '../../../../src/main/index.js';\nvoid main;\n",
+  },
+  {
     name: 'shared/ipc -> legal-domain',
     filePath: 'src/shared/ipc/boundary-check.js',
     code: "import * as domain from '@lex-editor/legal-domain';\nvoid domain;\n",
@@ -30,6 +40,11 @@ const deniedCases = [
     code: "import * as main from '../../../src/main/index.js';\nvoid main;\n",
   },
   {
+    name: 'source-catalog -> renderer',
+    filePath: 'services/source-catalog/src/boundary-check.js',
+    code: "import * as renderer from '../../../src/renderer/index.js';\nvoid renderer;\n",
+  },
+  {
     name: 'preload -> main',
     filePath: 'src/preload/boundary-check.js',
     code: "import * as main from '../main/index.js';\nvoid main;\n",
@@ -48,6 +63,16 @@ const allowedCases = [
     code: "import * as local from './local.js';\nvoid local;\n",
   },
   {
+    name: 'source-ingestion -> legal-domain',
+    filePath: 'packages/source-ingestion/src/boundary-check.js',
+    code: "import * as domain from '@lex-editor/legal-domain';\nvoid domain;\n",
+  },
+  {
+    name: 'source-ingestion Node -> Node',
+    filePath: 'packages/source-ingestion/src/node/boundary-check.js',
+    code: "import crypto from 'node:crypto';\nvoid crypto;\n",
+  },
+  {
     name: 'main -> legal-domain',
     filePath: 'src/main/boundary-check.js',
     code: "import * as domain from '@lex-editor/legal-domain';\nvoid domain;\n",
@@ -61,6 +86,11 @@ const allowedCases = [
     name: 'publisher -> shared publication protocol',
     filePath: 'services/publisher/src/boundary-check.js',
     code: "import * as protocol from '../../../src/shared/publication/approval.js';\nvoid protocol;\n",
+  },
+  {
+    name: 'source-catalog -> source-ingestion',
+    filePath: 'services/source-catalog/src/boundary-check.js',
+    code: "import * as contracts from '@lex-editor/source-ingestion';\nvoid contracts;\n",
   },
 ];
 

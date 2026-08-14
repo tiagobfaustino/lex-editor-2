@@ -87,6 +87,8 @@ try {
     'tests/database/legislative-update-queue.test.sql',
     'supabase/migrations/20260812120000_legal_reference_edges.sql',
     'tests/database/legal-reference-edges.test.sql',
+    'supabase/migrations/20260813120000_source_catalog.sql',
+    'tests/database/source-catalog.test.sql',
   ]) {
     await requireSuccess('docker', psqlArguments(), { input: await readFile(path) });
   }
@@ -167,6 +169,85 @@ try {
     !/permission denied/u.test(workerEditorialDecision.stderr)
   ) {
     throw new Error('The update worker unexpectedly reached the editorial decision function.');
+  }
+
+  const sourceWorkerDirectWrite = await execute('docker', [
+    ...psqlArguments('source_catalog_worker_test'),
+    '--command',
+    `update private.source_binding_health
+     set source_health_state = 'healthy'
+     where binding_id = 'bbbbbbbb-2000-4000-8000-000000000001'`,
+  ]);
+  if (
+    sourceWorkerDirectWrite.code === 0 ||
+    !/permission denied/u.test(sourceWorkerDirectWrite.stderr)
+  ) {
+    throw new Error('The source worker unexpectedly wrote directly to catalog health.');
+  }
+
+  const sourceWorkerAdminMutation = await execute('docker', [
+    ...psqlArguments('source_catalog_worker_test'),
+    '--command',
+    `select private.append_source_provider_revision(
+      'aaaaaaaa-0000-4000-8000-000000000001', 3, '{}'::jsonb
+    )`,
+  ]);
+  if (
+    sourceWorkerAdminMutation.code === 0 ||
+    !/permission denied/u.test(sourceWorkerAdminMutation.stderr)
+  ) {
+    throw new Error('The source worker unexpectedly reached an administrative function.');
+  }
+
+  const sourceCatalogUnauthorizedRead = await execute('docker', [
+    ...psqlArguments('source_catalog_unauthorized_test'),
+    '--command',
+    'select private.claim_due_source_checks(now(), 100)',
+  ]);
+  if (
+    sourceCatalogUnauthorizedRead.code === 0 ||
+    !/permission denied/u.test(sourceCatalogUnauthorizedRead.stderr)
+  ) {
+    throw new Error('An unauthorised identity unexpectedly read the source catalog.');
+  }
+
+  const sourceImporterDirectRead = await execute('docker', [
+    ...psqlArguments('source_catalog_importer_test'),
+    '--command',
+    'select * from private.law_source_binding_revisions',
+  ]);
+  if (
+    sourceImporterDirectRead.code === 0 ||
+    !/permission denied/u.test(sourceImporterDirectRead.stderr)
+  ) {
+    throw new Error('The source importer unexpectedly read catalog tables directly.');
+  }
+
+  const sourceImporterAdminMutation = await execute('docker', [
+    ...psqlArguments('source_catalog_importer_test'),
+    '--command',
+    `select private.change_law_source_binding_activation(
+      'aaaaaaaa-0000-4000-8000-000000000001',
+      'bbbbbbbb-2000-4000-8000-000000000001', 6, 'paused'
+    )`,
+  ]);
+  if (
+    sourceImporterAdminMutation.code === 0 ||
+    !/permission denied/u.test(sourceImporterAdminMutation.stderr)
+  ) {
+    throw new Error('The source importer unexpectedly reached an administrative function.');
+  }
+
+  const sourceImporterWorkerRead = await execute('docker', [
+    ...psqlArguments('source_catalog_importer_test'),
+    '--command',
+    'select private.claim_due_source_checks(now(), 100)',
+  ]);
+  if (
+    sourceImporterWorkerRead.code === 0 ||
+    !/permission denied/u.test(sourceImporterWorkerRead.stderr)
+  ) {
+    throw new Error('The source importer unexpectedly reached a worker function.');
   }
 
   const unauthorized = await execute('docker', [

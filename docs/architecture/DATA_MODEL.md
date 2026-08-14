@@ -9,6 +9,7 @@
 - [NormaAST](#normaast)
 - [Índice de referências jurídicas](#índice-de-referências-jurídicas)
 - [Metadados de frontmatter](#metadados-de-frontmatter)
+- [Catálogo de fontes oficiais](#catálogo-de-fontes-oficiais)
 - [Schema Postgres/Supabase](#schema-postgressupabase)
 - [Relacionamentos entre tabelas](#relacionamentos-entre-tabelas)
 - [Schema do Vinculex SaaS](#schema-do-vinculex-saas)
@@ -582,6 +583,147 @@ Mapeamento entre os campos de frontmatter do Markdown (ver `./MARKDOWN_SPEC.md` 
 | `fonte_secundaria` | `LeiNode.fontesSecundarias` | `string[]` | Fontes opcionais de checagem cruzada |
 
 O frontmatter é a serialização "de leitura humana" desses campos; o Supabase é a serialização "de consulta estruturada". Ambos derivam da mesma fonte: a NormaAST gerada pelo Lex Editor. `publicationStatus` permanece na NormaAST para controlar o fluxo editorial, mas não é serializado no frontmatter; `deviceStatus` é materializado no corpo conforme `MARKDOWN_SPEC.md`. `dataVerificacaoIntegridade`, `avisosAtualizacao` e `notasEditoriais` alimentam callouts do cabeçalho e as colunas privadas correspondentes de `versoes_lei`; não criam novas chaves de frontmatter.
+
+---
+
+## Catálogo de fontes oficiais
+
+O catálogo separa a descrição reutilizável de uma origem oficial do vínculo
+operacional de uma lei. Configuração é dado versionado; adaptador e parser são
+código instalado e não podem ser enviados pelo catálogo.
+
+### Ciclos de vida
+
+- `sourceActivationState`: `draft | active | paused | archived`; indica se a
+  configuração pode originar novas importações ou jobs.
+- `sourceHealthState`: `unknown | healthy | degraded | suspended`; é uma
+  observação operacional da revisão ativa e não altera a configuração.
+- `sourceTestOutcome`: `success | failure`; registra o resultado imutável de um
+  teste contra digests exatos das revisões.
+
+Esses campos nunca são condensados em `status`. Pausar/arquivar uma fonte e
+suspender temporariamente sua execução são fatos diferentes, com autoridades e
+recuperação distintas.
+
+### Contratos versionados
+
+```ts
+interface ProviderRevision {
+  schemaVersion: 1;
+  providerRevisionId: UUID;
+  providerId: UUID;
+  revisionNumber: number;
+  providerKey: string;
+  providerName: string;
+  sourceType: 'planalto_html' | 'lexml_xml';
+  adapterId: string;
+  adapterContractVersion: number;
+  origin: {
+    scheme: 'http' | 'https';
+    host: string; // ASCII/IDNA normalizado, exato e sem wildcard
+    port: number | null;
+    pathPrefix: string;
+  };
+  detectionParameters: Record<string, string | boolean | number>;
+  configDigest: SHA256;
+  createdByUserId: UUID;
+  createdAt: ISODateTime;
+}
+
+interface LawSourceBindingRevision {
+  schemaVersion: 1;
+  bindingRevisionId: UUID;
+  bindingId: UUID;
+  lawId: UUID;
+  providerRevisionId: UUID;
+  revisionNumber: number;
+  artifacts: Array<{
+    order: number;
+    sourceRole: 'primary_current' | 'historical_auxiliary' | 'cross_check';
+    sourceVariant: 'compiled' | 'annotated' | 'other';
+    sourceUrl: URL;
+  }>;
+  monitoringIntervalMs: number;
+  configDigest: SHA256;
+  createdByUserId: UUID;
+  createdAt: ISODateTime;
+}
+```
+
+Cada revisão de vínculo possui exatamente um artefato `primary_current` e no
+máximo dez artefatos no contrato genérico; cada adapter pode impor limite
+menor. Função e variante permanecem independentes conforme a ADR-009.
+`ProviderRevision` e `LawSourceBindingRevision` são append-only; seus
+registros-pai guardam somente `active*RevisionId`, `sourceActivationState` e
+`lockVersion`. Ativação troca os dois ponteiros sob lock e concorrência
+otimista; uma revisão ou evento anterior nunca é reescrito.
+
+O `adapterId + adapterContractVersion` resolve um descriptor instalado no
+build. O descriptor define tipos de fonte, política de origem e um schema
+`strict` para parâmetros declarativos; regex, seletores, templates, scripts e
+opções desconhecidas não são configuração válida.
+
+### Teste, saúde e auditoria
+
+`SourceTestEvidence` vincula revisão de provedor, revisão do vínculo, digests de
+ambas, adapter/versão, etapa alcançada, digest da evidência, resultado, código
+de erro allowlisted, ator e instante. `success` exige `errorCode = null`; uma
+falha exige código. Ativação aceita somente a evidência mais recente do par de
+revisões, com resultado `success` e compatível com revisões, digests e adapter
+exatos.
+
+`SourceBindingHealth` pertence ao par `bindingId + bindingRevisionId` capturado,
+contém `sourceHealthState`, próxima verificação, falhas consecutivas, retry,
+suspensão, código seguro e instantes. O worker pode ler apenas vínculos ativos
+e registrar saúde da revisão que ainda estiver ativa; ele não cria revisões,
+troca ponteiros ou escreve conteúdo normativo.
+
+`SourceCheckJob` é a unidade persistente do agendamento e captura, antes da
+execução, `bindingRevisionId`, `providerRevisionId`, `lawId`, a
+`baseVersionId` publicada e o gatilho `scheduled | manual`. Seu ciclo usa o
+campo explícito `sourceCheckJobState` (`queued | running | completed | failed |
+cancelled`). Existe no máximo um job `queued` ou `running` por vínculo. Pedidos
+manuais possuem chave de idempotência e são deduplicados tanto pela chave quanto
+por qualquer job aberto do mesmo vínculo.
+
+O claim transacional seleciona primeiro jobs manuais e depois vínculos ativos,
+devidos e não suspensos, usando lock com `SKIP LOCKED`. Um job `running` conserva
+as revisões e a base capturadas mesmo que o vínculo seja pausado, arquivado ou
+reativado durante a coleta. Jobs ainda `queued` são cancelados quando a
+configuração deixa de estar ativa. A conclusão sempre fecha o job, mas só aplica
+`SourceBindingHealth` quando a mesma revisão permanece ativa; cada transição de
+verificação e de saúde gera `SourceCheckEvent` append-only.
+
+Falhas consecutivas calculam backoff exponencial limitado com jitter e, ao
+atingir o limiar operacional, preenchem `suspendedUntil`. Suspensão afeta o
+scheduler e o pedido manual sem alterar `sourceActivationState`. Um sucesso
+posterior zera falhas/retry/suspensão, volta a saúde para `healthy` e registra a
+recuperação.
+
+`SourceCatalogEvent` é append-only e registra tipo de evento, entidade,
+revisões anterior/nova, ator server-side, código seguro e instante. HTML/XML,
+AST, headers, endereços DNS e credenciais não integram esse contrato.
+
+### Autoridade e persistência
+
+- mutações são executadas por funções privadas `SECURITY DEFINER`, com
+  `search_path = ''`, após revalidar identidade ativa com papel
+  `administrador`;
+- o ator é derivado da autenticação no serviço, nunca de um campo aceito no
+  request de negócio;
+- `lex_source_catalog_admin` executa somente funções administrativas fechadas;
+- `lex_source_catalog_worker` executa apenas claim de jobs devidos e conclusão
+  com saúde da revisão capturada; não recebe leitura ou DML direto nas tabelas;
+- nenhuma dessas roles recebe DML direto no catálogo, nas leis, versões,
+  artefatos, dispositivos ou Block IDs;
+- `anon`, `authenticated`, renderer e cliente SaaS não recebem acesso às
+  tabelas privadas.
+
+As tabelas normativas são `source_providers`, `source_provider_revisions`,
+`law_source_bindings`, `law_source_binding_revisions`,
+`law_source_binding_artifacts`, `source_test_evidence`,
+`source_binding_health` e `source_catalog_events`, todas no schema `private`.
+O contrato executável correspondente vive em `@lex-editor/source-ingestion`.
 
 ---
 

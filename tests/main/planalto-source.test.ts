@@ -35,6 +35,19 @@ describe('fetch seguro do conjunto Planalto', () => {
     expect(ports.request).not.toHaveBeenCalled();
   });
 
+  it.each([
+    'https://xn--planalt-6za.gov.br/ccivil_03/leis/l9099.htm',
+    'https://www.planalto.gov.br:8443/ccivil_03/leis/l9099.htm',
+  ])('rejeita host IDNA semelhante ou porta inesperada antes do DNS: %s', async (url) => {
+    const ports = makePorts(() => Promise.resolve(htmlResponse()));
+
+    await expect(fetchPlanaltoSourceSet(url, ports)).rejects.toMatchObject({
+      code: 'NETWORK_NOT_ALLOWED',
+    });
+    expect(ports.resolveHost).not.toHaveBeenCalled();
+    expect(ports.request).not.toHaveBeenCalled();
+  });
+
   it('rejeita qualquer resolução privada e não abre conexão', async () => {
     const ports = makePorts(
       () => Promise.resolve(htmlResponse()),

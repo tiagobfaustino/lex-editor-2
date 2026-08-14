@@ -14,6 +14,8 @@
     // `typecheck:workspaces` e pelo build do próprio pacote.
     "paths": {
       "@lex-editor/legal-domain": ["./packages/legal-domain/src/index.ts"],
+      "@lex-editor/source-ingestion": ["./packages/source-ingestion/src/index.ts"],
+      "@lex-editor/source-ingestion/node": ["./packages/source-ingestion/src/node/index.ts"],
       "@lex-editor/cli": ["./packages/cli/src/main.ts"],
       "@lex-editor/cli/*": ["./packages/cli/src/*"]
     }
@@ -25,7 +27,9 @@
     "src/main/**/*.ts",
     "src/preload/**/*.ts",
     "src/shared/**/*.ts",
+    "src/renderer/src/features/sources/source-form-validation.ts",
     "services/publisher/src/**/*.ts",
+    "services/source-catalog/src/**/*.ts",
     "services/update-worker/src/**/*.ts",
     "scripts/run-publication-staging-e2e.ts",
     "tests/**/*.ts",
@@ -35,6 +39,7 @@
     // roda o tsconfig do próprio pacote, que tem `"types": []`, e o teste de
     // pureza recusa qualquer import de infraestrutura.
     "packages/legal-domain/src/**/*.ts",
+    "packages/source-ingestion/src/**/*.ts",
     "packages/cli/src/**/*.ts"
   ]
 }
