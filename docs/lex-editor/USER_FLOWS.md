@@ -301,39 +301,41 @@ flowchart TD
 ## 6. Configurar uma nova fonte de monitoramento
 
 **Persona:** Administrador Técnico
-**Pré-condição:** Uma lei já está publicada no repositório Git/Supabase (ou está prestes a ser importada) e precisa ser incluída na rotina de monitoramento do worker.
-**Pós-condição de sucesso:** Lei cadastrada na configuração do worker, com URL de origem e frequência de verificação definidas, ativa para o próximo ciclo de checagem.
+**Pré-condição:** Uma lei possui identidade cadastrada e o Administrador Técnico está autenticado com papel administrativo revalidado no servidor.
+**Pós-condição de sucesso:** Revisões imutáveis de provedor e vínculo foram testadas e ativadas; importador e worker passam a consumir o mesmo conjunto versionado de artefatos.
 
 ### Passo a passo
 
-1. O administrador técnico abre a tela "Configuração de Fontes" no Lex Editor.
-2. O sistema lista as fontes já monitoradas, com status (ativa/pausada), URL de origem, frequência configurada e data da última verificação.
-3. O administrador aciona "Nova fonte de monitoramento".
-4. O sistema solicita: a lei correspondente (selecionada a partir das leis já publicadas, para vincular a fonte ao registro correto no Supabase), a URL oficial a ser monitorada (deve corresponder à mesma fonte usada na importação original, para que o hash de comparação seja consistente), e a frequência de verificação (ex.: diária, semanal, mensal — conforme criticidade da lei).
-5. O sistema valida a URL informada (mesma validação de formato do fluxo 1) e, opcionalmente, faz uma verificação de acessibilidade imediata (requisição de teste) para confirmar que a fonte responde antes de agendar.
-   - Se a verificação de acessibilidade falhar, o sistema alerta o administrador mas permite salvar mesmo assim (a fonte pode estar temporariamente indisponível), deixando claro que o primeiro ciclo real de monitoramento validará novamente.
-6. O administrador confirma o cadastro.
-7. O sistema grava a configuração (lei vinculada, URL, frequência, status ativo) na store de configuração do worker (Supabase, conforme `../architecture/UPDATE_PIPELINE.md`) e calcula o hash inicial de referência a partir do conteúdo já publicado, para que a primeira verificação futura compare corretamente.
-8. O sistema confirma o cadastro na UI e a nova fonte passa a aparecer na listagem como ativa, com "última verificação: nunca" até o primeiro ciclo do worker rodar.
-9. Opcionalmente, o administrador pode acionar "Verificar agora" para forçar um ciclo imediato de checagem fora do agendamento padrão, útil para validar a configuração recém-criada.
+1. O administrador técnico abre a tela "Configuração de fontes" no Lex Editor.
+2. O sistema lista provedor, revisão, vínculo, conjunto de artefatos, frequência, última verificação e os estados separados de ativação e saúde.
+3. O administrador aciona "Nova fonte oficial" e escolhe um adaptador já instalado.
+4. O sistema solicita a lei, a origem exata normalizada, os parâmetros declarativos aceitos pelo adaptador, os artefatos com função/variante e a frequência. Não aceita credenciais, headers, regex, seletores ou código.
+5. O sistema valida o contrato e cria revisões imutáveis de provedor e vínculo em rascunho.
+6. O sistema executa obrigatoriamente um dry-run pelo mesmo fetch seguro, política de rede e adaptador usados pela importação e pelo worker.
+   - Se o teste falhar, a revisão permanece como rascunho e não pode ser ativada.
+   - Se o teste passar, o sistema exibe a evidência limitada e solicita confirmação explícita da ativação.
+7. O administrador confirma; o servidor revalida papel, evidência, revisão e controle otimista, troca o ponteiro ativo e registra auditoria append-only.
+8. O sistema confirma a ativação na UI. Importações futuras da URL e novos jobs do worker capturam a mesma revisão; jobs já iniciados não mudam no meio da execução.
+9. O administrador pode pausar, arquivar ou restaurar uma revisão testada sem apagar histórico.
+10. O administrador pode acionar "Verificar agora"; a solicitação é autenticada, idempotente, deduplicada e usa os mesmos limites do agendamento.
 
 ### Diagrama
 
 ```mermaid
 flowchart TD
     A([Administrador abre\nConfiguração de Fontes]) --> B[Aciona Nova fonte\nde monitoramento]
-    B --> C[Seleciona lei publicada\n+ informa URL + frequência]
-    C --> D{URL válida?}
+    B --> C[Seleciona adapter e lei\n+ origem exata + artefatos]
+    C --> D{Contrato e política\nválidos?}
     D -- não --> D1[Erro inline] --> C
-    D -- sim --> E[Verificação de acessibilidade\nda fonte, opcional]
-    E --> F{Fonte acessível?}
-    F -- não --> F1[Alerta, mas permite salvar\nmesmo assim] --> G
-    F -- sim --> G[Administrador confirma cadastro]
-    G --> H[Sistema grava configuração\nno store do worker]
-    H --> I[Calcula hash inicial de\nreferência a partir do publicado]
-    I --> J[Fonte ativa na listagem\núltima verificação: nunca]
+    D -- sim --> E[Cria revisões imutáveis\nem rascunho]
+    E --> F[Dry-run obrigatório pelo\nfetch e adapter reais]
+    F --> G{Teste passou?}
+    G -- não --> G1[Preserva rascunho\ne bloqueia ativação] --> C
+    G -- sim --> H[Administrador confirma\nativação]
+    H --> I[Servidor revalida papel,\nevidência e lock]
+    I --> J[Importador e worker usam\na mesma revisão ativa]
     J --> K{Administrador aciona\nVerificar agora?}
-    K -- sim --> L[Ciclo de checagem\nimediato disparado]
+    K -- sim --> L[Job idempotente e\ndeduplicado na fila]
     K -- não --> M([Aguarda próximo ciclo\nagendado do worker])
     L --> M
 ```

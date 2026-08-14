@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: ready
+- `implementation_status`: done
 - `priority`: P3
 - `owner`: não atribuído
 
@@ -163,26 +163,26 @@ seguintes usam a revisão 4.
 
 ## Critérios de aceite
 
-- [ ] Um administrador cadastra pela UI uma nova origem compatível com o
+- [x] Um administrador cadastra pela UI uma nova origem compatível com o
   adaptador Planalto, testa e ativa sem alteração de código.
-- [ ] A mesma URL é detectada pelo importador e coletada pelo worker com a
+- [x] A mesma URL é detectada pelo importador e coletada pelo worker com a
   mesma revisão, adaptador e conjunto de fontes.
-- [ ] Lei nº 10.826/2003 mantém compilada como primária e anotada como
+- [x] Lei nº 10.826/2003 mantém compilada como primária e anotada como
   histórica; leis nº 9.099/1995 e nº 9.605/1998 funcionam com fonte anotada
   primária quando não houver compilada.
-- [ ] Revisão não testada ou teste falho não pode ser ativado, inclusive por
+- [x] Revisão não testada ou teste falho não pode ser ativado, inclusive por
   chamada direta à fronteira server-side.
-- [ ] Ativar, pausar e restaurar são operações concorrentes seguras,
+- [x] Ativar, pausar e restaurar são operações concorrentes seguras,
   versionadas e auditadas, sem deleção do histórico.
-- [ ] Worker ignora vínculos pausados/arquivados e preserva a revisão capturada
+- [x] Worker ignora vínculos pausados/arquivados e preserva a revisão capturada
   em jobs concorrentes.
-- [ ] SSRF, redirects proibidos, DNS rebinding, resposta excessiva, tipo de
+- [x] SSRF, redirects proibidos, DNS rebinding, resposta excessiva, tipo de
   conteúdo inválido e regras de detecção abusivas são bloqueados em testes.
-- [ ] Renderer recebe somente DTOs mínimos e uma identidade sem papel de
+- [x] Renderer recebe somente DTOs mínimos e uma identidade sem papel de
   administrador não consegue mutar o catálogo.
-- [ ] Fluxo de teclado cobre listar, cadastrar, testar, ativar, pausar e
+- [x] Fluxo de teclado cobre listar, cadastrar, testar, ativar, pausar e
   restaurar, com foco e erros acessíveis.
-- [ ] Testes offline usam fixtures e transporte injetado; CI não depende de
+- [x] Testes offline usam fixtures e transporte injetado; CI não depende de
   fonte oficial real.
 
 ## Validação mínima
@@ -214,4 +214,3 @@ seguintes usam a revisão 4.
   sem marcar teste ou verificação como sucesso.
 - Administrador alterar fonte jurídica sem rastreabilidade: autenticação
   server-side, concorrência otimista e auditoria append-only.
-

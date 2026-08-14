@@ -78,6 +78,9 @@ contratos distintos e não usam um campo genérico `status`.
 - O fetch seguro atual do Planalto é movido sem enfraquecer revalidação de DNS,
   redirects, timeout, tamanho ou tipo de conteúdo. Electron main e worker
   injetam transporte, armazenamento de snapshot e relógio.
+- O adaptador Node mantém `defuddle` como dependência explícita para reutilizar
+  a limpeza HTML já validada pelo importador; substituir por uma limpeza DOM
+  própria duplicaria regras e aumentaria o risco de regressão jurídica.
 - Dry-run persiste digest, revisão, adaptador, resultado por etapa e código de
   erro; não persiste HTML/AST em logs nem cria projeto, pendência ou publicação.
 - Alterações criam nova revisão. Pausa e ativação também geram evento e usam
@@ -149,4 +152,3 @@ contratos distintos e não usam um campo genérico `status`.
 - Não migrar automaticamente uma lei publicada para a nova fonte nem produzir
   publicação durante teste/ativação.
 - Não incluir RF-23/RF-24 ou implementar LexML neste incremento.
-

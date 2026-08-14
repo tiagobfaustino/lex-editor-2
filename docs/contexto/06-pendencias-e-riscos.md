@@ -4,10 +4,9 @@
 > dívida é algo que já está no repositório e precisa de correção; risco é o que
 > pode dar errado adiante.
 
-> Atualização em 2026-08-13: as Features 001–010 estão concluídas e a Feature
-> 011 está planejada como `ready`. As seções datadas abaixo permanecem como
-> histórico; o estado operacional atual está no `spec/FEATURE_INDEX.md` e nos
-> `review.md` das features encerradas.
+> Atualização em 2026-08-14: as Features 001–011 estão concluídas. As seções
+> datadas abaixo permanecem como histórico; o estado operacional atual está no
+> `spec/FEATURE_INDEX.md` e nos `review.md` das features encerradas.
 
 ## Resolvido em 2026-08-04
 
@@ -73,13 +72,27 @@ As evidências e decisões permanentes estão nos respectivos `review.md`. As
 Features 009–010 acrescentaram as projeções completa/vigente e as referências
 jurídicas navegáveis.
 
+## Resolvido em 2026-08-14 — Feature 011
+
+A configuração e o catálogo de fontes oficiais deixaram de ser uma pendência.
+O Administrador Técnico pode criar revisões imutáveis de provedor e vínculo,
+testar pelo mesmo fetch/adaptador da ingestão real e só então ativar, pausar,
+arquivar ou restaurar. Importador e worker capturam a mesma revisão ativa; os
+estados de ativação e saúde permanecem separados.
+
+A matriz offline cobre SSRF, IDNA/host semelhante, DNS rebinding, redirect,
+porta, MIME, tamanho, regra abusiva, autorização, concorrência e sucesso falso.
+O corte E2E cadastra pela UI uma origem Planalto compatível sem `www`, ativa-a
+e a usa na importação. As Leis nº 9.099/1995, nº 9.605/1998 e nº 10.826/2003
+foram revalidadas com funções e variantes explícitas.
+
 ## Escopo concluído desde o levantamento
 
-As Features 002–010 implementaram o domínio jurídico, parser, Block IDs,
+As Features 002–011 implementaram o domínio jurídico, parser, Block IDs,
 Formatter, importação/preview/exportação, revisão editorial, publicação segura,
 atualizações legislativas, projeções completa/vigente e referências jurídicas
-navegáveis. Não há feature ativa nem tarefa parcial no índice atual.
-A Feature 011 está planejada e ainda não foi ativada para implementação.
+navegáveis, além do catálogo versionado de fontes oficiais. Não há feature
+ativa nem tarefa parcial no índice atual.
 
 ## Dívidas menores
 
@@ -139,11 +152,12 @@ quebra links do Obsidian, notas e favoritos já ancorados no SaaS.
 ### Fronteira de segurança do Electron (alto)
 
 A fronteira agora inclui importação por URL e arquivo, estado editorial,
-publicação, atualizações e navegação jurídica. As capacidades usam contratos
-nomeados, validação runtime, remetente/frame autorizado e DTOs mínimos; os
-testes cobrem SSRF/redirect, traversal/symlink, argumentos Git e ausência de
-paths, AST e secrets no renderer. O risco residual é uma nova integração
-contornar esse padrão criando canal ou executor genérico.
+publicação, atualizações, catálogo de fontes e navegação jurídica. As
+capacidades usam contratos nomeados, validação runtime, remetente/frame
+autorizado e DTOs mínimos; os testes cobrem SSRF/redirect/DNS rebinding,
+traversal/symlink, argumentos Git e ausência de paths, AST e secrets no
+renderer. O risco residual é uma nova integração contornar esse padrão criando
+canal ou executor genérico.
 
 ### Overengineering visual (baixo, já mitigado)
 
@@ -152,7 +166,7 @@ necessário.
 
 ## Próxima sequência
 
-1. Manter a suíte e as fixtures reais das Features 001–010 verdes.
+1. Manter a suíte e as fixtures reais das Features 001–011 verdes.
 2. Tratar as dívidas menores acima sem misturá-las a uma nova feature.
-3. Revisar e ativar a Feature 011 quando o usuário autorizar sua implementação;
-   até lá, ela permanece `ready` e sem tarefas iniciadas.
+3. Planejar a próxima feature antes de ativá-la; não há incremento posterior
+   autorizado ou parcialmente iniciado no índice.
