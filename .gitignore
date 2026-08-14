@@ -24,6 +24,7 @@ coverage/
 playwright-report/
 test-results/
 blob-report/
+output/playwright/
 
 # Variáveis de ambiente e segredos
 .env
@@ -73,6 +74,7 @@ temp/
 
 # Ferramentas locais de agentes e navegador
 .playwright-mcp/
+.playwright-cli/
 .codex/
 .kilocode/
 .kilo/

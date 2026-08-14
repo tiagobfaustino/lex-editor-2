@@ -1,5 +1,8 @@
 import { _electron as electron, expect, test } from '@playwright/test';
 import type { ElectronApplication, Page } from '@playwright/test';
+import { build } from 'esbuild';
+import { mkdir, rm } from 'node:fs/promises';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Lança o diretório do aplicativo, não o arquivo de entrada: assim o Electron
@@ -7,6 +10,8 @@ import { fileURLToPath } from 'node:url';
 // Apontar direto para o bundle faria `app.getVersion()` cair no fallback da
 // versão do próprio Electron.
 const appDirectory = fileURLToPath(new URL('../..', import.meta.url));
+const e2eOutputDirectory = join(appDirectory, 'output/playwright/source-catalog');
+const sourceCatalogHarnessPath = join(e2eOutputDirectory, 'source-catalog-harness.mjs');
 
 const inheritedEnvironment = (): Record<string, string> => {
   const result: Record<string, string> = {};
@@ -37,13 +42,31 @@ let app: ElectronApplication;
 let mainWindow: Page;
 
 test.beforeAll(async () => {
-  app = await electron.launch({ args: [appDirectory], env: inheritedEnvironment() });
+  await mkdir(e2eOutputDirectory, { recursive: true });
+  await build({
+    entryPoints: [join(appDirectory, 'tests/e2e/support/source-catalog-harness.ts')],
+    outfile: sourceCatalogHarnessPath,
+    bundle: true,
+    format: 'esm',
+    platform: 'node',
+    target: 'node22',
+    packages: 'external',
+  });
+  app = await electron.launch({
+    args: [appDirectory],
+    env: {
+      ...inheritedEnvironment(),
+      LEX_EDITOR_E2E_SOURCE_CATALOG: '1',
+      LEX_EDITOR_E2E_SOURCE_CATALOG_MODULE: sourceCatalogHarnessPath,
+    },
+  });
   mainWindow = await app.firstWindow();
   await mainWindow.waitForLoadState('domcontentloaded');
 });
 
 test.afterAll(async () => {
   await app.close();
+  await rm(e2eOutputDirectory, { recursive: true, force: true });
 });
 
 test('abre a janela principal com as três áreas do shell', async () => {
@@ -140,6 +163,7 @@ test('não entrega Node, Electron ou ipcRenderer ao renderer', async () => {
     'preview',
     'publication',
     'source',
+    'sources',
     'updates',
     'version',
   ]);
@@ -159,6 +183,7 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
           editorial: Record<string, unknown>;
           publication: Record<string, unknown>;
           updates: Record<string, unknown>;
+          sources: Record<string, unknown>;
           export: {
             chooseDestination(input: {
               projectId: string;
@@ -186,6 +211,7 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
       editorialKeys: Object.keys(api.editorial).sort(),
       publicationKeys: Object.keys(api.publication).sort(),
       updatesKeys: Object.keys(api.updates).sort(),
+      sourcesKeys: Object.keys(api.sources).sort(),
       exportKeys: Object.keys(api.export).sort(),
       result: await api.app.getVersion(),
     };
@@ -230,6 +256,15 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
     'updates.approve',
     'updates.reject',
     'updates.reprocess',
+    'sources.list',
+    'sources.createProviderRevision',
+    'sources.createBindingRevision',
+    'sources.dryRun',
+    'sources.activate',
+    'sources.pause',
+    'sources.archive',
+    'sources.restore',
+    'sources.requestCheck',
   ]);
   expect(bridge?.appKeys).toEqual(['getVersion']);
   expect(bridge?.sourceKeys).toEqual(['importFromUrl', 'selectLocal']);
@@ -268,6 +303,17 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
     'reject',
     'reprocess',
   ]);
+  expect(bridge?.sourcesKeys).toEqual([
+    'activate',
+    'archive',
+    'createBindingRevision',
+    'createProviderRevision',
+    'dryRun',
+    'list',
+    'pause',
+    'requestCheck',
+    'restore',
+  ]);
   expect(bridge?.exportKeys).toEqual([
     'chooseBatchDestination',
     'chooseDestination',
@@ -292,6 +338,64 @@ test('não vaza caminho real, segredo ou AST pela ponte', async () => {
   expect(payload).not.toMatch(/\/home\/|[A-Za-z]:\\|\.\.\//);
   expect(payload).not.toMatch(/secret|token|password|senha|apikey|api_key/i);
   expect(payload).not.toMatch(/normaAst|blockId|sourceRef/i);
+});
+
+test('cadastra, testa e ativa uma nova origem pela UI e a usa na importação', async () => {
+  const sourceUrl = 'https://planalto.gov.br/ccivil_03/leis/l9099.htm';
+  await mainWindow.getByRole('link', { name: /Configuração de fontes/u }).click();
+  const newSource = mainWindow.getByRole('button', { name: 'Nova fonte oficial' });
+  await expect(newSource).toBeEnabled();
+  await newSource.click();
+
+  const providerKey = mainWindow.getByLabel('Chave do provedor');
+  await expect(providerKey).toBeFocused();
+  await providerKey.fill('planalto-e2e');
+  await mainWindow.getByLabel('Nome do provedor').fill('Origem Planalto sem www');
+  await mainWindow.getByLabel('UUID da lei').fill('99999999-9999-4999-8999-999999999999');
+  await mainWindow.getByLabel('Host oficial').selectOption('planalto.gov.br');
+  await mainWindow.getByLabel('Prefixo de caminho').fill('/ccivil_03/leis/');
+  await mainWindow.locator('select[name="primary-variant"]').selectOption('annotated');
+  await mainWindow.getByLabel('URL oficial').fill(sourceUrl);
+  await mainWindow.getByRole('button', { name: 'Criar revisão e testar' }).click();
+
+  const confirmation = mainWindow.getByRole('dialog', { name: 'Confirmar alteração da fonte?' });
+  await expect(confirmation).toBeVisible({ timeout: 30_000 });
+  await confirmation.getByRole('button', { name: 'Confirmar alteração' }).click();
+  await expect(mainWindow.getByText('Revisão testada ativada.')).toBeVisible();
+  await expect(mainWindow.getByText('Lei nº 9.099/1995 — origem E2E')).toBeVisible();
+  await expect(mainWindow.getByText('Ativa', { exact: true })).toBeVisible();
+
+  const pause = mainWindow.getByRole('button', { name: 'Pausar' });
+  await pause.focus();
+  await mainWindow.keyboard.press('Enter');
+  const pauseConfirmation = mainWindow.getByRole('dialog', {
+    name: 'Confirmar alteração da fonte?',
+  });
+  await expect(pauseConfirmation.getByRole('button', { name: 'Voltar' })).toBeFocused();
+  await mainWindow.keyboard.press('Tab');
+  await mainWindow.keyboard.press('Enter');
+  await expect(mainWindow.getByText('Fonte pausada; novos jobs foram bloqueados.')).toBeVisible();
+
+  const restore = mainWindow.getByRole('button', { name: 'Restaurar revisão' });
+  await restore.focus();
+  await mainWindow.keyboard.press('Enter');
+  const restoreConfirmation = mainWindow.getByRole('dialog', {
+    name: 'Confirmar alteração da fonte?',
+  });
+  await expect(restoreConfirmation.getByRole('button', { name: 'Voltar' })).toBeFocused();
+  await mainWindow.keyboard.press('Tab');
+  await mainWindow.keyboard.press('Enter');
+  await expect(mainWindow.getByText('Revisão testada restaurada.')).toBeVisible();
+
+  await mainWindow.getByRole('link', { name: 'Importação Nova fonte' }).click();
+  await mainWindow.getByLabel('URL da fonte oficial').fill(sourceUrl);
+  await mainWindow.getByRole('button', { name: 'Importar URL' }).click();
+
+  await expect(
+    mainWindow.locator('.import-panel').getByText('l9099.htm', { exact: true }),
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(mainWindow.locator('.preview-document')).toBeVisible({ timeout: 30_000 });
+  await expect(mainWindow.locator('.document-state')).toContainText('l9099');
 });
 
 test('nega abertura de nova janela a partir do renderer', async () => {
@@ -335,6 +439,15 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
       'updates:approve',
       'updates:reject',
       'updates:reprocess',
+      'sources:list',
+      'sources:create-provider-revision',
+      'sources:create-binding-revision',
+      'sources:dry-run',
+      'sources:activate',
+      'sources:pause',
+      'sources:archive',
+      'sources:restore',
+      'sources:request-check',
       'execute',
       'shell',
       'readFile',
@@ -384,5 +497,14 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
     'updates:approve',
     'updates:reject',
     'updates:reprocess',
+    'sources:list',
+    'sources:create-provider-revision',
+    'sources:create-binding-revision',
+    'sources:dry-run',
+    'sources:activate',
+    'sources:pause',
+    'sources:archive',
+    'sources:restore',
+    'sources:request-check',
   ]);
 });

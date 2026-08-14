@@ -113,6 +113,48 @@ import {
   UPDATES_REJECT_CHANNEL,
   UPDATES_REPROCESS_CHANNEL,
 } from '../../shared/ipc/updates.js';
+import {
+  ActivateSourceBindingCommandSchema,
+  ActivatedSourceBindingDtoSchema,
+  ChangeSourceBindingActivationCommandSchema,
+  ChangedSourceBindingActivationDtoSchema,
+  CreateLawSourceBindingRevisionCommandSchema,
+  CreatedLawSourceBindingRevisionDtoSchema,
+  CreateSourceProviderRevisionCommandSchema,
+  CreatedSourceProviderRevisionDtoSchema,
+  DESKTOP_SOURCE_CATALOG_LIMITS,
+  DryRunSourceBindingCommandSchema,
+  ListSourceCatalogCommandSchema,
+  SOURCES_ACTIVATE_CHANNEL,
+  SOURCES_ARCHIVE_CHANNEL,
+  SOURCES_CREATE_BINDING_REVISION_CHANNEL,
+  SOURCES_CREATE_PROVIDER_REVISION_CHANNEL,
+  SOURCES_DRY_RUN_CHANNEL,
+  SOURCES_LIST_CHANNEL,
+  SOURCES_PAUSE_CHANNEL,
+  SOURCES_RESTORE_CHANNEL,
+  SOURCES_REQUEST_CHECK_CHANNEL,
+  RequestSourceCheckCommandSchema,
+  RequestedSourceCheckDtoSchema,
+  SourceCatalogPageDtoSchema,
+  SourceDryRunDtoSchema,
+} from '../../shared/ipc/sources.js';
+import type {
+  ActivateSourceBindingCommand,
+  ActivatedSourceBindingDto,
+  ChangeSourceBindingActivationCommand,
+  ChangedSourceBindingActivationDto,
+  CreateLawSourceBindingRevisionCommand,
+  CreatedLawSourceBindingRevisionDto,
+  CreateSourceProviderRevisionCommand,
+  CreatedSourceProviderRevisionDto,
+  DryRunSourceBindingCommand,
+  ListSourceCatalogCommand,
+  SourceCatalogPageDto,
+  SourceDryRunDto,
+  RequestSourceCheckCommand,
+  RequestedSourceCheckDto,
+} from '../../shared/ipc/sources.js';
 import type {
   ApproveLegislativeUpdateCommand,
   GetLegislativeUpdateCountsCommand,
@@ -229,12 +271,37 @@ export type DesktopUpdateIpcCapabilities = Readonly<{
   reprocessUpdate: NamedCapability<LegislativeUpdateIdCommand, LegislativeUpdateDecisionDto>;
 }>;
 
+export type DesktopSourceCatalogIpcCapabilities = Readonly<{
+  listCatalog: NamedCapability<ListSourceCatalogCommand, SourceCatalogPageDto>;
+  createProviderRevision: NamedCapability<
+    CreateSourceProviderRevisionCommand,
+    CreatedSourceProviderRevisionDto
+  >;
+  createBindingRevision: NamedCapability<
+    CreateLawSourceBindingRevisionCommand,
+    CreatedLawSourceBindingRevisionDto
+  >;
+  dryRunBinding: NamedCapability<DryRunSourceBindingCommand, SourceDryRunDto>;
+  activateBinding: NamedCapability<ActivateSourceBindingCommand, ActivatedSourceBindingDto>;
+  pauseBinding: NamedCapability<
+    ChangeSourceBindingActivationCommand,
+    ChangedSourceBindingActivationDto
+  >;
+  archiveBinding: NamedCapability<
+    ChangeSourceBindingActivationCommand,
+    ChangedSourceBindingActivationDto
+  >;
+  restoreBinding: NamedCapability<ActivateSourceBindingCommand, ActivatedSourceBindingDto>;
+  requestSourceCheck: NamedCapability<RequestSourceCheckCommand, RequestedSourceCheckDto>;
+}>;
+
 type RegisterIpcHandlersOptions = Readonly<{
   rendererLocation: RendererLocation;
   getMainWindow(): BrowserWindow | null;
   importCapabilities?: DesktopImportIpcCapabilities;
   publicationCapabilities?: DesktopPublicationIpcCapabilities;
   updateCapabilities?: DesktopUpdateIpcCapabilities;
+  sourceCatalogCapabilities?: DesktopSourceCatalogIpcCapabilities;
 }>;
 
 const unavailable = (): never => {
@@ -284,12 +351,25 @@ const unavailableUpdateCapabilities: DesktopUpdateIpcCapabilities = {
   reprocessUpdate: { authorize: () => false, handle: unavailable },
 };
 
+const unavailableSourceCatalogCapabilities: DesktopSourceCatalogIpcCapabilities = {
+  listCatalog: { authorize: () => false, handle: unavailable },
+  createProviderRevision: { authorize: () => false, handle: unavailable },
+  createBindingRevision: { authorize: () => false, handle: unavailable },
+  dryRunBinding: { authorize: () => false, handle: unavailable },
+  activateBinding: { authorize: () => false, handle: unavailable },
+  pauseBinding: { authorize: () => false, handle: unavailable },
+  archiveBinding: { authorize: () => false, handle: unavailable },
+  restoreBinding: { authorize: () => false, handle: unavailable },
+  requestSourceCheck: { authorize: () => false, handle: unavailable },
+};
+
 export const registerIpcHandlers = ({
   rendererLocation,
   getMainWindow,
   importCapabilities = unavailableImportCapabilities,
   publicationCapabilities = unavailablePublicationCapabilities,
   updateCapabilities = unavailableUpdateCapabilities,
+  sourceCatalogCapabilities = unavailableSourceCatalogCapabilities,
 }: RegisterIpcHandlersOptions): (() => void) => {
   const getTrustedWebContents = () => getMainWindow()?.webContents ?? null;
 
@@ -714,6 +794,114 @@ export const registerIpcHandlers = ({
     }),
   );
 
+  ipcMain.handle(SOURCES_LIST_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: ListSourceCatalogCommandSchema,
+      outputSchema: SourceCatalogPageDtoSchema,
+      maxInputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.pageResultBytes,
+      ...sourceCatalogCapabilities.listCatalog,
+    }),
+  );
+
+  ipcMain.handle(SOURCES_CREATE_PROVIDER_REVISION_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: CreateSourceProviderRevisionCommandSchema,
+      outputSchema: CreatedSourceProviderRevisionDtoSchema,
+      maxInputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.actionResultBytes,
+      ...sourceCatalogCapabilities.createProviderRevision,
+    }),
+  );
+
+  ipcMain.handle(SOURCES_CREATE_BINDING_REVISION_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: CreateLawSourceBindingRevisionCommandSchema,
+      outputSchema: CreatedLawSourceBindingRevisionDtoSchema,
+      maxInputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.actionResultBytes,
+      ...sourceCatalogCapabilities.createBindingRevision,
+    }),
+  );
+
+  ipcMain.handle(SOURCES_DRY_RUN_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: DryRunSourceBindingCommandSchema,
+      outputSchema: SourceDryRunDtoSchema,
+      maxInputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.actionResultBytes,
+      ...sourceCatalogCapabilities.dryRunBinding,
+    }),
+  );
+
+  ipcMain.handle(SOURCES_ACTIVATE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: ActivateSourceBindingCommandSchema,
+      outputSchema: ActivatedSourceBindingDtoSchema,
+      maxInputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.actionResultBytes,
+      ...sourceCatalogCapabilities.activateBinding,
+    }),
+  );
+
+  ipcMain.handle(SOURCES_PAUSE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: ChangeSourceBindingActivationCommandSchema,
+      outputSchema: ChangedSourceBindingActivationDtoSchema,
+      maxInputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.actionResultBytes,
+      ...sourceCatalogCapabilities.pauseBinding,
+    }),
+  );
+
+  ipcMain.handle(SOURCES_ARCHIVE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: ChangeSourceBindingActivationCommandSchema,
+      outputSchema: ChangedSourceBindingActivationDtoSchema,
+      maxInputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.actionResultBytes,
+      ...sourceCatalogCapabilities.archiveBinding,
+    }),
+  );
+
+  ipcMain.handle(SOURCES_RESTORE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: ActivateSourceBindingCommandSchema,
+      outputSchema: ActivatedSourceBindingDtoSchema,
+      maxInputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.actionResultBytes,
+      ...sourceCatalogCapabilities.restoreBinding,
+    }),
+  );
+
+  ipcMain.handle(SOURCES_REQUEST_CHECK_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: RequestSourceCheckCommandSchema,
+      outputSchema: RequestedSourceCheckDtoSchema,
+      maxInputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SOURCE_CATALOG_LIMITS.actionResultBytes,
+      ...sourceCatalogCapabilities.requestSourceCheck,
+    }),
+  );
+
   return () => {
     ipcMain.removeHandler(APP_GET_VERSION_CHANNEL);
     ipcMain.removeHandler(SOURCE_SELECT_LOCAL_CHANNEL);
@@ -750,5 +938,14 @@ export const registerIpcHandlers = ({
     ipcMain.removeHandler(UPDATES_APPROVE_CHANNEL);
     ipcMain.removeHandler(UPDATES_REJECT_CHANNEL);
     ipcMain.removeHandler(UPDATES_REPROCESS_CHANNEL);
+    ipcMain.removeHandler(SOURCES_LIST_CHANNEL);
+    ipcMain.removeHandler(SOURCES_CREATE_PROVIDER_REVISION_CHANNEL);
+    ipcMain.removeHandler(SOURCES_CREATE_BINDING_REVISION_CHANNEL);
+    ipcMain.removeHandler(SOURCES_DRY_RUN_CHANNEL);
+    ipcMain.removeHandler(SOURCES_ACTIVATE_CHANNEL);
+    ipcMain.removeHandler(SOURCES_PAUSE_CHANNEL);
+    ipcMain.removeHandler(SOURCES_ARCHIVE_CHANNEL);
+    ipcMain.removeHandler(SOURCES_RESTORE_CHANNEL);
+    ipcMain.removeHandler(SOURCES_REQUEST_CHECK_CHANNEL);
   };
 };

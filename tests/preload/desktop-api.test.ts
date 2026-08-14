@@ -45,6 +45,11 @@ import {
   SOURCE_IMPORT_URL_CHANNEL,
 } from '../../src/shared/ipc/import.js';
 import { UPDATES_GET_COUNTS_CHANNEL, UPDATES_LIST_CHANNEL } from '../../src/shared/ipc/updates.js';
+import {
+  SOURCES_LIST_CHANNEL,
+  SOURCES_PAUSE_CHANNEL,
+  SOURCES_REQUEST_CHECK_CHANNEL,
+} from '../../src/shared/ipc/sources.js';
 import '../../src/preload/index.js';
 
 const SOURCE_ID = '11111111-1111-4111-8111-111111111111';
@@ -202,6 +207,33 @@ describe('preload desktop API', () => {
               actionable: 0,
             },
           };
+        case SOURCES_LIST_CHANNEL:
+          return {
+            ok: true,
+            value: { items: [], nextCursor: null, adapterCapabilities: [] },
+          };
+        case SOURCES_PAUSE_CHANNEL:
+          return {
+            ok: true,
+            value: {
+              bindingId: JOB_ID,
+              bindingRevisionId: DESTINATION_ID,
+              bindingLockVersion: 3,
+              sourceActivationState: 'paused',
+            },
+          };
+        case SOURCES_REQUEST_CHECK_CHANNEL:
+          return {
+            ok: true,
+            value: {
+              sourceCheckJobId: PROJECT_ID,
+              bindingId: JOB_ID,
+              bindingRevisionId: DESTINATION_ID,
+              sourceCheckJobState: 'queued',
+              requestedAt: '2026-08-13T15:00:00.000Z',
+              deduplicated: false,
+            },
+          };
         default:
           throw new Error('Canal inesperado.');
       }
@@ -222,6 +254,7 @@ describe('preload desktop API', () => {
       'preview',
       'publication',
       'source',
+      'sources',
       'updates',
       'version',
     ]);
@@ -266,6 +299,17 @@ describe('preload desktop API', () => {
       'approve',
       'reject',
       'reprocess',
+    ]);
+    expect(Object.keys(api.sources)).toEqual([
+      'list',
+      'createProviderRevision',
+      'createBindingRevision',
+      'dryRun',
+      'activate',
+      'pause',
+      'archive',
+      'restore',
+      'requestCheck',
     ]);
     expect(api).not.toHaveProperty('ipcRenderer');
     expect(api).not.toHaveProperty('invoke');
@@ -328,6 +372,16 @@ describe('preload desktop API', () => {
       ok: true,
       value: { actionable: 0 },
     });
+    await expect(api.sources.list({ cursor: null, limit: 25 })).resolves.toEqual({
+      ok: true,
+      value: { items: [], nextCursor: null, adapterCapabilities: [] },
+    });
+    await expect(
+      api.sources.pause({ bindingId: JOB_ID, expectedBindingLockVersion: 2 }),
+    ).resolves.toMatchObject({ ok: true, value: { sourceActivationState: 'paused' } });
+    await expect(
+      api.sources.requestCheck({ bindingId: JOB_ID, idempotencyKey: 'manual-check-1' }),
+    ).resolves.toMatchObject({ ok: true, value: { sourceCheckJobState: 'queued' } });
 
     expect(electronMocks.invoke.mock.calls).toEqual([
       [APP_GET_VERSION_CHANNEL, {}],
@@ -357,6 +411,9 @@ describe('preload desktop API', () => {
       [EXPORT_WRITE_BATCH_CHANNEL, { destinationId: DESTINATION_ID }],
       [UPDATES_LIST_CHANNEL, { updateReviewStatus: null, cursor: null, limit: 100 }],
       [UPDATES_GET_COUNTS_CHANNEL, {}],
+      [SOURCES_LIST_CHANNEL, { cursor: null, limit: 25 }],
+      [SOURCES_PAUSE_CHANNEL, { bindingId: JOB_ID, expectedBindingLockVersion: 2 }],
+      [SOURCES_REQUEST_CHECK_CHANNEL, { bindingId: JOB_ID, idempotencyKey: 'manual-check-1' }],
     ]);
   });
 
@@ -385,6 +442,8 @@ describe('preload desktop API', () => {
     const api = exposedApi();
     const forgedStart = api.pipeline.start as (input: unknown) => Promise<unknown>;
     const forgedReference = api.preview.getLegalReference as (input: unknown) => Promise<unknown>;
+    const forgedSources = api.sources.list as (input: unknown) => Promise<unknown>;
+    const forgedCheck = api.sources.requestCheck as (input: unknown) => Promise<unknown>;
 
     await expect(forgedStart({ sourceId: SOURCE_ID, path: '/etc/passwd' })).resolves.toMatchObject({
       ok: false,
@@ -393,6 +452,36 @@ describe('preload desktop API', () => {
     await expect(
       forgedReference({ projectId: PROJECT_ID, referenceId: 'not-a-hash', path: '/etc/passwd' }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+    await expect(
+      forgedSources({
+        cursor: null,
+        limit: 25,
+        actorUserId: PROJECT_ID,
+        role: 'administrador',
+        accessToken: 'secret',
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+    await expect(
+      forgedCheck({ bindingId: JOB_ID, idempotencyKey: 'manual-check-1', actorUserId: PROJECT_ID }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
     expect(electronMocks.invoke).not.toHaveBeenCalled();
+  });
+
+  it('rejeita resposta do catálogo que contenha payload privilegiado', async () => {
+    const api = exposedApi();
+    electronMocks.invoke.mockResolvedValueOnce({
+      ok: true,
+      value: {
+        items: [],
+        nextCursor: null,
+        adapterCapabilities: [],
+        html: '<script>secret()</script>',
+      },
+    });
+
+    const result = await api.sources.list({ cursor: null, limit: 25 });
+
+    expect(result).toMatchObject({ ok: false, error: { code: 'FAILED' } });
+    expect(JSON.stringify(result)).not.toMatch(/script|secret|html/iu);
   });
 });

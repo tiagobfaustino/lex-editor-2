@@ -168,7 +168,7 @@ test('importa, navega por diagnóstico, bloqueia conteúdo ativo e exporta bytes
 
   await mainWindow.getByLabel('URL da fonte oficial').fill('https://attacker.example.com/admin');
   await mainWindow.getByRole('button', { name: 'Importar URL' }).click();
-  await expect(mainWindow.getByRole('alert')).toHaveText(
+  await expect(mainWindow.locator('.import-panel').getByRole('alert')).toHaveText(
     'A URL ou o destino de rede não é permitido.',
   );
   await expect(mainWindow.locator('.document-state')).toContainText('lindb · 30 artigos');

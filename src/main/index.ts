@@ -9,6 +9,8 @@ import { registerIpcHandlers } from './ipc/register.js';
 import { createLocalProjectService } from './local-project-service.js';
 import { resolveRendererLocation } from './renderer-location.js';
 import { denyAllSessionPermissions, installWebContentsGuards } from './security.js';
+import { loadSourceCatalogE2eHarness } from './source-catalog-e2e-harness.js';
+import { createDesktopSourceCatalogIpcCapabilities } from './source-catalog-ipc-capabilities.js';
 import { createMainWindow } from './window.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -42,7 +44,7 @@ app.once('will-quit', () => {
   disposeIpcHandlers = null;
 });
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
   const developmentUrl = process.env['ELECTRON_RENDERER_URL'];
   const rendererLocation = resolveRendererLocation({
     productionUrl: new URL('../renderer/index.html', import.meta.url).href,
@@ -52,8 +54,14 @@ void app.whenReady().then(() => {
   denyAllSessionPermissions(session.defaultSession);
 
   Menu.setApplicationMenu(null);
+  const storageRoot = app.getPath('userData');
+  const sourceCatalogHarness = await loadSourceCatalogE2eHarness({
+    isPackaged: app.isPackaged,
+    storageRoot,
+    environment: process.env,
+  });
   const importCapabilities = createLocalProjectService({
-    storageRoot: app.getPath('userData'),
+    storageRoot,
     dialog,
     getMainWindow: () => mainWindow,
     sendProgress: (progress) => {
@@ -69,11 +77,25 @@ void app.whenReady().then(() => {
         mainWindow.webContents.send(PIPELINE_PROGRESS_CHANNEL, parsed.data);
       }
     },
+    ...(sourceCatalogHarness === null
+      ? {}
+      : {
+          activeSourceImportResolver: sourceCatalogHarness.activeSourceImportResolver,
+          networkPorts: sourceCatalogHarness.networkPorts,
+        }),
   });
   disposeIpcHandlers = registerIpcHandlers({
     rendererLocation,
     getMainWindow: () => mainWindow,
     importCapabilities,
+    ...(sourceCatalogHarness === null
+      ? {}
+      : {
+          sourceCatalogCapabilities: createDesktopSourceCatalogIpcCapabilities({
+            service: sourceCatalogHarness.service,
+            getAccessToken: sourceCatalogHarness.getAccessToken,
+          }),
+        }),
   });
   openMainWindow(rendererLocation);
 

@@ -47,7 +47,14 @@ const contentSecurityPolicyPlugin = (): Plugin => ({
 });
 
 export default defineConfig({
-  main: {},
+  main: {
+    build: {
+      // `defuddle/node` é CommonJS e carrega `linkedom` com `require()`.
+      // Empacotá-lo parcialmente faz o Rollup gerar um default import ESM que
+      // `linkedom` não oferece. Externalize o grafo intacto para o Node/Electron.
+      externalizeDeps: { include: ['defuddle'] },
+    },
+  },
   preload: {
     build: {
       externalizeDeps: false,
@@ -62,6 +69,12 @@ export default defineConfig({
   },
   renderer: {
     plugins: [contentSecurityPolicyPlugin()],
+    // O runtime JSX de desenvolvimento é descoberto somente depois do
+    // primeiro carregamento do React. Incluí-lo na otimização inicial evita
+    // que o Vite recarregue a janela já exibida e deixe um flash vazio.
+    optimizeDeps: {
+      include: ['react/jsx-dev-runtime'],
+    },
     build: {
       assetsInlineLimit: 0,
     },

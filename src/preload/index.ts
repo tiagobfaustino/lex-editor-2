@@ -112,6 +112,47 @@ import {
   PublicationIdCommandSchema,
 } from '../shared/ipc/publication.js';
 import {
+  ActivateSourceBindingCommandSchema,
+  ActivateSourceBindingResultSchema,
+  ChangeSourceBindingActivationCommandSchema,
+  ChangeSourceBindingActivationResultSchema,
+  CreateLawSourceBindingRevisionCommandSchema,
+  CreateLawSourceBindingRevisionResultSchema,
+  CreateSourceProviderRevisionCommandSchema,
+  CreateSourceProviderRevisionResultSchema,
+  DryRunSourceBindingCommandSchema,
+  DryRunSourceBindingResultSchema,
+  ListSourceCatalogCommandSchema,
+  ListSourceCatalogResultSchema,
+  SOURCES_ACTIVATE_CHANNEL,
+  SOURCES_ARCHIVE_CHANNEL,
+  SOURCES_CREATE_BINDING_REVISION_CHANNEL,
+  SOURCES_CREATE_PROVIDER_REVISION_CHANNEL,
+  SOURCES_DRY_RUN_CHANNEL,
+  SOURCES_LIST_CHANNEL,
+  SOURCES_PAUSE_CHANNEL,
+  SOURCES_RESTORE_CHANNEL,
+  SOURCES_REQUEST_CHECK_CHANNEL,
+  RequestSourceCheckCommandSchema,
+  RequestSourceCheckResultSchema,
+} from '../shared/ipc/sources.js';
+import type {
+  ActivateSourceBindingCommand,
+  ActivateSourceBindingResult,
+  ChangeSourceBindingActivationCommand,
+  ChangeSourceBindingActivationResult,
+  CreateLawSourceBindingRevisionCommand,
+  CreateLawSourceBindingRevisionResult,
+  CreateSourceProviderRevisionCommand,
+  CreateSourceProviderRevisionResult,
+  DryRunSourceBindingCommand,
+  DryRunSourceBindingResult,
+  ListSourceCatalogCommand,
+  ListSourceCatalogResult,
+  RequestSourceCheckCommand,
+  RequestSourceCheckResult,
+} from '../shared/ipc/sources.js';
+import {
   ApproveLegislativeUpdateCommandSchema,
   GetLegislativeUpdateCountsCommandSchema,
   LegislativeUpdateCountsResultSchema,
@@ -622,6 +663,90 @@ const reprocessLegislativeUpdate = async (
     : createFailedResult('INVALID_INPUT');
 };
 
+const listSourceCatalog = async (
+  input: ListSourceCatalogCommand,
+): Promise<ListSourceCatalogResult> => {
+  const parsed = ListSourceCatalogCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(SOURCES_LIST_CHANNEL, parsed.data, ListSourceCatalogResultSchema)) ??
+        createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const createSourceProviderRevision = async (
+  input: CreateSourceProviderRevisionCommand,
+): Promise<CreateSourceProviderRevisionResult> => {
+  const parsed = CreateSourceProviderRevisionCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(
+        SOURCES_CREATE_PROVIDER_REVISION_CHANNEL,
+        parsed.data,
+        CreateSourceProviderRevisionResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const createLawSourceBindingRevision = async (
+  input: CreateLawSourceBindingRevisionCommand,
+): Promise<CreateLawSourceBindingRevisionResult> => {
+  const parsed = CreateLawSourceBindingRevisionCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(
+        SOURCES_CREATE_BINDING_REVISION_CHANNEL,
+        parsed.data,
+        CreateLawSourceBindingRevisionResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const dryRunSourceBinding = async (
+  input: DryRunSourceBindingCommand,
+): Promise<DryRunSourceBindingResult> => {
+  const parsed = DryRunSourceBindingCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(
+        SOURCES_DRY_RUN_CHANNEL,
+        parsed.data,
+        DryRunSourceBindingResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const invokeSourceBindingActivation = async (
+  channel: typeof SOURCES_ACTIVATE_CHANNEL | typeof SOURCES_RESTORE_CHANNEL,
+  input: ActivateSourceBindingCommand,
+): Promise<ActivateSourceBindingResult> => {
+  const parsed = ActivateSourceBindingCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(channel, parsed.data, ActivateSourceBindingResultSchema)) ??
+        createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const invokeSourceBindingStateChange = async (
+  channel: typeof SOURCES_PAUSE_CHANNEL | typeof SOURCES_ARCHIVE_CHANNEL,
+  input: ChangeSourceBindingActivationCommand,
+): Promise<ChangeSourceBindingActivationResult> => {
+  const parsed = ChangeSourceBindingActivationCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(channel, parsed.data, ChangeSourceBindingActivationResultSchema)) ??
+        createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const requestSourceCheck = async (
+  input: RequestSourceCheckCommand,
+): Promise<RequestSourceCheckResult> => {
+  const parsed = RequestSourceCheckCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(
+        SOURCES_REQUEST_CHECK_CHANNEL,
+        parsed.data,
+        RequestSourceCheckResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
 const desktopApi: LexDesktopApiV1 = Object.freeze({
   version: DESKTOP_API_VERSION,
   capabilities: DESKTOP_CAPABILITIES,
@@ -678,6 +803,21 @@ const desktopApi: LexDesktopApiV1 = Object.freeze({
     approve: approveLegislativeUpdate,
     reject: rejectLegislativeUpdate,
     reprocess: reprocessLegislativeUpdate,
+  }),
+  sources: Object.freeze({
+    list: listSourceCatalog,
+    createProviderRevision: createSourceProviderRevision,
+    createBindingRevision: createLawSourceBindingRevision,
+    dryRun: dryRunSourceBinding,
+    activate: (input: ActivateSourceBindingCommand) =>
+      invokeSourceBindingActivation(SOURCES_ACTIVATE_CHANNEL, input),
+    pause: (input: ChangeSourceBindingActivationCommand) =>
+      invokeSourceBindingStateChange(SOURCES_PAUSE_CHANNEL, input),
+    archive: (input: ChangeSourceBindingActivationCommand) =>
+      invokeSourceBindingStateChange(SOURCES_ARCHIVE_CHANNEL, input),
+    restore: (input: ActivateSourceBindingCommand) =>
+      invokeSourceBindingActivation(SOURCES_RESTORE_CHANNEL, input),
+    requestCheck: requestSourceCheck,
   }),
 });
 

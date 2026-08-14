@@ -68,6 +68,22 @@ import type {
   ListLegislativeUpdatesCommand,
   RejectLegislativeUpdateCommand,
 } from './updates.js';
+import type {
+  ActivateSourceBindingCommand,
+  ActivateSourceBindingResult,
+  ChangeSourceBindingActivationCommand,
+  ChangeSourceBindingActivationResult,
+  RequestSourceCheckCommand,
+  RequestSourceCheckResult,
+  CreateLawSourceBindingRevisionCommand,
+  CreateLawSourceBindingRevisionResult,
+  CreateSourceProviderRevisionCommand,
+  CreateSourceProviderRevisionResult,
+  DryRunSourceBindingCommand,
+  DryRunSourceBindingResult,
+  ListSourceCatalogCommand,
+  ListSourceCatalogResult,
+} from './sources.js';
 
 export const DESKTOP_API_VERSION = 1 as const;
 export const APP_GET_VERSION_CHANNEL = 'app:get-version' as const;
@@ -108,6 +124,15 @@ export const DESKTOP_CAPABILITIES = Object.freeze([
   'updates.approve',
   'updates.reject',
   'updates.reprocess',
+  'sources.list',
+  'sources.createProviderRevision',
+  'sources.createBindingRevision',
+  'sources.dryRun',
+  'sources.activate',
+  'sources.pause',
+  'sources.archive',
+  'sources.restore',
+  'sources.requestCheck',
 ] as const);
 
 export const DesktopErrorCodeSchema = z.enum([
@@ -220,6 +245,25 @@ export type LexDesktopApiV1 = Readonly<{
     approve(input: ApproveLegislativeUpdateCommand): Promise<LegislativeUpdateDecisionResult>;
     reject(input: RejectLegislativeUpdateCommand): Promise<LegislativeUpdateDecisionResult>;
     reprocess(input: LegislativeUpdateIdCommand): Promise<LegislativeUpdateDecisionResult>;
+  }>;
+  sources: Readonly<{
+    list(input: ListSourceCatalogCommand): Promise<ListSourceCatalogResult>;
+    createProviderRevision(
+      input: CreateSourceProviderRevisionCommand,
+    ): Promise<CreateSourceProviderRevisionResult>;
+    createBindingRevision(
+      input: CreateLawSourceBindingRevisionCommand,
+    ): Promise<CreateLawSourceBindingRevisionResult>;
+    dryRun(input: DryRunSourceBindingCommand): Promise<DryRunSourceBindingResult>;
+    activate(input: ActivateSourceBindingCommand): Promise<ActivateSourceBindingResult>;
+    pause(
+      input: ChangeSourceBindingActivationCommand,
+    ): Promise<ChangeSourceBindingActivationResult>;
+    archive(
+      input: ChangeSourceBindingActivationCommand,
+    ): Promise<ChangeSourceBindingActivationResult>;
+    restore(input: ActivateSourceBindingCommand): Promise<ActivateSourceBindingResult>;
+    requestCheck(input: RequestSourceCheckCommand): Promise<RequestSourceCheckResult>;
   }>;
 }>;
 

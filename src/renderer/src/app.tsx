@@ -19,6 +19,7 @@ import type {
 import type { IpcResult } from '../../shared/ipc/desktop-api.js';
 import { PublicationPanel } from './features/publication/publication-panel.js';
 import { LegalReferenceText } from './features/preview/legal-reference-link.js';
+import { SourcesPanel } from './features/sources/sources-panel.js';
 import { UpdatesPanel } from './features/updates/updates-panel.js';
 
 type DesktopIntegrationState =
@@ -52,16 +53,19 @@ const BATCH_EXPORT_FAILURE_LABELS: Readonly<Record<BatchExportFailureCode, strin
 );
 
 const navigationItems = [
-  { label: 'Importação', detail: 'Nova fonte', href: '#importacao', available: true },
-  { label: 'Preview e edição', detail: 'Revisão jurídica', href: '#preview', available: true },
-  { label: 'Publicação', detail: 'Release seguro', href: '#publicacao', available: true },
+  { label: 'Importação', detail: 'Nova fonte', href: '#importacao' },
+  { label: 'Preview e edição', detail: 'Revisão jurídica', href: '#preview' },
+  { label: 'Publicação', detail: 'Release seguro', href: '#publicacao' },
   {
     label: 'Fila de atualizações',
     detail: 'Revisão legislativa',
     href: '#atualizacoes',
-    available: true,
   },
-  { label: 'Configuração de fontes', detail: 'Em breve', available: false },
+  {
+    label: 'Configuração de fontes',
+    detail: 'Origens oficiais',
+    href: '#fontes',
+  },
 ] as const;
 
 const Navigation = ({ hasDocument }: { hasDocument: boolean }): React.JSX.Element => (
@@ -70,30 +74,18 @@ const Navigation = ({ hasDocument }: { hasDocument: boolean }): React.JSX.Elemen
     <ul className="navigation-list">
       {navigationItems.map((item, index) => (
         <li key={item.label}>
-          {item.available ? (
-            <a
-              className={`navigation-item${index === (hasDocument ? 1 : 0) ? ' is-current' : ''}`}
-              href={item.href}
-            >
-              <span className="navigation-index" aria-hidden="true">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <span>
-                <strong>{item.label}</strong>
-                <small>{item.detail}</small>
-              </span>
-            </a>
-          ) : (
-            <span className="navigation-item is-disabled" aria-disabled="true">
-              <span className="navigation-index" aria-hidden="true">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <span>
-                <strong>{item.label}</strong>
-                <small>{item.detail}</small>
-              </span>
+          <a
+            className={`navigation-item${index === (hasDocument ? 1 : 0) ? ' is-current' : ''}`}
+            href={item.href}
+          >
+            <span className="navigation-index" aria-hidden="true">
+              {String(index + 1).padStart(2, '0')}
             </span>
-          )}
+            <span>
+              <strong>{item.label}</strong>
+              <small>{item.detail}</small>
+            </span>
+          </a>
         </li>
       ))}
     </ul>
@@ -1331,6 +1323,7 @@ export const App = (): React.JSX.Element => {
             canPublish={editorial?.canExport === true}
           />
           <UpdatesPanel />
+          <SourcesPanel />
           <ValidationPanel
             diagnostics={diagnostics}
             editorial={editorial}

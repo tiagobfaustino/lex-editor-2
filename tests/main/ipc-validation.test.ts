@@ -79,10 +79,13 @@ describe('resolveRendererLocation', () => {
 });
 
 describe('isTrustedIpcSender', () => {
-  it('aceita somente a janela principal, o frame principal e a URL exata', () => {
+  it('aceita somente a janela principal, o frame principal e o arquivo local exato', () => {
     const fixture = createSenderFixture();
+    const fragment = createSenderFixture(`${productionLocation.url}#fontes`);
+    const query = createSenderFixture(`${productionLocation.url}?forged=1#fontes`);
 
     expect(isTrustedIpcSender(fixture.event, fixture.webContents, productionLocation)).toBe(true);
+    expect(isTrustedIpcSender(fragment.event, fragment.webContents, productionLocation)).toBe(true);
     expect(isTrustedIpcSender(fixture.event, null, productionLocation)).toBe(false);
     expect(
       isTrustedIpcSender(
@@ -104,6 +107,7 @@ describe('isTrustedIpcSender', () => {
         productionLocation,
       ),
     ).toBe(false);
+    expect(isTrustedIpcSender(query.event, query.webContents, productionLocation)).toBe(false);
   });
 
   it('aceita apenas a origem loopback exata em desenvolvimento', () => {

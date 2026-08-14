@@ -59,7 +59,10 @@ export const isTrustedRendererUrl = (location: RendererLocation, candidateUrl: s
       return parsedCandidate.origin === location.trustedOrigin;
     }
 
-    return parsedCandidate.href === location.url;
+    const trusted = new URL(location.url);
+    parsedCandidate.hash = '';
+    trusted.hash = '';
+    return parsedCandidate.href === trusted.href;
   } catch {
     return false;
   }

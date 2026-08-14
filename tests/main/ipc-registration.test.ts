@@ -20,6 +20,7 @@ vi.mock('electron', () => ({
 import {
   registerIpcHandlers,
   type DesktopImportIpcCapabilities,
+  type DesktopSourceCatalogIpcCapabilities,
   type DesktopUpdateIpcCapabilities,
 } from '../../src/main/ipc/register.js';
 import { PlanaltoNetworkError } from '../../src/main/import/planalto-source.js';
@@ -72,6 +73,17 @@ import {
   UPDATES_REJECT_CHANNEL,
   UPDATES_REPROCESS_CHANNEL,
 } from '../../src/shared/ipc/updates.js';
+import {
+  SOURCES_ACTIVATE_CHANNEL,
+  SOURCES_ARCHIVE_CHANNEL,
+  SOURCES_CREATE_BINDING_REVISION_CHANNEL,
+  SOURCES_CREATE_PROVIDER_REVISION_CHANNEL,
+  SOURCES_DRY_RUN_CHANNEL,
+  SOURCES_LIST_CHANNEL,
+  SOURCES_PAUSE_CHANNEL,
+  SOURCES_REQUEST_CHECK_CHANNEL,
+  SOURCES_RESTORE_CHANNEL,
+} from '../../src/shared/ipc/sources.js';
 
 const SOURCE_ID = '11111111-1111-4111-8111-111111111111';
 const PROJECT_ID = '22222222-2222-4222-8222-222222222222';
@@ -79,6 +91,7 @@ const JOB_ID = '33333333-3333-4333-8333-333333333333';
 const DESTINATION_ID = '44444444-4444-4444-8444-444444444444';
 const UPDATE_ID = '55555555-5555-4555-8555-555555555555';
 const REFERENCE_ID = 'a'.repeat(64);
+const TEST_EVIDENCE_ID = '66666666-6666-4666-8666-666666666666';
 
 const source: SourceSummaryDto = {
   sourceId: SOURCE_ID,
@@ -290,6 +303,97 @@ const updateCapabilities = (): DesktopUpdateIpcCapabilities => ({
   },
 });
 
+const sourceCatalogCapabilities = (): DesktopSourceCatalogIpcCapabilities => ({
+  listCatalog: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => ({ items: [], nextCursor: null, adapterCapabilities: [] })),
+  },
+  createProviderRevision: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => ({
+      providerId: SOURCE_ID,
+      providerRevisionId: PROJECT_ID,
+      revisionNumber: 1,
+      providerLockVersion: 1,
+    })),
+  },
+  createBindingRevision: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => ({
+      bindingId: JOB_ID,
+      bindingRevisionId: DESTINATION_ID,
+      revisionNumber: 1,
+      bindingLockVersion: 1,
+    })),
+  },
+  dryRunBinding: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => ({
+      testEvidenceId: TEST_EVIDENCE_ID,
+      providerRevisionId: PROJECT_ID,
+      bindingRevisionId: DESTINATION_ID,
+      sourceTestOutcome: 'success' as const,
+      completedStage: 'adapter' as const,
+      evidenceDigest: 'd'.repeat(64),
+      errorCode: null,
+      testedAt: '2026-08-13T15:00:00.000Z',
+    })),
+  },
+  activateBinding: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => ({
+      providerId: SOURCE_ID,
+      providerRevisionId: PROJECT_ID,
+      providerLockVersion: 2,
+      bindingId: JOB_ID,
+      bindingRevisionId: DESTINATION_ID,
+      bindingLockVersion: 2,
+      sourceActivationState: 'active' as const,
+    })),
+  },
+  pauseBinding: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => ({
+      bindingId: JOB_ID,
+      bindingRevisionId: DESTINATION_ID,
+      bindingLockVersion: 3,
+      sourceActivationState: 'paused' as const,
+    })),
+  },
+  archiveBinding: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => ({
+      bindingId: JOB_ID,
+      bindingRevisionId: DESTINATION_ID,
+      bindingLockVersion: 4,
+      sourceActivationState: 'archived' as const,
+    })),
+  },
+  restoreBinding: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => ({
+      providerId: SOURCE_ID,
+      providerRevisionId: PROJECT_ID,
+      providerLockVersion: 3,
+      bindingId: JOB_ID,
+      bindingRevisionId: DESTINATION_ID,
+      bindingLockVersion: 5,
+      sourceActivationState: 'active' as const,
+    })),
+  },
+  requestSourceCheck: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => ({
+      sourceCheckJobId: UPDATE_ID,
+      bindingId: JOB_ID,
+      bindingRevisionId: DESTINATION_ID,
+      sourceCheckJobState: 'queued' as const,
+      requestedAt: '2026-08-13T15:00:00.000Z',
+      deduplicated: false,
+    })),
+  },
+});
+
 type InvokeHandler = (
   event: Pick<IpcMainInvokeEvent, 'sender' | 'senderFrame'>,
   payload: unknown,
@@ -298,6 +402,7 @@ type InvokeHandler = (
 const setup = (
   importCapabilities = capabilities(),
   updateIpcCapabilities?: DesktopUpdateIpcCapabilities,
+  sourceIpcCapabilities?: DesktopSourceCatalogIpcCapabilities,
 ) => {
   const rendererLocation = resolveRendererLocation({
     productionUrl: 'file:///app/out/renderer/index.html',
@@ -321,6 +426,9 @@ const setup = (
     getMainWindow: () => mainWindow,
     importCapabilities,
     ...(updateIpcCapabilities === undefined ? {} : { updateCapabilities: updateIpcCapabilities }),
+    ...(sourceIpcCapabilities === undefined
+      ? {}
+      : { sourceCatalogCapabilities: sourceIpcCapabilities }),
   });
   const handlers = new Map<string, InvokeHandler>(
     electronMocks.handle.mock.calls.map(([channel, handler]) => [
@@ -338,7 +446,8 @@ describe('registerIpcHandlers', () => {
   });
 
   it('registra, executa e remove somente capacidades nomeadas', async () => {
-    const { dispose, event, handlers } = setup();
+    const sourceCapabilities = sourceCatalogCapabilities();
+    const { dispose, event, handlers } = setup(capabilities(), undefined, sourceCapabilities);
     const expectedChannels = [
       APP_GET_VERSION_CHANNEL,
       SOURCE_SELECT_LOCAL_CHANNEL,
@@ -375,6 +484,15 @@ describe('registerIpcHandlers', () => {
       UPDATES_APPROVE_CHANNEL,
       UPDATES_REJECT_CHANNEL,
       UPDATES_REPROCESS_CHANNEL,
+      SOURCES_LIST_CHANNEL,
+      SOURCES_CREATE_PROVIDER_REVISION_CHANNEL,
+      SOURCES_CREATE_BINDING_REVISION_CHANNEL,
+      SOURCES_DRY_RUN_CHANNEL,
+      SOURCES_ACTIVATE_CHANNEL,
+      SOURCES_PAUSE_CHANNEL,
+      SOURCES_ARCHIVE_CHANNEL,
+      SOURCES_RESTORE_CHANNEL,
+      SOURCES_REQUEST_CHECK_CHANNEL,
     ];
 
     expect([...handlers.keys()]).toEqual(expectedChannels);
@@ -440,6 +558,21 @@ describe('registerIpcHandlers', () => {
     await expect(
       handlers.get(EXPORT_WRITE_BATCH_CHANNEL)?.(event, { destinationId: DESTINATION_ID }),
     ).resolves.toMatchObject({ ok: true, value: { succeeded: 1 } });
+    await expect(
+      handlers.get(SOURCES_LIST_CHANNEL)?.(event, { cursor: null, limit: 25 }),
+    ).resolves.toEqual({
+      ok: true,
+      value: { items: [], nextCursor: null, adapterCapabilities: [] },
+    });
+    await expect(
+      handlers.get(SOURCES_REQUEST_CHECK_CHANNEL)?.(event, {
+        bindingId: JOB_ID,
+        idempotencyKey: 'manual-check-1',
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      value: { bindingId: JOB_ID, sourceCheckJobState: 'queued' },
+    });
 
     dispose();
 
@@ -558,6 +691,59 @@ describe('registerIpcHandlers', () => {
       }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
     expect(updates.rejectUpdate.handle).not.toHaveBeenCalled();
+  });
+
+  it('valida intenção administrativa sem aceitar ator, papel, token ou resposta privilegiada', async () => {
+    const sources = sourceCatalogCapabilities();
+    const { event, handlers } = setup(capabilities(), undefined, sources);
+    const forgedFrame = {
+      isDestroyed: () => false,
+      url: 'file:///tmp/forged-source-catalog.html',
+    } as WebFrameMain;
+    await expect(
+      handlers.get(SOURCES_LIST_CHANNEL)?.(
+        { ...event, senderFrame: forgedFrame },
+        { cursor: null, limit: 25 },
+      ),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'NOT_ALLOWED' } });
+    await expect(
+      handlers.get(SOURCES_LIST_CHANNEL)?.(event, {
+        cursor: null,
+        limit: 25,
+        actorUserId: SOURCE_ID,
+        role: 'administrador',
+        accessToken: 'secret',
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+    expect(sources.listCatalog.handle).not.toHaveBeenCalled();
+
+    const leakingSources: DesktopSourceCatalogIpcCapabilities = {
+      ...sourceCatalogCapabilities(),
+      listCatalog: {
+        authorize: vi.fn(() => true),
+        handle: vi.fn(
+          () =>
+            ({
+              items: [],
+              nextCursor: null,
+              html: '<script>secret()</script>',
+            }) as unknown as Awaited<
+              ReturnType<DesktopSourceCatalogIpcCapabilities['listCatalog']['handle']>
+            >,
+        ),
+      },
+    };
+    const { handlers: leakingHandlers, event: leakingEvent } = setup(
+      capabilities(),
+      undefined,
+      leakingSources,
+    );
+    const leaked = await leakingHandlers.get(SOURCES_LIST_CHANNEL)?.(leakingEvent, {
+      cursor: null,
+      limit: 25,
+    });
+    expect(leaked).toMatchObject({ ok: false, error: { code: 'FAILED' } });
+    expect(JSON.stringify(leaked)).not.toMatch(/script|secret|html/iu);
   });
 
   it('recusa saída privilegiada fora do schema e redige falha interna', async () => {

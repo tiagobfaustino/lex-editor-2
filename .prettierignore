@@ -4,6 +4,7 @@
 AGENTS.md
 CLAUDE.md
 .playwright-mcp/
+.playwright-cli/
 .kilo/
 .kilocode/
 .serena/

@@ -47,6 +47,12 @@ import {
   type SourceVariant,
   type ContentProjectionProfile,
 } from '@lex-editor/legal-domain';
+import {
+  sourceConfigurationEvidenceSchema,
+  type ActiveSourceImportConfiguration,
+  type SourceConfigurationEvidence,
+} from '@lex-editor/source-ingestion';
+import { fetchConfiguredPlanaltoSourceSet } from '@lex-editor/source-ingestion/node';
 import type { BrowserWindow, OpenDialogOptions, SaveDialogOptions } from 'electron';
 
 import {
@@ -108,6 +114,7 @@ type SourceRecord = Readonly<{
   summary: SourceSummaryDto;
   primary: SourceArtifactRecord;
   artifacts: readonly SourceArtifactRecord[];
+  configurationEvidence: SourceConfigurationEvidence | null;
 }>;
 
 type PreviewRecord = Readonly<{
@@ -157,7 +164,19 @@ export type LocalProjectServiceOptions = Readonly<{
   sendProgress(progress: ProgressDto): void;
   now?(): Date;
   networkPorts?: PlanaltoNetworkPorts;
+  activeSourceImportResolver?: ActiveSourceImportResolver;
 }>;
+
+export interface ActiveSourceImportResolver {
+  resolve(sourceUrl: string): Promise<ActiveSourceImportConfiguration | null>;
+}
+
+export class SourceConfigurationResolutionError extends Error {
+  constructor() {
+    super('A URL não possui uma configuração de fonte ativa e inequívoca.');
+    this.name = 'SourceConfigurationResolutionError';
+  }
+}
 
 const sha256 = (value: string | Uint8Array): string =>
   createHash('sha256').update(value).digest('hex');
@@ -592,6 +611,7 @@ export const createLocalProjectService = ({
   sendProgress,
   now = () => new Date(),
   networkPorts,
+  activeSourceImportResolver,
 }: LocalProjectServiceOptions): DesktopImportIpcCapabilities => {
   const sources = new Map<string, SourceRecord>();
   const projects = new Map<string, ProjectRecord>();
@@ -632,6 +652,34 @@ export const createLocalProjectService = ({
       await snapshotFile.close();
     }
     return { ...details, sourceArtifactSha256: digest, snapshotPath };
+  };
+
+  const persistConfiguredImportEvidence = async (
+    sourceId: string,
+    configuration: SourceConfigurationEvidence,
+    artifacts: readonly SourceArtifactRecord[],
+  ): Promise<void> => {
+    const evidencePath = join(storageRoot, 'sources', sourceId, 'import-evidence.json');
+    const evidenceFile = await open(evidencePath, 'wx', 0o600);
+    try {
+      await evidenceFile.writeFile(
+        JSON.stringify({
+          schemaVersion: 1,
+          sourceId,
+          configuration,
+          snapshots: artifacts.map((artifact) => ({
+            sourceArtifactId: artifact.sourceArtifactId,
+            sourceArtifactSha256: artifact.sourceArtifactSha256,
+            sourceRole: artifact.sourceRole,
+            sourceVariant: artifact.sourceVariant,
+            finalUrl: artifact.finalUrl,
+          })),
+        }),
+      );
+      await evidenceFile.sync();
+    } finally {
+      await evidenceFile.close();
+    }
   };
 
   const emit = (job: JobRecord, value: Omit<ProgressDto, 'jobId' | 'projectId' | 'sequence'>) => {
@@ -1445,17 +1493,40 @@ export const createLocalProjectService = ({
           byteLength: bytes.byteLength,
           sourceArtifactSha256: artifact.sourceArtifactSha256,
         };
-        sources.set(sourceId, { summary, primary: artifact, artifacts: [artifact] });
+        sources.set(sourceId, {
+          summary,
+          primary: artifact,
+          artifacts: [artifact],
+          configurationEvidence: null,
+        });
         return summary;
       },
     },
     importFromUrl: {
       authorize: () => getMainWindow() !== null,
       handle: async ({ url }) => {
+        const activeConfiguration =
+          activeSourceImportResolver === undefined
+            ? null
+            : await activeSourceImportResolver.resolve(url);
+        if (activeSourceImportResolver !== undefined && activeConfiguration === null) {
+          throw new SourceConfigurationResolutionError();
+        }
         const fetched =
-          networkPorts === undefined
-            ? await fetchPlanaltoSourceSet(url)
-            : await fetchPlanaltoSourceSet(url, networkPorts);
+          activeConfiguration === null
+            ? networkPorts === undefined
+              ? await fetchPlanaltoSourceSet(url)
+              : await fetchPlanaltoSourceSet(url, networkPorts)
+            : networkPorts === undefined
+              ? await fetchConfiguredPlanaltoSourceSet(
+                  activeConfiguration.providerRevision,
+                  activeConfiguration.bindingRevision,
+                )
+              : await fetchConfiguredPlanaltoSourceSet(
+                  activeConfiguration.providerRevision,
+                  activeConfiguration.bindingRevision,
+                  networkPorts,
+                );
         const sourceId = randomUUID();
         const primaryFetched = fetched.find(({ sourceRole }) => sourceRole === 'primary_current');
         if (primaryFetched === undefined) throw new PlanaltoNetworkError('NETWORK_FAILED');
@@ -1480,7 +1551,24 @@ export const createLocalProjectService = ({
           byteLength: primaryFetched.bytes.byteLength,
           sourceArtifactSha256: primary.sourceArtifactSha256,
         };
-        sources.set(sourceId, { summary, primary, artifacts });
+        const configurationEvidence =
+          activeConfiguration === null
+            ? null
+            : sourceConfigurationEvidenceSchema.parse({
+                schemaVersion: 1,
+                providerId: activeConfiguration.providerRevision.providerId,
+                providerRevisionId: activeConfiguration.providerRevision.providerRevisionId,
+                providerConfigDigest: activeConfiguration.providerRevision.configDigest,
+                bindingId: activeConfiguration.bindingRevision.bindingId,
+                bindingRevisionId: activeConfiguration.bindingRevision.bindingRevisionId,
+                bindingConfigDigest: activeConfiguration.bindingRevision.configDigest,
+                adapterId: activeConfiguration.providerRevision.adapterId,
+                adapterContractVersion: activeConfiguration.providerRevision.adapterContractVersion,
+              });
+        if (configurationEvidence !== null) {
+          await persistConfiguredImportEvidence(sourceId, configurationEvidence, artifacts);
+        }
+        sources.set(sourceId, { summary, primary, artifacts, configurationEvidence });
         return summary;
       },
     },

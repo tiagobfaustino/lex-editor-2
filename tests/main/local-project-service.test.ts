@@ -4,9 +4,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import type { BrowserWindow, OpenDialogOptions } from 'electron';
+import type { ActiveSourceImportConfiguration } from '@lex-editor/source-ingestion';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createLocalProjectService } from '../../src/main/local-project-service.js';
+import {
+  createLocalProjectService,
+  SourceConfigurationResolutionError,
+  type ActiveSourceImportResolver,
+} from '../../src/main/local-project-service.js';
 import type { PlanaltoNetworkPorts } from '../../src/main/import/planalto-source.js';
 import type { PreviewNodeDto, ProgressDto } from '../../src/shared/ipc/import.js';
 
@@ -28,6 +33,7 @@ const setup = async (
   selectedPath: string,
   destinationPath: string,
   networkPorts?: PlanaltoNetworkPorts,
+  activeSourceImportResolver?: ActiveSourceImportResolver,
 ) => {
   const root = await makeRoot();
   let resolveTerminal: ((value: ProgressDto) => void) | undefined;
@@ -48,6 +54,7 @@ const setup = async (
     },
     now: () => new Date('2026-08-09T12:00:00.000Z'),
     ...(networkPorts === undefined ? {} : { networkPorts }),
+    ...(activeSourceImportResolver === undefined ? {} : { activeSourceImportResolver }),
   });
   return { root, service, terminal, progress };
 };
@@ -538,6 +545,127 @@ describe('local project service', () => {
     expect(files).toHaveLength(2);
     const stats = await Promise.all(files.map((file) => stat(join(snapshotDirectory, file))));
     expect(stats.every((value) => (value.mode & 0o777) === 0o600)).toBe(true);
+  });
+
+  it('resolve a revisão ativa, coleta somente o conjunto configurado e persiste sua identidade', async () => {
+    const root = await makeRoot();
+    const selectedPath = join(root, 'unused.html');
+    await writeFile(selectedPath, '<html></html>');
+    const requestedUrl = 'https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826.htm';
+    const compiledUrl = 'https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826compilado.htm';
+    const configuration: ActiveSourceImportConfiguration = {
+      providerRevision: {
+        schemaVersion: 1,
+        providerRevisionId: '11111111-1111-4111-8111-111111111111',
+        providerId: '22222222-2222-4222-8222-222222222222',
+        revisionNumber: 3,
+        providerKey: 'planalto-oficial',
+        providerName: 'Portal da Legislação do Planalto',
+        sourceType: 'planalto_html',
+        adapterId: 'planalto.html',
+        adapterContractVersion: 1,
+        origin: {
+          scheme: 'https',
+          host: 'www.planalto.gov.br',
+          port: null,
+          pathPrefix: '/ccivil_03/',
+        },
+        detectionParameters: { requireLegalHeader: true },
+        configDigest: 'a'.repeat(64),
+        createdByUserId: '33333333-3333-4333-8333-333333333333',
+        createdAt: '2026-08-13T15:00:00.000Z',
+      },
+      bindingRevision: {
+        schemaVersion: 1,
+        bindingRevisionId: '44444444-4444-4444-8444-444444444444',
+        bindingId: '55555555-5555-4555-8555-555555555555',
+        lawId: '66666666-6666-4666-8666-666666666666',
+        providerRevisionId: '11111111-1111-4111-8111-111111111111',
+        revisionNumber: 4,
+        artifacts: [
+          {
+            order: 0,
+            sourceRole: 'primary_current',
+            sourceVariant: 'compiled',
+            sourceUrl: compiledUrl,
+          },
+          {
+            order: 1,
+            sourceRole: 'historical_auxiliary',
+            sourceVariant: 'annotated',
+            sourceUrl: requestedUrl,
+          },
+        ],
+        monitoringIntervalMs: 86_400_000,
+        configDigest: 'b'.repeat(64),
+        createdByUserId: '33333333-3333-4333-8333-333333333333',
+        createdAt: '2026-08-13T15:01:00.000Z',
+      },
+    };
+    const requestedPaths: string[] = [];
+    const ports: PlanaltoNetworkPorts = {
+      resolveHost: () => Promise.resolve([{ address: '1.1.1.1', family: 4 }]),
+      request: ({ url }) => {
+        requestedPaths.push(url.pathname);
+        return Promise.resolve({
+          statusCode: 200,
+          headers: { 'content-type': 'text/html' },
+          body: Buffer.from(`<html>${url.pathname}</html>`),
+        });
+      },
+    };
+    const resolver = { resolve: vi.fn(() => Promise.resolve(configuration)) };
+    const result = await setup(selectedPath, join(root, 'out.md'), ports, resolver);
+    const source = await result.service.importFromUrl.handle({ url: requestedUrl });
+
+    expect(resolver.resolve).toHaveBeenCalledWith(requestedUrl);
+    expect(requestedPaths.sort()).toEqual([
+      '/ccivil_03/leis/2003/l10.826.htm',
+      '/ccivil_03/leis/2003/l10.826compilado.htm',
+    ]);
+    const evidencePath = join(
+      result.root,
+      'workspace',
+      'sources',
+      source.sourceId,
+      'import-evidence.json',
+    );
+    const evidence = JSON.parse(await readFile(evidencePath, 'utf8')) as Record<string, unknown>;
+    expect(evidence).toMatchObject({
+      configuration: {
+        providerId: configuration.providerRevision.providerId,
+        providerRevisionId: configuration.providerRevision.providerRevisionId,
+        providerConfigDigest: configuration.providerRevision.configDigest,
+        bindingId: configuration.bindingRevision.bindingId,
+        bindingRevisionId: configuration.bindingRevision.bindingRevisionId,
+        bindingConfigDigest: configuration.bindingRevision.configDigest,
+        adapterId: 'planalto.html',
+        adapterContractVersion: 1,
+      },
+    });
+    expect(JSON.stringify(evidence)).not.toMatch(/NormaAST|snapshotPath|rawHtml|htmlContent/iu);
+    expect((await stat(evidencePath)).mode & 0o777).toBe(0o600);
+  });
+
+  it('falha fechado quando o catálogo não resolve uma configuração ativa', async () => {
+    const root = await makeRoot();
+    const selectedPath = join(root, 'unused.html');
+    await writeFile(selectedPath, '<html></html>');
+    const ports: PlanaltoNetworkPorts = {
+      resolveHost: vi.fn(() => Promise.resolve([{ address: '1.1.1.1', family: 4 as const }])),
+      request: vi.fn(() => Promise.reject(new Error('network must not be reached'))),
+    };
+    const result = await setup(selectedPath, join(root, 'out.md'), ports, {
+      resolve: () => Promise.resolve(null),
+    });
+
+    await expect(
+      result.service.importFromUrl.handle({
+        url: 'https://www.planalto.gov.br/ccivil_03/leis/l9605.htm',
+      }),
+    ).rejects.toBeInstanceOf(SourceConfigurationResolutionError);
+    expect(ports.resolveHost).not.toHaveBeenCalled();
+    expect(ports.request).not.toHaveBeenCalled();
   });
 
   it('alterna projeções de um par compilada/anotada sem perder histórico', async () => {
