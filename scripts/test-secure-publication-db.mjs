@@ -89,6 +89,8 @@ try {
     'tests/database/legal-reference-edges.test.sql',
     'supabase/migrations/20260813120000_source_catalog.sql',
     'tests/database/source-catalog.test.sql',
+    'supabase/migrations/20260815120000_operational_audit_projection.sql',
+    'tests/database/operational-audit.test.sql',
   ]) {
     await requireSuccess('docker', psqlArguments(), { input: await readFile(path) });
   }

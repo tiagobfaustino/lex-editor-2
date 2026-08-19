@@ -101,6 +101,37 @@ export default defineConfig([
     },
   },
   {
+    files: ['packages/operational-audit/src/**/*.{js,ts}'],
+    rules: {
+      'no-restricted-imports': boundaryRule({
+        paths: [
+          ...nodePaths,
+          restrictedPath('electron', 'A auditoria pura não pode depender de Electron.'),
+          restrictedPath('react', 'A auditoria pura não pode depender de React.'),
+          restrictedPath('react-dom', 'A auditoria pura não pode depender de React DOM.'),
+          restrictedPath(
+            '@supabase/supabase-js',
+            'A auditoria pura não pode acessar banco ou rede.',
+          ),
+        ],
+        patterns: [
+          {
+            group: [
+              'electron/**',
+              'react/**',
+              'react-dom/**',
+              '@supabase/**',
+              ...layerPatterns('main', 'preload', 'renderer'),
+              '**/services',
+              '**/services/**',
+            ],
+            message: 'O pacote de auditoria aceita somente dependências puras aprovadas.',
+          },
+        ],
+      }),
+    },
+  },
+  {
     files: ['packages/source-ingestion/src/*.{js,ts}'],
     rules: {
       'no-restricted-imports': boundaryRule({

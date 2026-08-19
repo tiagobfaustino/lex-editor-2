@@ -10,6 +10,9 @@ export default defineConfig({
   // `npm run typecheck`, que roda o tsc do próprio pacote.
   resolve: {
     alias: {
+      '@lex-editor/operational-audit': fileURLToPath(
+        new URL('./packages/operational-audit/src/index.ts', import.meta.url),
+      ),
       '@lex-editor/source-ingestion/node': fileURLToPath(
         new URL('./packages/source-ingestion/src/node/index.ts', import.meta.url),
       ),
