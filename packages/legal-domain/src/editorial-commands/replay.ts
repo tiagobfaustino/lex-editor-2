@@ -12,6 +12,7 @@ import {
 } from './index.js';
 import { applyEditorialCommand, type EditorialCommandErrorCode } from './apply.js';
 import type { IdentifiedNormaAST } from '../ast/nodes.js';
+import type { PublicationHistoryEvidence } from './publication-history-authority.js';
 
 export type EditorialReplayErrorCode =
   'invalid_journal' | 'invalid_checkpoint' | 'command_rejected' | 'result_hash_mismatch';
@@ -44,6 +45,9 @@ export const appendEditorialJournalEntry = (
   rawCommand: unknown,
   rawResultRevisionHash: unknown,
   sha256: RevisionHashFunction,
+  metadataContext?: Readonly<{
+    publicationHistoryEvidence: PublicationHistoryEvidence;
+  }>,
 ): EditorialJournal => {
   const journal = parseEditorialJournal(rawJournal, sha256);
   const command = editorialCommandSchema.parse(rawCommand);
@@ -59,6 +63,7 @@ export const appendEditorialJournalEntry = (
         sequence: journal.entries.length + 1,
         command,
         resultRevisionHash,
+        ...(metadataContext === undefined ? {} : { metadataContext }),
       },
     ],
   });
@@ -159,7 +164,14 @@ export const replayEditorialJournal = (
 
   let revisionHash = calculateRevisionHash(ast, sha256);
   for (const entry of journal.entries.slice(startSequence)) {
-    const applied = applyEditorialCommand(ast, entry.command, sha256);
+    const applied = applyEditorialCommand(ast, entry.command, sha256, {
+      ...(entry.metadataContext === undefined
+        ? {}
+        : {
+            publicationHistoryEvidence: entry.metadataContext.publicationHistoryEvidence,
+            metadataReplayResultRevisionHash: entry.resultRevisionHash,
+          }),
+    });
     if (!applied.ok) {
       return {
         ok: false,

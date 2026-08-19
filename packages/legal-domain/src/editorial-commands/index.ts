@@ -1,8 +1,10 @@
 import { z } from 'zod';
 
-import { deviceStatusSchema, legalStatusSchema, tipoNormaSchema } from '../ast/enums.js';
+import { deviceStatusSchema } from '../ast/enums.js';
 import type { IdentifiedNormaAST } from '../ast/nodes.js';
 import { identifiedNormaAstSchema } from '../ast/schemas.js';
+import { lawMetadataCommandChangesSchema } from './frontmatter-metadata.js';
+import { publicationHistoryEvidenceSchema } from './publication-history-authority.js';
 
 const textoObrigatorio = (rotulo: string, maximo: number) =>
   z
@@ -18,17 +20,6 @@ const textoObrigatorio = (rotulo: string, maximo: number) =>
       }
     });
 
-const dataSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/u, 'Esperada data no formato YYYY-MM-DD.')
-  .refine((valor) => {
-    const [ano, mes, dia] = valor.split('-').map(Number) as [number, number, number];
-    const data = new Date(Date.UTC(ano, mes - 1, dia));
-    return (
-      data.getUTCFullYear() === ano && data.getUTCMonth() === mes - 1 && data.getUTCDate() === dia
-    );
-  }, 'Data inexistente no calendário.');
-
 const nodeIdSchema = textoObrigatorio('O ID interno do nó', 256);
 const reasonSchema = textoObrigatorio('O motivo editorial', 2_000);
 const noteSchema = textoObrigatorio('A nota editorial', 2_000);
@@ -36,32 +27,6 @@ const noteSchema = textoObrigatorio('A nota editorial', 2_000);
 export const revisionHashSchema = z
   .string()
   .regex(/^[0-9a-f]{64}$/u, 'Esperado SHA-256 em hexadecimal minúsculo.');
-
-export const editableLawMetadataChangesSchema = z
-  .strictObject({
-    titulo: textoObrigatorio('O título', 500).optional(),
-    sigla: textoObrigatorio('A sigla', 80).optional(),
-    tipoNorma: tipoNormaSchema.optional(),
-    numero: textoObrigatorio('O número da norma', 80).optional(),
-    ano: z.int().optional(),
-    ramo: textoObrigatorio('O ramo jurídico', 160).optional(),
-    fonte: z.url().optional(),
-    dataPublicacao: dataSchema.optional(),
-    dataAtualizacaoLegal: dataSchema.optional(),
-    legalStatus: legalStatusSchema.optional(),
-    tags: z.array(textoObrigatorio('A tag', 120)).max(100).optional(),
-    revogadaPor: textoObrigatorio('A norma revogadora', 500).nullable().optional(),
-    fontesSecundarias: z.array(z.url()).max(100).optional(),
-  })
-  .check((ctx) => {
-    if (Object.keys(ctx.value).length === 0) {
-      ctx.issues.push({
-        code: 'custom',
-        input: ctx.value,
-        message: 'A correção de metadados precisa alterar ao menos um campo.',
-      });
-    }
-  });
 
 const replaceNodeTextOperationSchema = z.strictObject({
   kind: z.literal('replace_node_text'),
@@ -98,7 +63,7 @@ const moveNodeOperationSchema = z.strictObject({
 
 const setLawMetadataOperationSchema = z.strictObject({
   kind: z.literal('set_law_metadata'),
-  changes: editableLawMetadataChangesSchema,
+  changes: lawMetadataCommandChangesSchema,
   reason: reasonSchema,
 });
 
@@ -156,6 +121,11 @@ export const editorialJournalEntrySchema = z.strictObject({
   sequence: z.int().positive(),
   command: editorialCommandSchema,
   resultRevisionHash: revisionHashSchema,
+  metadataContext: z
+    .strictObject({
+      publicationHistoryEvidence: publicationHistoryEvidenceSchema,
+    })
+    .optional(),
 });
 
 const editorialJournalShapeSchema = z.strictObject({
@@ -194,12 +164,26 @@ export const editorialJournalSchema = editorialJournalShapeSchema.superRefine((j
         message: 'O comando não parte da revisão produzida pela entrada anterior.',
       });
     }
+    const operation = entry.command.operation;
+    const changesIdentity =
+      operation.kind === 'set_law_metadata' &&
+      ['sigla', 'tipoNorma', 'numero', 'ano'].some((field) => field in operation.changes);
+    if (
+      changesIdentity &&
+      entry.metadataContext?.publicationHistoryEvidence.state !== 'never_published'
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['entries', index, 'metadataContext'],
+        message:
+          'Uma mudança persistida de identidade exige prova autoritativa de ausência de publicação.',
+      });
+    }
     expectedRevisionHash = entry.resultRevisionHash;
   }
 });
 
 export type RevisionHash = z.infer<typeof revisionHashSchema>;
-export type EditableLawMetadataChanges = z.infer<typeof editableLawMetadataChangesSchema>;
 export type EditorialOperation = z.infer<typeof editorialOperationSchema>;
 export type EditorialCommand = z.infer<typeof editorialCommandSchema>;
 export type EditorialJournalEntry = z.infer<typeof editorialJournalEntrySchema>;
@@ -230,3 +214,6 @@ export const parseEditorialJournal = (
   }
   return journal;
 };
+
+export { editableLawMetadataChangesSchema } from './frontmatter-metadata.js';
+export type { EditableLawMetadataChanges } from './frontmatter-metadata.js';

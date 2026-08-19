@@ -322,6 +322,29 @@ export {
   revisionSnapshotSchema,
 } from './editorial-commands/index.js';
 
+export {
+  frontmatterMetadataContextSchema,
+  frontmatterMetadataFieldPolicy,
+  frontmatterMetadataProjectionSchema,
+  lawMetadataCommandChangesSchema,
+  metadataBlockedReasonSchema,
+  metadataMutabilitySchema,
+  metadataOriginSchema,
+  metadataPolicyErrorCodeSchema,
+  projectFrontmatterMetadata,
+  publicationHistoryStateSchema,
+  validateLawMetadataChangesPolicy,
+} from './editorial-commands/frontmatter-metadata.js';
+
+export {
+  provePublicationHistory,
+  publicationHistoryEvidenceSchema,
+  publicationHistoryInspectionSchema,
+  publicationHistoryStateFor,
+} from './editorial-commands/publication-history-authority.js';
+
+export { deriveMetadataWorkspace } from './editorial-commands/metadata-derivatives.js';
+
 export type {
   EditableLawMetadataChanges,
   EditorialCheckpoint,
@@ -333,6 +356,32 @@ export type {
   RevisionHashFunction,
   RevisionSnapshot,
 } from './editorial-commands/index.js';
+
+export type {
+  FrontmatterMetadataContext,
+  FrontmatterMetadataProjection,
+  LawMetadataCommandChanges,
+  MetadataBlockedReason,
+  MetadataMutability,
+  MetadataOrigin,
+  MetadataPolicyErrorCode,
+  MetadataPolicyResult,
+  PublicationHistoryState,
+} from './editorial-commands/frontmatter-metadata.js';
+
+export type {
+  PublicationHistoryAuthority,
+  PublicationHistoryEvidence,
+  PublicationHistoryInspection,
+} from './editorial-commands/publication-history-authority.js';
+
+export type {
+  MetadataDerivedDocument,
+  MetadataWorkspaceContext,
+  MetadataWorkspaceDerivationResult,
+  MetadataWorkspaceDerivatives,
+  MetadataWorkspaceDocument,
+} from './editorial-commands/metadata-derivatives.js';
 
 export {
   applyEditorialCommand,
@@ -373,6 +422,7 @@ export type {
   RunEditorialValidationOptions,
 } from './editorial-validation/index.js';
 export type {
+  ApplyEditorialCommandOptions,
   EditorialCommandErrorCode,
   EditorialCommandResult,
 } from './editorial-commands/apply.js';

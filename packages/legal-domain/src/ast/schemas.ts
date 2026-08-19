@@ -11,14 +11,11 @@ import { z } from 'zod';
 import {
   astPhaseSchema,
   deviceStatusSchema,
-  legalStatusSchema,
   parseConfidenceReasonSchema,
   parseConfidenceSchema,
-  publicationStatusSchema,
   sourceRoleSchema,
   sourceTypeSchema,
   sourceVariantSchema,
-  tipoNormaSchema,
 } from './enums.js';
 import type { CodigoProblema } from './errors.js';
 import type {
@@ -35,6 +32,7 @@ import type {
   SourceReference,
   TabelaNode,
 } from './nodes.js';
+import { metadataFieldSchemas, metadataDateSchema } from './metadata-fields.js';
 
 // --- Primitivos ------------------------------------------------------------
 
@@ -75,22 +73,7 @@ const sha256Schema = z
  * data é reconstruída e comparada: uma data impossível em metadado jurídico é
  * erro, não detalhe de formatação.
  */
-const dataSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Esperada data no formato YYYY-MM-DD.')
-  .refine((valor) => {
-    const [ano, mes, dia] = valor.split('-').map(Number) as [number, number, number];
-    const data = new Date(Date.UTC(ano, mes - 1, dia));
-
-    return (
-      data.getUTCFullYear() === ano && data.getUTCMonth() === mes - 1 && data.getUTCDate() === dia
-    );
-  }, 'Data inexistente no calendário.');
-
-/** SemVer sem prefixo, alinhado ao CHECK de `versoes_lei.versao_vinculex`. */
-const semverSchema = z
-  .string()
-  .regex(/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/, 'Esperado SemVer, ex.: 1.3.0.');
+const dataSchema = metadataDateSchema;
 
 /**
  * Block ID canônico: `BLOCK_ID_SPEC.md` §2.3 exige minúsculas, apenas
@@ -463,25 +446,25 @@ const construirFamilias = <Disp extends z.ZodType, Div extends z.ZodType, Fase e
     ...camposBase,
     tipo: z.literal('lei'),
     astPhase: fase,
-    titulo: textoObrigatorio('O título da lei'),
-    sigla: textoObrigatorio('A sigla da lei'),
-    tipoNorma: tipoNormaSchema,
-    numero: textoObrigatorio('O número da lei'),
-    ano: z.int(),
-    ramo: textoObrigatorio('O ramo da lei'),
-    fonte: z.url(),
-    dataPublicacao: dataSchema,
-    dataAtualizacaoLegal: dataSchema,
-    dataFormatacaoVinculex: dataSchema,
-    totalArtigos: z.int().nonnegative(),
-    versaoVinculex: semverSchema,
-    legalStatus: legalStatusSchema,
-    publicationStatus: publicationStatusSchema,
-    tags: z.array(z.string()).optional(),
-    revogadaPor: z.string().nullable().optional(),
+    titulo: metadataFieldSchemas.titulo,
+    sigla: metadataFieldSchemas.sigla,
+    tipoNorma: metadataFieldSchemas.tipoNorma,
+    numero: metadataFieldSchemas.numero,
+    ano: metadataFieldSchemas.ano,
+    ramo: metadataFieldSchemas.ramo,
+    fonte: metadataFieldSchemas.fonte,
+    dataPublicacao: metadataFieldSchemas.dataPublicacao,
+    dataAtualizacaoLegal: metadataFieldSchemas.dataAtualizacaoLegal,
+    dataFormatacaoVinculex: metadataFieldSchemas.dataFormatacaoVinculex,
+    totalArtigos: metadataFieldSchemas.totalArtigos,
+    versaoVinculex: metadataFieldSchemas.versaoVinculex,
+    legalStatus: metadataFieldSchemas.legalStatus,
+    publicationStatus: metadataFieldSchemas.publicationStatus,
+    tags: metadataFieldSchemas.tags.optional(),
+    revogadaPor: metadataFieldSchemas.revogadaPor.optional(),
     redacoesDadasPor: z.array(referenciaRedacaoSchema).optional(),
     idsDepreciados: z.array(blockIdDepreciadoSchema).optional(),
-    fontesSecundarias: z.array(z.url()).optional(),
+    fontesSecundarias: metadataFieldSchemas.fontesSecundarias.optional(),
     dataVerificacaoIntegridade: dataSchema,
     avisosAtualizacao: z.array(z.string()).optional(),
     notasEditoriais: z.array(z.string()).optional(),

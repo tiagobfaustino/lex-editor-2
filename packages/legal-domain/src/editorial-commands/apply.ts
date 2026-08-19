@@ -11,6 +11,19 @@ import {
   type RevisionHash,
   type RevisionHashFunction,
 } from './index.js';
+import {
+  validateLawMetadataChangesPolicy,
+  type EditableLawMetadataChanges,
+} from './frontmatter-metadata.js';
+import {
+  deriveMetadataWorkspace,
+  type MetadataWorkspaceContext,
+  type MetadataWorkspaceDerivatives,
+} from './metadata-derivatives.js';
+import {
+  publicationHistoryStateFor,
+  type PublicationHistoryEvidence,
+} from './publication-history-authority.js';
 
 export const editorialCommandErrorCodeSchema = z.enum([
   'invalid_command',
@@ -22,6 +35,12 @@ export const editorialCommandErrorCodeSchema = z.enum([
   'pending_review_not_found',
   'invariant_violation',
   'identity_reconciliation_failed',
+  'metadata_field_not_editable',
+  'published_identity_immutable',
+  'publication_history_required',
+  'metadata_cross_field_invalid',
+  'metadata_workspace_required',
+  'metadata_derivation_failed',
   'no_change',
 ]);
 
@@ -35,6 +54,7 @@ export type EditorialCommandResult =
       structuralChange: boolean;
       newAliases: readonly Readonly<{ antigo: string; novo: string }>[];
       missingPublishedBlockIds: readonly string[];
+      metadataDerivatives?: MetadataWorkspaceDerivatives;
     }>
   | Readonly<{
       ok: false;
@@ -45,6 +65,13 @@ export type EditorialCommandResult =
     }>;
 
 type NodeRecord = Record<string, unknown>;
+
+export interface ApplyEditorialCommandOptions {
+  readonly publicationHistoryEvidence?: PublicationHistoryEvidence;
+  readonly metadataWorkspace?: MetadataWorkspaceContext;
+  /** Usado somente pelo replay de uma entrada já validada e ligada ao hash persistido. */
+  readonly metadataReplayResultRevisionHash?: RevisionHash;
+}
 
 type NodeLocation = Readonly<{
   node: NodeRecord;
@@ -189,6 +216,121 @@ const moveAndReconcile = (
   return reconciled.valor.arvore;
 };
 
+const applyLawMetadataChanges = (root: NodeRecord, changes: EditableLawMetadataChanges): void => {
+  if (changes.titulo !== undefined) root['titulo'] = changes.titulo;
+  if (changes.sigla !== undefined) root['sigla'] = changes.sigla;
+  if (changes.tipoNorma !== undefined) root['tipoNorma'] = changes.tipoNorma;
+  if (changes.numero !== undefined) root['numero'] = changes.numero;
+  if (changes.ano !== undefined) root['ano'] = changes.ano;
+  if (changes.ramo !== undefined) root['ramo'] = changes.ramo;
+  if (changes.dataPublicacao !== undefined) root['dataPublicacao'] = changes.dataPublicacao;
+  if (changes.dataAtualizacaoLegal !== undefined) {
+    root['dataAtualizacaoLegal'] = changes.dataAtualizacaoLegal;
+  }
+  if (changes.legalStatus !== undefined) root['legalStatus'] = changes.legalStatus;
+  if (changes.tags !== undefined) root['tags'] = changes.tags;
+  if (changes.revogadaPor !== undefined) root['revogadaPor'] = changes.revogadaPor;
+};
+
+const applyLawMetadataOperation = (
+  original: IdentifiedNormaAST,
+  command: EditorialCommand,
+  sha256: RevisionHashFunction,
+  options: ApplyEditorialCommandOptions,
+  currentRevisionHash: RevisionHash,
+): EditorialCommandResult => {
+  if (command.operation.kind !== 'set_law_metadata') {
+    return failure('invalid_command', 'A operação não altera metadados da lei.');
+  }
+  const policy = validateLawMetadataChangesPolicy(
+    original,
+    command.operation.changes,
+    publicationHistoryStateFor(original, options.publicationHistoryEvidence),
+  );
+  if (!policy.ok) return failure(policy.error.code, policy.error.message);
+
+  let candidate: IdentifiedNormaAST;
+  if (policy.changesIdentity) {
+    if (
+      options.metadataWorkspace === undefined &&
+      options.metadataReplayResultRevisionHash === undefined
+    ) {
+      return failure(
+        'metadata_workspace_required',
+        'A correção de identidade exige o workspace completo para regenerar os derivados.',
+      );
+    }
+    if ((original.idsDepreciados?.length ?? 0) > 0) {
+      return failure(
+        'identity_reconciliation_failed',
+        'Uma norma com histórico de Block IDs depreciados não pode ser tratada como pré-publicação.',
+      );
+    }
+    const parsed = stripIdentification(original);
+    const root = parsed as unknown as NodeRecord;
+    applyLawMetadataChanges(root, policy.changes);
+    delete root['idsDepreciados'];
+    const validatedParsed = parsedNormaAstSchema.safeParse(root);
+    if (!validatedParsed.success) {
+      return failure(
+        'identity_reconciliation_failed',
+        'A correção de identidade produziria uma NormaAST parsed inválida.',
+      );
+    }
+    const identified = identificar(validatedParsed.data, validatedParsed.data.sigla);
+    if (!identified.ok) {
+      return failure(
+        'identity_reconciliation_failed',
+        'A nova identidade não pôde regenerar Block IDs canônicos.',
+      );
+    }
+    candidate = identified.valor;
+  } else {
+    candidate = clone(original);
+    applyLawMetadataChanges(candidate as unknown as NodeRecord, policy.changes);
+  }
+
+  const validated = identifiedNormaAstSchema.safeParse(candidate);
+  if (!validated.success) {
+    return failure('invariant_violation', 'O comando produziria uma NormaAST inválida.');
+  }
+  const revisionHash = calculateRevisionHash(validated.data, sha256);
+  if (revisionHash === currentRevisionHash) {
+    return failure('no_change', 'O comando não altera a revisão atual.');
+  }
+  if (
+    options.metadataReplayResultRevisionHash !== undefined &&
+    revisionHash !== options.metadataReplayResultRevisionHash
+  ) {
+    return failure(
+      'metadata_derivation_failed',
+      'O replay de metadados diverge do hash persistido no diário.',
+    );
+  }
+
+  let metadataDerivatives: MetadataWorkspaceDerivatives | undefined;
+  if (options.metadataWorkspace !== undefined) {
+    const derived = deriveMetadataWorkspace(
+      original,
+      validated.data,
+      options.metadataWorkspace,
+      sha256,
+    );
+    if (!derived.ok) return failure('metadata_derivation_failed', derived.message);
+    metadataDerivatives = derived.value;
+  }
+
+  return {
+    ok: true,
+    ast: validated.data,
+    revisionHash,
+    structuralChange: policy.changesIdentity,
+    newAliases: [],
+    missingPublishedBlockIds: [],
+    ...(metadataDerivatives === undefined ? {} : { metadataDerivatives }),
+  };
+};
+
 const applyNonStructuralOperation = (
   ast: IdentifiedNormaAST,
   command: EditorialCommand,
@@ -196,10 +338,8 @@ const applyNonStructuralOperation = (
   const root = ast as unknown as NodeRecord;
   const operation = command.operation;
   if (operation.kind === 'confirm_warning') return ast;
-  if (operation.kind === 'set_law_metadata') {
-    Object.assign(root, operation.changes);
-    return ast;
-  }
+  if (operation.kind === 'set_law_metadata')
+    return failure('invalid_command', 'Operação inválida.');
   const location = oneLocation(root, operation.targetNodeId);
   if (isFailure(location)) return location;
   if (operation.kind === 'replace_node_text') {
@@ -254,6 +394,7 @@ export const applyEditorialCommand = (
   currentAst: unknown,
   rawCommand: unknown,
   sha256: RevisionHashFunction,
+  options: ApplyEditorialCommandOptions = {},
 ): EditorialCommandResult => {
   const parsedAst = identifiedNormaAstSchema.safeParse(currentAst);
   const parsedCommand = editorialCommandSchema.safeParse(rawCommand);
@@ -265,6 +406,15 @@ export const applyEditorialCommand = (
     return failure(
       'stale_revision',
       'O comando foi criado para uma revisão que não é mais a atual.',
+    );
+  }
+  if (parsedCommand.data.operation.kind === 'set_law_metadata') {
+    return applyLawMetadataOperation(
+      parsedAst.data,
+      parsedCommand.data,
+      sha256,
+      options,
+      currentRevisionHash,
     );
   }
   const copy = clone(parsedAst.data);
