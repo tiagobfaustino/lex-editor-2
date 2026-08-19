@@ -32,6 +32,19 @@ import type {
   ValidateEditorialCommand,
 } from '../../shared/ipc/editorial.js';
 import {
+  DESKTOP_METADATA_LIMITS,
+  GetMetadataStateCommandSchema,
+  METADATA_GET_STATE_CHANNEL,
+  METADATA_UPDATE_CHANNEL,
+  MetadataStateDtoSchema,
+  UpdateMetadataCommandSchema,
+} from '../../shared/ipc/metadata.js';
+import type {
+  GetMetadataStateCommand,
+  MetadataStateDto,
+  UpdateMetadataCommand,
+} from '../../shared/ipc/metadata.js';
+import {
   CancelJobCommandSchema,
   CancelJobDtoSchema,
   BatchExportResultDtoSchema,
@@ -76,6 +89,14 @@ import {
   WriteExportCommandSchema,
   WriteBatchExportCommandSchema,
 } from '../../shared/ipc/import.js';
+import {
+  DESKTOP_REPROCESSING_LIMITS,
+  GetReprocessingStateCommandSchema,
+  REPROCESSING_GET_STATE_CHANNEL,
+  REPROCESSING_REQUEST_CHANNEL,
+  ReprocessingStateDtoSchema,
+  RequestReprocessingCommandSchema,
+} from '../../shared/ipc/reprocessing.js';
 import {
   DESKTOP_PUBLICATION_LIMITS,
   GetPublicationDiffCommandSchema,
@@ -139,6 +160,37 @@ import {
   SourceCatalogPageDtoSchema,
   SourceDryRunDtoSchema,
 } from '../../shared/ipc/sources.js';
+import {
+  AUDIT_GET_DETAIL_CHANNEL,
+  AUDIT_GET_INCIDENT_CHANNEL,
+  AUDIT_GET_TIMELINE_CHANNEL,
+  AUDIT_OPEN_EVIDENCE_CHANNEL,
+  AUDIT_QUERY_CHANNEL,
+  AUDIT_RECORD_INCIDENT_NOTE_CHANNEL,
+  AuditEventDetailDtoSchema,
+  AuditEventIdCommandSchema,
+  AuditPageDtoSchema,
+  AuditQueryCommandSchema,
+  AuditTimelineCommandSchema,
+  DESKTOP_AUDIT_LIMITS,
+  EvidenceExcerptDtoSchema,
+  IncidentDetailDtoSchema,
+  IncidentIdCommandSchema,
+  OpenEvidenceCommandSchema,
+  RecordIncidentNoteCommandSchema,
+} from '../../shared/ipc/audit.js';
+import type {
+  AuditEventDetailDto,
+  AuditEventIdCommand,
+  AuditPageDto,
+  AuditQueryCommand,
+  AuditTimelineCommand,
+  EvidenceExcerptDto,
+  IncidentDetailDto,
+  IncidentIdCommand,
+  OpenEvidenceCommand,
+  RecordIncidentNoteCommand,
+} from '../../shared/ipc/audit.js';
 import type {
   ActivateSourceBindingCommand,
   ActivatedSourceBindingDto,
@@ -206,6 +258,11 @@ import type {
   WriteExportCommand,
   WriteBatchExportCommand,
 } from '../../shared/ipc/import.js';
+import type {
+  GetReprocessingStateCommand,
+  RequestReprocessingCommand,
+  ReprocessingStateDto,
+} from '../../shared/ipc/reprocessing.js';
 import type { RendererLocation } from '../renderer-location.js';
 import { executeValidatedIpcHandler } from './validated-handler.js';
 
@@ -240,6 +297,8 @@ export type DesktopImportIpcCapabilities = Readonly<{
   confirmEditorialWarning: NamedCapability<ConfirmEditorialWarningCommand, EditorialStateDto>;
   validateEditorial: NamedCapability<ValidateEditorialCommand, EditorialStateDto>;
   approveEditorial: NamedCapability<ApproveEditorialCommand, EditorialStateDto>;
+  getMetadataState: NamedCapability<GetMetadataStateCommand, MetadataStateDto>;
+  updateMetadata: NamedCapability<UpdateMetadataCommand, MetadataStateDto>;
   chooseExportDestination: NamedCapability<
     ChooseExportDestinationCommand,
     DestinationSummaryDto | null
@@ -250,6 +309,8 @@ export type DesktopImportIpcCapabilities = Readonly<{
     DestinationSummaryDto | null
   >;
   writeBatchExport: NamedCapability<WriteBatchExportCommand, BatchExportResultDto>;
+  requestReprocessing: NamedCapability<RequestReprocessingCommand, ReprocessingStateDto>;
+  getReprocessingState: NamedCapability<GetReprocessingStateCommand, ReprocessingStateDto | null>;
 }>;
 
 export type DesktopPublicationIpcCapabilities = Readonly<{
@@ -295,6 +356,15 @@ export type DesktopSourceCatalogIpcCapabilities = Readonly<{
   requestSourceCheck: NamedCapability<RequestSourceCheckCommand, RequestedSourceCheckDto>;
 }>;
 
+export type DesktopAuditIpcCapabilities = Readonly<{
+  queryAudit: NamedCapability<AuditQueryCommand, AuditPageDto>;
+  getAuditDetail: NamedCapability<AuditEventIdCommand, AuditEventDetailDto>;
+  getAuditTimeline: NamedCapability<AuditTimelineCommand, AuditPageDto>;
+  getIncidentDetail: NamedCapability<IncidentIdCommand, IncidentDetailDto>;
+  recordIncidentNote: NamedCapability<RecordIncidentNoteCommand, IncidentDetailDto>;
+  openEvidence: NamedCapability<OpenEvidenceCommand, EvidenceExcerptDto>;
+}>;
+
 type RegisterIpcHandlersOptions = Readonly<{
   rendererLocation: RendererLocation;
   getMainWindow(): BrowserWindow | null;
@@ -302,6 +372,7 @@ type RegisterIpcHandlersOptions = Readonly<{
   publicationCapabilities?: DesktopPublicationIpcCapabilities;
   updateCapabilities?: DesktopUpdateIpcCapabilities;
   sourceCatalogCapabilities?: DesktopSourceCatalogIpcCapabilities;
+  auditCapabilities?: DesktopAuditIpcCapabilities;
 }>;
 
 const unavailable = (): never => {
@@ -326,10 +397,14 @@ const unavailableImportCapabilities: DesktopImportIpcCapabilities = {
   confirmEditorialWarning: { authorize: () => true, handle: unavailable },
   validateEditorial: { authorize: () => true, handle: unavailable },
   approveEditorial: { authorize: () => true, handle: unavailable },
+  getMetadataState: { authorize: () => true, handle: unavailable },
+  updateMetadata: { authorize: () => true, handle: unavailable },
   chooseExportDestination: { authorize: () => true, handle: unavailable },
   writeExport: { authorize: () => true, handle: unavailable },
   chooseBatchExportDestination: { authorize: () => true, handle: unavailable },
   writeBatchExport: { authorize: () => true, handle: unavailable },
+  requestReprocessing: { authorize: () => true, handle: unavailable },
+  getReprocessingState: { authorize: () => true, handle: unavailable },
 };
 
 const unavailablePublicationCapabilities: DesktopPublicationIpcCapabilities = {
@@ -363,6 +438,15 @@ const unavailableSourceCatalogCapabilities: DesktopSourceCatalogIpcCapabilities 
   requestSourceCheck: { authorize: () => false, handle: unavailable },
 };
 
+const unavailableAuditCapabilities: DesktopAuditIpcCapabilities = {
+  queryAudit: { authorize: () => false, handle: unavailable },
+  getAuditDetail: { authorize: () => false, handle: unavailable },
+  getAuditTimeline: { authorize: () => false, handle: unavailable },
+  getIncidentDetail: { authorize: () => false, handle: unavailable },
+  recordIncidentNote: { authorize: () => false, handle: unavailable },
+  openEvidence: { authorize: () => false, handle: unavailable },
+};
+
 export const registerIpcHandlers = ({
   rendererLocation,
   getMainWindow,
@@ -370,6 +454,7 @@ export const registerIpcHandlers = ({
   publicationCapabilities = unavailablePublicationCapabilities,
   updateCapabilities = unavailableUpdateCapabilities,
   sourceCatalogCapabilities = unavailableSourceCatalogCapabilities,
+  auditCapabilities = unavailableAuditCapabilities,
 }: RegisterIpcHandlersOptions): (() => void) => {
   const getTrustedWebContents = () => getMainWindow()?.webContents ?? null;
 
@@ -590,6 +675,30 @@ export const registerIpcHandlers = ({
     }),
   );
 
+  ipcMain.handle(METADATA_GET_STATE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: GetMetadataStateCommandSchema,
+      outputSchema: MetadataStateDtoSchema,
+      maxInputBytes: DESKTOP_METADATA_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_METADATA_LIMITS.stateBytes,
+      ...importCapabilities.getMetadataState,
+    }),
+  );
+
+  ipcMain.handle(METADATA_UPDATE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: UpdateMetadataCommandSchema,
+      outputSchema: MetadataStateDtoSchema,
+      maxInputBytes: DESKTOP_METADATA_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_METADATA_LIMITS.stateBytes,
+      ...importCapabilities.updateMetadata,
+    }),
+  );
+
   ipcMain.handle(EXPORT_CHOOSE_DESTINATION_CHANNEL, (event, payload: unknown) =>
     executeValidatedIpcHandler(event, payload, {
       rendererLocation,
@@ -635,6 +744,30 @@ export const registerIpcHandlers = ({
       maxInputBytes: DESKTOP_IMPORT_LIMITS.commandBytes,
       maxOutputBytes: DESKTOP_IMPORT_LIMITS.previewDocumentBytes,
       ...importCapabilities.writeBatchExport,
+    }),
+  );
+
+  ipcMain.handle(REPROCESSING_REQUEST_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: RequestReprocessingCommandSchema,
+      outputSchema: ReprocessingStateDtoSchema,
+      maxInputBytes: DESKTOP_REPROCESSING_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_REPROCESSING_LIMITS.stateBytes,
+      ...importCapabilities.requestReprocessing,
+    }),
+  );
+
+  ipcMain.handle(REPROCESSING_GET_STATE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: GetReprocessingStateCommandSchema,
+      outputSchema: ReprocessingStateDtoSchema.nullable(),
+      maxInputBytes: DESKTOP_REPROCESSING_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_REPROCESSING_LIMITS.stateBytes,
+      ...importCapabilities.getReprocessingState,
     }),
   );
 
@@ -902,6 +1035,78 @@ export const registerIpcHandlers = ({
     }),
   );
 
+  ipcMain.handle(AUDIT_QUERY_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: AuditQueryCommandSchema,
+      outputSchema: AuditPageDtoSchema,
+      maxInputBytes: DESKTOP_AUDIT_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_AUDIT_LIMITS.pageBytes,
+      ...auditCapabilities.queryAudit,
+    }),
+  );
+
+  ipcMain.handle(AUDIT_GET_DETAIL_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: AuditEventIdCommandSchema,
+      outputSchema: AuditEventDetailDtoSchema,
+      maxInputBytes: DESKTOP_AUDIT_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_AUDIT_LIMITS.detailBytes,
+      ...auditCapabilities.getAuditDetail,
+    }),
+  );
+
+  ipcMain.handle(AUDIT_GET_TIMELINE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: AuditTimelineCommandSchema,
+      outputSchema: AuditPageDtoSchema,
+      maxInputBytes: DESKTOP_AUDIT_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_AUDIT_LIMITS.timelineBytes,
+      ...auditCapabilities.getAuditTimeline,
+    }),
+  );
+
+  ipcMain.handle(AUDIT_GET_INCIDENT_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: IncidentIdCommandSchema,
+      outputSchema: IncidentDetailDtoSchema,
+      maxInputBytes: DESKTOP_AUDIT_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_AUDIT_LIMITS.incidentBytes,
+      ...auditCapabilities.getIncidentDetail,
+    }),
+  );
+
+  ipcMain.handle(AUDIT_RECORD_INCIDENT_NOTE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: RecordIncidentNoteCommandSchema,
+      outputSchema: IncidentDetailDtoSchema,
+      maxInputBytes: DESKTOP_AUDIT_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_AUDIT_LIMITS.incidentBytes,
+      ...auditCapabilities.recordIncidentNote,
+    }),
+  );
+
+  ipcMain.handle(AUDIT_OPEN_EVIDENCE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: OpenEvidenceCommandSchema,
+      outputSchema: EvidenceExcerptDtoSchema,
+      maxInputBytes: DESKTOP_AUDIT_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_AUDIT_LIMITS.evidenceBytes,
+      ...auditCapabilities.openEvidence,
+    }),
+  );
+
   return () => {
     ipcMain.removeHandler(APP_GET_VERSION_CHANNEL);
     ipcMain.removeHandler(SOURCE_SELECT_LOCAL_CHANNEL);
@@ -921,10 +1126,14 @@ export const registerIpcHandlers = ({
     ipcMain.removeHandler(EDITORIAL_CONFIRM_WARNING_CHANNEL);
     ipcMain.removeHandler(EDITORIAL_VALIDATE_CHANNEL);
     ipcMain.removeHandler(EDITORIAL_APPROVE_CHANNEL);
+    ipcMain.removeHandler(METADATA_GET_STATE_CHANNEL);
+    ipcMain.removeHandler(METADATA_UPDATE_CHANNEL);
     ipcMain.removeHandler(EXPORT_CHOOSE_DESTINATION_CHANNEL);
     ipcMain.removeHandler(EXPORT_WRITE_CHANNEL);
     ipcMain.removeHandler(EXPORT_CHOOSE_BATCH_DESTINATION_CHANNEL);
     ipcMain.removeHandler(EXPORT_WRITE_BATCH_CHANNEL);
+    ipcMain.removeHandler(REPROCESSING_REQUEST_CHANNEL);
+    ipcMain.removeHandler(REPROCESSING_GET_STATE_CHANNEL);
     ipcMain.removeHandler(PUBLICATION_PREPARE_CHANNEL);
     ipcMain.removeHandler(PUBLICATION_EXECUTE_CHANNEL);
     ipcMain.removeHandler(PUBLICATION_GET_ATTEMPT_CHANNEL);
@@ -947,5 +1156,11 @@ export const registerIpcHandlers = ({
     ipcMain.removeHandler(SOURCES_ARCHIVE_CHANNEL);
     ipcMain.removeHandler(SOURCES_RESTORE_CHANNEL);
     ipcMain.removeHandler(SOURCES_REQUEST_CHECK_CHANNEL);
+    ipcMain.removeHandler(AUDIT_QUERY_CHANNEL);
+    ipcMain.removeHandler(AUDIT_GET_DETAIL_CHANNEL);
+    ipcMain.removeHandler(AUDIT_GET_TIMELINE_CHANNEL);
+    ipcMain.removeHandler(AUDIT_GET_INCIDENT_CHANNEL);
+    ipcMain.removeHandler(AUDIT_RECORD_INCIDENT_NOTE_CHANNEL);
+    ipcMain.removeHandler(AUDIT_OPEN_EVIDENCE_CHANNEL);
   };
 };

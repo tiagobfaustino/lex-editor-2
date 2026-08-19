@@ -11,6 +11,12 @@ import { resolveRendererLocation } from './renderer-location.js';
 import { denyAllSessionPermissions, installWebContentsGuards } from './security.js';
 import { loadSourceCatalogE2eHarness } from './source-catalog-e2e-harness.js';
 import { createDesktopSourceCatalogIpcCapabilities } from './source-catalog-ipc-capabilities.js';
+import { createDesktopAuditIpcCapabilities } from './audit/audit-ipc-capabilities.js';
+import { createEvidenceProvider } from './audit/evidence-provider.js';
+import { createFederatedAuditService } from './audit/federated-audit-service.js';
+import { createIncidentActions } from './audit/incident-actions.js';
+import { createLocalAuditJournalStore } from './audit/local-audit-journal.js';
+import { createLocalAuditProvider } from './audit/local-audit-provider.js';
 import { createMainWindow } from './window.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -55,6 +61,7 @@ void app.whenReady().then(async () => {
 
   Menu.setApplicationMenu(null);
   const storageRoot = app.getPath('userData');
+  const auditJournal = createLocalAuditJournalStore(storageRoot);
   const sourceCatalogHarness = await loadSourceCatalogE2eHarness({
     isPackaged: app.isPackaged,
     storageRoot,
@@ -77,6 +84,7 @@ void app.whenReady().then(async () => {
         mainWindow.webContents.send(PIPELINE_PROGRESS_CHANNEL, parsed.data);
       }
     },
+    auditJournalStore: auditJournal,
     ...(sourceCatalogHarness === null
       ? {}
       : {
@@ -84,10 +92,34 @@ void app.whenReady().then(async () => {
           networkPorts: sourceCatalogHarness.networkPorts,
         }),
   });
+  const federatedAuditService = createFederatedAuditService({
+    providers: [
+      createLocalAuditProvider(auditJournal),
+      ...(sourceCatalogHarness?.auditProviders ?? []),
+    ],
+  });
+  const evidenceProvider = createEvidenceProvider(auditJournal, storageRoot);
+  const incidentActions = createIncidentActions({
+    journal: auditJournal,
+    evidenceProvider,
+    service: federatedAuditService,
+  });
   disposeIpcHandlers = registerIpcHandlers({
     rendererLocation,
     getMainWindow: () => mainWindow,
     importCapabilities,
+    auditCapabilities: createDesktopAuditIpcCapabilities({
+      service: federatedAuditService,
+      // A identidade vem da sessão privilegiada do processo principal; o
+      // renderer nunca escolhe ator ou papel. Provedores remotos continuam
+      // indisponíveis até existir uma sessão administrativa autenticada.
+      getActor: () => ({
+        actorKey: 'local-technical-administrator',
+        actorRole: 'administrador_tecnico',
+      }),
+      recordIncidentNote: incidentActions.recordIncidentNote,
+      openEvidence: incidentActions.openEvidence,
+    }),
     ...(sourceCatalogHarness === null
       ? {}
       : {

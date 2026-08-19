@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 import type { PlanaltoNetworkPorts } from '@lex-editor/source-ingestion/node';
 
 import type { SourceCatalogService } from '../../services/source-catalog/src/index.js';
+import type { AuditProvider } from './audit/federated-audit-service.js';
 import type { ActiveSourceImportResolver } from './local-project-service.js';
 
 export type SourceCatalogE2eHarness = Readonly<{
@@ -10,6 +11,7 @@ export type SourceCatalogE2eHarness = Readonly<{
   getAccessToken(): string | null | Promise<string | null>;
   activeSourceImportResolver: ActiveSourceImportResolver;
   networkPorts: PlanaltoNetworkPorts;
+  auditProviders?: readonly AuditProvider[];
 }>;
 
 type SourceCatalogE2eHarnessModule = Readonly<{

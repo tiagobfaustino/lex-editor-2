@@ -45,6 +45,52 @@ import type {
   ValidateEditorialResult,
 } from '../shared/ipc/editorial.js';
 import {
+  GetMetadataStateCommandSchema,
+  GetMetadataStateResultSchema,
+  METADATA_GET_STATE_CHANNEL,
+  METADATA_UPDATE_CHANNEL,
+  UpdateMetadataCommandSchema,
+  UpdateMetadataResultSchema,
+} from '../shared/ipc/metadata.js';
+import {
+  AUDIT_GET_DETAIL_CHANNEL,
+  AUDIT_GET_INCIDENT_CHANNEL,
+  AUDIT_GET_TIMELINE_CHANNEL,
+  AUDIT_OPEN_EVIDENCE_CHANNEL,
+  AUDIT_QUERY_CHANNEL,
+  AUDIT_RECORD_INCIDENT_NOTE_CHANNEL,
+  AuditEventDetailResultSchema,
+  AuditEventIdCommandSchema,
+  AuditQueryCommandSchema,
+  AuditQueryResultSchema,
+  AuditTimelineCommandSchema,
+  AuditTimelineResultSchema,
+  EvidenceExcerptResultSchema,
+  IncidentDetailResultSchema,
+  IncidentIdCommandSchema,
+  OpenEvidenceCommandSchema,
+  RecordIncidentNoteCommandSchema,
+} from '../shared/ipc/audit.js';
+import type {
+  AuditEventDetailResult,
+  AuditEventIdCommand,
+  AuditQueryCommand,
+  AuditQueryResult,
+  AuditTimelineCommand,
+  AuditTimelineResult,
+  EvidenceExcerptResult,
+  IncidentDetailResult,
+  IncidentIdCommand,
+  OpenEvidenceCommand,
+  RecordIncidentNoteCommand,
+} from '../shared/ipc/audit.js';
+import type {
+  GetMetadataStateCommand,
+  GetMetadataStateResult,
+  UpdateMetadataCommand,
+  UpdateMetadataResult,
+} from '../shared/ipc/metadata.js';
+import {
   CancelJobCommandSchema,
   CancelJobResultSchema,
   ChooseBatchExportDestinationCommandSchema,
@@ -223,6 +269,18 @@ import type {
   WriteBatchExportCommand,
   WriteBatchExportResult,
 } from '../shared/ipc/import.js';
+import {
+  GetReprocessingStateCommandSchema,
+  GetReprocessingStateResultSchema,
+  REPROCESSING_GET_STATE_CHANNEL,
+  REPROCESSING_REQUEST_CHANNEL,
+  RequestReprocessingCommandSchema,
+  RequestReprocessingResultSchema,
+  type GetReprocessingStateCommand,
+  type GetReprocessingStateResult,
+  type RequestReprocessingCommand,
+  type RequestReprocessingResult,
+} from '../shared/ipc/reprocessing.js';
 
 const invokeValidated = async <Result>(
   channel: string,
@@ -455,6 +513,30 @@ const approveEditorial = async (
     : createFailedResult('INVALID_INPUT');
 };
 
+const getMetadataState = async (
+  input: GetMetadataStateCommand,
+): Promise<GetMetadataStateResult> => {
+  const parsedInput = GetMetadataStateCommandSchema.safeParse(input);
+  return parsedInput.success
+    ? ((await invokeValidated(
+        METADATA_GET_STATE_CHANNEL,
+        parsedInput.data,
+        GetMetadataStateResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const updateMetadata = async (input: UpdateMetadataCommand): Promise<UpdateMetadataResult> => {
+  const parsedInput = UpdateMetadataCommandSchema.safeParse(input);
+  return parsedInput.success
+    ? ((await invokeValidated(
+        METADATA_UPDATE_CHANNEL,
+        parsedInput.data,
+        UpdateMetadataResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
 const onProgress = (listener: (progress: ProgressDto) => void): (() => void) => {
   const wrapped = (_event: Electron.IpcRendererEvent, value: unknown): void => {
     const parsed = ProgressDtoSchema.safeParse(value);
@@ -511,6 +593,32 @@ const writeBatchExport = async (
         EXPORT_WRITE_BATCH_CHANNEL,
         parsedInput.data,
         WriteBatchExportResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const requestReprocessing = async (
+  input: RequestReprocessingCommand,
+): Promise<RequestReprocessingResult> => {
+  const parsedInput = RequestReprocessingCommandSchema.safeParse(input);
+  return parsedInput.success
+    ? ((await invokeValidated(
+        REPROCESSING_REQUEST_CHANNEL,
+        parsedInput.data,
+        RequestReprocessingResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const getReprocessingState = async (
+  input: GetReprocessingStateCommand,
+): Promise<GetReprocessingStateResult> => {
+  const parsedInput = GetReprocessingStateCommandSchema.safeParse(input);
+  return parsedInput.success
+    ? ((await invokeValidated(
+        REPROCESSING_GET_STATE_CHANNEL,
+        parsedInput.data,
+        GetReprocessingStateResultSchema,
       )) ?? createFailedResult('FAILED'))
     : createFailedResult('INVALID_INPUT');
 };
@@ -747,6 +855,71 @@ const requestSourceCheck = async (
     : createFailedResult('INVALID_INPUT');
 };
 
+const queryAudit = async (input: AuditQueryCommand): Promise<AuditQueryResult> => {
+  const parsed = AuditQueryCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(AUDIT_QUERY_CHANNEL, parsed.data, AuditQueryResultSchema)) ??
+        createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const getAuditDetail = async (input: AuditEventIdCommand): Promise<AuditEventDetailResult> => {
+  const parsed = AuditEventIdCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(
+        AUDIT_GET_DETAIL_CHANNEL,
+        parsed.data,
+        AuditEventDetailResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const getAuditTimeline = async (input: AuditTimelineCommand): Promise<AuditTimelineResult> => {
+  const parsed = AuditTimelineCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(
+        AUDIT_GET_TIMELINE_CHANNEL,
+        parsed.data,
+        AuditTimelineResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const getIncidentDetail = async (input: IncidentIdCommand): Promise<IncidentDetailResult> => {
+  const parsed = IncidentIdCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(
+        AUDIT_GET_INCIDENT_CHANNEL,
+        parsed.data,
+        IncidentDetailResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const recordIncidentNote = async (
+  input: RecordIncidentNoteCommand,
+): Promise<IncidentDetailResult> => {
+  const parsed = RecordIncidentNoteCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(
+        AUDIT_RECORD_INCIDENT_NOTE_CHANNEL,
+        parsed.data,
+        IncidentDetailResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
+const openEvidence = async (input: OpenEvidenceCommand): Promise<EvidenceExcerptResult> => {
+  const parsed = OpenEvidenceCommandSchema.safeParse(input);
+  return parsed.success
+    ? ((await invokeValidated(
+        AUDIT_OPEN_EVIDENCE_CHANNEL,
+        parsed.data,
+        EvidenceExcerptResultSchema,
+      )) ?? createFailedResult('FAILED'))
+    : createFailedResult('INVALID_INPUT');
+};
+
 const desktopApi: LexDesktopApiV1 = Object.freeze({
   version: DESKTOP_API_VERSION,
   capabilities: DESKTOP_CAPABILITIES,
@@ -781,11 +954,19 @@ const desktopApi: LexDesktopApiV1 = Object.freeze({
     validate: validateEditorial,
     approve: approveEditorial,
   }),
+  metadata: Object.freeze({
+    getState: getMetadataState,
+    update: updateMetadata,
+  }),
   export: Object.freeze({
     chooseDestination: chooseExportDestination,
     write: writeExport,
     chooseBatchDestination: chooseBatchExportDestination,
     writeBatch: writeBatchExport,
+  }),
+  reprocessing: Object.freeze({
+    request: requestReprocessing,
+    getState: getReprocessingState,
   }),
   publication: Object.freeze({
     prepare: preparePublication,
@@ -818,6 +999,14 @@ const desktopApi: LexDesktopApiV1 = Object.freeze({
     restore: (input: ActivateSourceBindingCommand) =>
       invokeSourceBindingActivation(SOURCES_RESTORE_CHANNEL, input),
     requestCheck: requestSourceCheck,
+  }),
+  audit: Object.freeze({
+    query: queryAudit,
+    getDetail: getAuditDetail,
+    getTimeline: getAuditTimeline,
+    getIncidentDetail,
+    recordIncidentNote,
+    openEvidence,
   }),
 });
 

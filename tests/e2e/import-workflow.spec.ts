@@ -182,7 +182,7 @@ test('importa, navega por diagnóstico, bloqueia conteúdo ativo e exporta bytes
   await expect(mainWindow.locator('#publicacao')).not.toContainText('Publicado e confirmado');
 
   await mainWindow.getByRole('button', { name: 'Exportar Markdown' }).click();
-  await expect(mainWindow.getByRole('status')).toContainText(
+  await expect(mainWindow.locator('.export-message')).toContainText(
     'lindb-exportada.md exportado no perfil lei completa, com integridade verificada.',
   );
   const exported = await readFile(exportPath);
@@ -342,7 +342,7 @@ test('importa, corrige, valida, aprova e exporta uma interpretação de baixa co
   await mainWindow.getByRole('button', { name: 'Aprovar preview' }).click();
   await expect(mainWindow.getByRole('button', { name: 'Exportar Markdown' })).toBeEnabled();
   await mainWindow.getByRole('button', { name: 'Exportar Markdown' }).click();
-  await expect(mainWindow.getByRole('status')).toContainText(
+  await expect(mainWindow.locator('.export-message')).toContainText(
     'pena-revisada.md exportado no perfil lei completa, com integridade verificada.',
   );
 
@@ -361,7 +361,7 @@ test('alterna e exporta as duas projeções da Lei 9.099 sem duplicar Block IDs'
   await mainWindow.getByRole('button', { name: 'Aprovar preview' }).click();
   await expect(mainWindow.getByRole('button', { name: 'Preview aprovado' })).toBeVisible();
   await mainWindow.getByRole('button', { name: 'Exportar Markdown' }).click();
-  await expect(mainWindow.getByRole('status')).toContainText(
+  await expect(mainWindow.locator('.export-message')).toContainText(
     'l9099-completa.md exportado no perfil lei completa, com integridade verificada.',
   );
 
@@ -373,7 +373,7 @@ test('alterna e exporta as duas projeções da Lei 9.099 sem duplicar Block IDs'
   await expect(mainWindow.getByRole('radio', { name: /Somente texto vigente/u })).toBeChecked();
   await configureDialogs(app, fixture('l9099', 'snapshot.html'), l9099CurrentExportPath);
   await mainWindow.getByRole('button', { name: 'Exportar Markdown' }).click();
-  await expect(mainWindow.getByRole('status')).toContainText(
+  await expect(mainWindow.locator('.export-message')).toContainText(
     'l9099-vigente.md exportado no perfil somente vigente, com integridade verificada.',
   );
 

@@ -33,6 +33,10 @@ import {
   EDITORIAL_VALIDATE_CHANNEL,
 } from '../../src/shared/ipc/editorial.js';
 import {
+  METADATA_GET_STATE_CHANNEL,
+  METADATA_UPDATE_CHANNEL,
+} from '../../src/shared/ipc/metadata.js';
+import {
   EXPORT_CHOOSE_BATCH_DESTINATION_CHANNEL,
   EXPORT_CHOOSE_DESTINATION_CHANNEL,
   EXPORT_WRITE_BATCH_CHANNEL,
@@ -121,6 +125,12 @@ describe('preload desktop API', () => {
               reviewTargets: [],
             },
           };
+        case METADATA_GET_STATE_CHANNEL:
+        case METADATA_UPDATE_CHANNEL:
+          return {
+            ok: false,
+            error: { code: 'NOT_ALLOWED', message: 'Operação indisponível.', retryable: false },
+          };
         case PREVIEW_SET_PROJECTION_PROFILE_CHANNEL:
           return {
             ok: true,
@@ -158,6 +168,7 @@ describe('preload desktop API', () => {
             ok: true,
             value: {
               projectId: PROJECT_ID,
+              revisionHash: 'c'.repeat(64),
               destinationId: DESTINATION_ID,
               projectionProfile: 'complete_with_history',
               fileName: 'codigo-penal.md',
@@ -184,6 +195,7 @@ describe('preload desktop API', () => {
                   title: 'Código Penal',
                   sigla: 'cp',
                   batchExportStatus: 'succeeded',
+                  revisionHash: 'c'.repeat(64),
                   directoryName: 'codigo-penal',
                   markdownFileName: 'cp.md',
                   updateFileName: 'UPDATE.md',
@@ -246,18 +258,30 @@ describe('preload desktop API', () => {
     expect(api.capabilities).toBe(DESKTOP_CAPABILITIES);
     expect(Object.keys(api).sort()).toEqual([
       'app',
+      'audit',
       'capabilities',
       'diagnostics',
       'editorial',
       'export',
+      'metadata',
       'pipeline',
       'preview',
       'publication',
+      'reprocessing',
       'source',
       'sources',
       'updates',
       'version',
     ]);
+    expect(Object.keys(api.audit)).toEqual([
+      'query',
+      'getDetail',
+      'getTimeline',
+      'getIncidentDetail',
+      'recordIncidentNote',
+      'openEvidence',
+    ]);
+    expect(Object.keys(api.reprocessing)).toEqual(['request', 'getState']);
     expect(Object.keys(api.source)).toEqual(['selectLocal', 'importFromUrl']);
     expect(Object.keys(api.pipeline)).toEqual(['start', 'cancel', 'onProgress']);
     expect(Object.keys(api.preview)).toEqual([
@@ -277,6 +301,7 @@ describe('preload desktop API', () => {
       'validate',
       'approve',
     ]);
+    expect(Object.keys(api.metadata)).toEqual(['getState', 'update']);
     expect(Object.keys(api.export).sort()).toEqual([
       'chooseBatchDestination',
       'chooseDestination',
@@ -337,6 +362,18 @@ describe('preload desktop API', () => {
       ok: true,
       value: { validationMode: 'full' },
     });
+    await expect(api.metadata.getState({ projectId: PROJECT_ID })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'NOT_ALLOWED' },
+    });
+    await expect(
+      api.metadata.update({
+        projectId: PROJECT_ID,
+        expectedRevisionHash: 'c'.repeat(64),
+        changes: { titulo: 'Código Penal revisado' },
+        reason: 'Conferido na fonte oficial.',
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'NOT_ALLOWED' } });
     await expect(
       api.preview.setProjectionProfile({
         projectId: PROJECT_ID,
@@ -393,6 +430,16 @@ describe('preload desktop API', () => {
       [PIPELINE_START_CHANNEL, { sourceId: SOURCE_ID }],
       [EDITORIAL_GET_STATE_CHANNEL, { projectId: PROJECT_ID }],
       [EDITORIAL_VALIDATE_CHANNEL, { projectId: PROJECT_ID }],
+      [METADATA_GET_STATE_CHANNEL, { projectId: PROJECT_ID }],
+      [
+        METADATA_UPDATE_CHANNEL,
+        {
+          projectId: PROJECT_ID,
+          expectedRevisionHash: 'c'.repeat(64),
+          changes: { titulo: 'Código Penal revisado' },
+          reason: 'Conferido na fonte oficial.',
+        },
+      ],
       [
         PREVIEW_SET_PROJECTION_PROFILE_CHANNEL,
         { projectId: PROJECT_ID, projectionProfile: 'current_only' },
@@ -444,6 +491,7 @@ describe('preload desktop API', () => {
     const forgedReference = api.preview.getLegalReference as (input: unknown) => Promise<unknown>;
     const forgedSources = api.sources.list as (input: unknown) => Promise<unknown>;
     const forgedCheck = api.sources.requestCheck as (input: unknown) => Promise<unknown>;
+    const forgedMetadata = api.metadata.update as (input: unknown) => Promise<unknown>;
 
     await expect(forgedStart({ sourceId: SOURCE_ID, path: '/etc/passwd' })).resolves.toMatchObject({
       ok: false,
@@ -463,6 +511,14 @@ describe('preload desktop API', () => {
     ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
     await expect(
       forgedCheck({ bindingId: JOB_ID, idempotencyKey: 'manual-check-1', actorUserId: PROJECT_ID }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+    await expect(
+      forgedMetadata({
+        projectId: PROJECT_ID,
+        expectedRevisionHash: 'c'.repeat(64),
+        changes: { fonte: 'https://example.com/forjada' },
+        reason: 'Tentativa direta.',
+      }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
     expect(electronMocks.invoke).not.toHaveBeenCalled();
   });

@@ -9,6 +9,8 @@ import {
   calculateRevisionHash,
   createEditorialCheckpoint,
   identifiedMinima,
+  legalNormIdentityKey,
+  publicationHistoryEvidenceSchema,
   type EditorialCommand,
   type EditorialJournal,
 } from '@lex-editor/legal-domain';
@@ -215,6 +217,67 @@ describe('editorial project store', () => {
     });
   });
 
+  it('reexecuta mudança de identidade com a prova persistida mesmo sem checkpoint utilizável', async () => {
+    const root = await makeRoot();
+    const storageRoot = join(root, 'workspace');
+    const ast = clone(identifiedMinima);
+    const baseRevisionHash = calculateRevisionHash(ast, sha256);
+    const evidence = publicationHistoryEvidenceSchema.parse({
+      schemaVersion: 1,
+      canonicalIdentityKey: legalNormIdentityKey(ast),
+      state: 'never_published',
+      authorityRevision: 'publication-db-revision-20',
+    });
+    const command: EditorialCommand = {
+      schemaVersion: 1,
+      commandId: COMMAND_ID_1,
+      localActorId: 'editor-local',
+      occurredAt: '2026-08-14T12:00:00.000Z',
+      expectedRevisionHash: baseRevisionHash,
+      operation: {
+        kind: 'set_law_metadata',
+        changes: { sigla: 'nova', numero: '2' },
+        reason: 'Identidade conferida antes da primeira publicação.',
+      },
+    };
+    const applied = applyEditorialCommand(ast, command, sha256, {
+      publicationHistoryEvidence: evidence,
+      metadataWorkspace: {
+        currentDocumentId: PROJECT_ID,
+        documents: [{ documentId: PROJECT_ID, ast }],
+      },
+    });
+    if (!applied.ok) throw new Error('Mudança de identidade da fixture rejeitada.');
+    const journal = appendEditorialJournalEntry(
+      {
+        schemaVersion: 1,
+        journalId: JOURNAL_ID,
+        projectId: PROJECT_ID,
+        createdAt: '2026-08-14T12:00:00.000Z',
+        base: { revisionHash: baseRevisionHash, ast },
+        entries: [],
+      },
+      command,
+      applied.revisionHash,
+      sha256,
+      { publicationHistoryEvidence: evidence },
+    );
+    const store = createEditorialProjectStore(storageRoot);
+    await store.saveJournal(journal);
+    await writeFile(join(projectDirectory(storageRoot), 'checkpoint.json'), '{corrompido');
+
+    const recovered = await store.recover(PROJECT_ID);
+
+    expect(recovered).toMatchObject({
+      ok: true,
+      revisionHash: applied.revisionHash,
+      checkpointUsed: false,
+      checkpointIssue: 'corrupt_checkpoint',
+      replayedEntries: 1,
+      ast: { sigla: 'nova', numero: '2' },
+    });
+  });
+
   it('não abre silenciosamente diário truncado ou resultado adulterado', async () => {
     const root = await makeRoot();
     const storageRoot = join(root, 'workspace');
@@ -259,6 +322,83 @@ describe('editorial project store', () => {
     await expect(store.recover(PROJECT_ID)).resolves.toMatchObject({
       ok: false,
       error: { code: 'unsafe_storage' },
+    });
+  });
+
+  describe('estado de reprocessamento (lock e idempotência)', () => {
+    const REQUEST_ID = '77777777-7777-4777-8777-777777777777';
+
+    const reprocessingFixture = (
+      overrides: Partial<{
+        status:
+          'running' | 'awaiting_promotion' | 'completed' | 'conflicted' | 'failed' | 'cancelled';
+        resultingRevisionHash: string | null;
+        conflictCode: string | null;
+      }> = {},
+    ) => ({
+      schemaVersion: 1 as const,
+      projectId: PROJECT_ID,
+      requestId: REQUEST_ID,
+      incidentId: null,
+      plan: 'from_source_snapshot' as const,
+      reason: 'Nova versão do parser oficial.',
+      expectedRevisionHash: 'a'.repeat(64),
+      status: overrides.status ?? ('running' as const),
+      createdAt: '2026-08-19T12:00:00.000Z',
+      updatedAt: '2026-08-19T12:00:00.000Z',
+      resultingRevisionHash: overrides.resultingRevisionHash ?? null,
+      conflictCode: overrides.conflictCode ?? null,
+    });
+
+    it('grava e recupera o lock de reprocessamento sem tocar no diário', async () => {
+      const root = await makeRoot();
+      const storageRoot = join(root, 'workspace');
+      const history = makeHistory();
+      const store = createEditorialProjectStore(storageRoot);
+      await store.saveJournal(history.journal);
+      const journalPath = join(projectDirectory(storageRoot), 'journal.json');
+      const journalBefore = await readFile(journalPath, 'utf8');
+
+      const saved = await store.saveReprocessingState(reprocessingFixture());
+      expect(saved.status).toBe('running');
+      expect(await readFile(journalPath, 'utf8')).toBe(journalBefore);
+
+      const statePath = join(projectDirectory(storageRoot), 'reprocessing.json');
+      expect((await stat(statePath)).mode & 0o777).toBe(0o600);
+      expect(
+        (await readdir(projectDirectory(storageRoot))).some((name) => name.endsWith('.tmp')),
+      ).toBe(false);
+
+      const readerAfterRestart = createEditorialProjectStore(storageRoot);
+      await expect(readerAfterRestart.loadReprocessingState(PROJECT_ID)).resolves.toEqual(saved);
+    });
+
+    it('devolve null quando nenhuma solicitação de reprocessamento existe', async () => {
+      const root = await makeRoot();
+      const storageRoot = join(root, 'workspace');
+      const history = makeHistory();
+      const store = createEditorialProjectStore(storageRoot);
+      await store.saveJournal(history.journal);
+
+      await expect(store.loadReprocessingState(PROJECT_ID)).resolves.toBeNull();
+    });
+
+    it('sobrescreve o lock atomicamente quando o status avança', async () => {
+      const root = await makeRoot();
+      const storageRoot = join(root, 'workspace');
+      const history = makeHistory();
+      const store = createEditorialProjectStore(storageRoot);
+      await store.saveJournal(history.journal);
+      await store.saveReprocessingState(reprocessingFixture({ status: 'running' }));
+
+      const completed = await store.saveReprocessingState(
+        reprocessingFixture({ status: 'completed', resultingRevisionHash: 'b'.repeat(64) }),
+      );
+
+      await expect(store.loadReprocessingState(PROJECT_ID)).resolves.toEqual(completed);
+      expect(
+        (await readdir(projectDirectory(storageRoot))).some((name) => name.endsWith('.tmp')),
+      ).toBe(false);
     });
   });
 });

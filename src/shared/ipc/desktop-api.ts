@@ -46,6 +46,12 @@ import type {
   ValidateEditorialResult,
 } from './editorial.js';
 import type {
+  GetMetadataStateCommand,
+  GetMetadataStateResult,
+  UpdateMetadataCommand,
+  UpdateMetadataResult,
+} from './metadata.js';
+import type {
   GetPublicationDiffCommand,
   ListPublicationHistoryCommand,
   PreparePublicationCommand,
@@ -84,6 +90,25 @@ import type {
   ListSourceCatalogCommand,
   ListSourceCatalogResult,
 } from './sources.js';
+import type {
+  AuditEventDetailResult,
+  AuditEventIdCommand,
+  AuditQueryCommand,
+  AuditQueryResult,
+  AuditTimelineCommand,
+  AuditTimelineResult,
+  EvidenceExcerptResult,
+  IncidentDetailResult,
+  IncidentIdCommand,
+  OpenEvidenceCommand,
+  RecordIncidentNoteCommand,
+} from './audit.js';
+import type {
+  GetReprocessingStateCommand,
+  GetReprocessingStateResult,
+  RequestReprocessingCommand,
+  RequestReprocessingResult,
+} from './reprocessing.js';
 
 export const DESKTOP_API_VERSION = 1 as const;
 export const APP_GET_VERSION_CHANNEL = 'app:get-version' as const;
@@ -107,10 +132,14 @@ export const DESKTOP_CAPABILITIES = Object.freeze([
   'editorial.confirmWarning',
   'editorial.validate',
   'editorial.approve',
+  'metadata.getState',
+  'metadata.update',
   'export.chooseDestination',
   'export.write',
   'export.chooseBatchDestination',
   'export.writeBatch',
+  'reprocessing.request',
+  'reprocessing.getState',
   'publication.prepare',
   'publication.execute',
   'publication.getAttempt',
@@ -133,12 +162,19 @@ export const DESKTOP_CAPABILITIES = Object.freeze([
   'sources.archive',
   'sources.restore',
   'sources.requestCheck',
+  'audit.query',
+  'audit.getDetail',
+  'audit.getTimeline',
+  'audit.getIncidentDetail',
+  'audit.recordIncidentNote',
+  'audit.openEvidence',
 ] as const);
 
 export const DesktopErrorCodeSchema = z.enum([
   'INVALID_INPUT',
   'PAYLOAD_TOO_LARGE',
   'NOT_ALLOWED',
+  'CONFLICT',
   'NETWORK_NOT_ALLOWED',
   'NETWORK_DNS',
   'NETWORK_TIMEOUT',
@@ -219,6 +255,10 @@ export type LexDesktopApiV1 = Readonly<{
     validate(input: ValidateEditorialCommand): Promise<ValidateEditorialResult>;
     approve(input: ApproveEditorialCommand): Promise<ApproveEditorialResult>;
   }>;
+  metadata: Readonly<{
+    getState(input: GetMetadataStateCommand): Promise<GetMetadataStateResult>;
+    update(input: UpdateMetadataCommand): Promise<UpdateMetadataResult>;
+  }>;
   export: Readonly<{
     chooseDestination(
       input: ChooseExportDestinationCommand,
@@ -228,6 +268,10 @@ export type LexDesktopApiV1 = Readonly<{
       input: ChooseBatchExportDestinationCommand,
     ): Promise<ChooseBatchExportDestinationResult>;
     writeBatch(input: WriteBatchExportCommand): Promise<WriteBatchExportResult>;
+  }>;
+  reprocessing: Readonly<{
+    request(input: RequestReprocessingCommand): Promise<RequestReprocessingResult>;
+    getState(input: GetReprocessingStateCommand): Promise<GetReprocessingStateResult>;
   }>;
   publication: Readonly<{
     prepare(input: PreparePublicationCommand): Promise<PreparePublicationResult>;
@@ -265,6 +309,14 @@ export type LexDesktopApiV1 = Readonly<{
     restore(input: ActivateSourceBindingCommand): Promise<ActivateSourceBindingResult>;
     requestCheck(input: RequestSourceCheckCommand): Promise<RequestSourceCheckResult>;
   }>;
+  audit: Readonly<{
+    query(input: AuditQueryCommand): Promise<AuditQueryResult>;
+    getDetail(input: AuditEventIdCommand): Promise<AuditEventDetailResult>;
+    getTimeline(input: AuditTimelineCommand): Promise<AuditTimelineResult>;
+    getIncidentDetail(input: IncidentIdCommand): Promise<IncidentDetailResult>;
+    recordIncidentNote(input: RecordIncidentNoteCommand): Promise<IncidentDetailResult>;
+    openEvidence(input: OpenEvidenceCommand): Promise<EvidenceExcerptResult>;
+  }>;
 }>;
 
 export const APP_GET_VERSION_INPUT: AppGetVersionInput = Object.freeze({});
@@ -274,6 +326,8 @@ export const createFailedResult = <Value>(code: DesktopErrorCode): IpcResult<Val
   error: {
     code,
     message: 'A operação desktop não pôde ser concluída.',
-    retryable: ['FAILED', 'NETWORK_DNS', 'NETWORK_TIMEOUT', 'NETWORK_HTTP'].includes(code),
+    retryable: ['FAILED', 'CONFLICT', 'NETWORK_DNS', 'NETWORK_TIMEOUT', 'NETWORK_HTTP'].includes(
+      code,
+    ),
   },
 });

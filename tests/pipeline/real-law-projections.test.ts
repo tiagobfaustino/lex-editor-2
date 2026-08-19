@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import {
   analisar,
+  applyEditorialCommand,
+  calculateRevisionHash,
   decodificarHtmlPlanalto,
   extrairLinhas,
   formatar,
@@ -14,6 +16,7 @@ import {
   reconhecer,
   validarIdentifiedNormaAst,
   validarMarkdownCanonico,
+  type EditorialCommand,
   type IdentifiedNormaAST,
   type MetadadosDaNorma,
   type ParsedNormaAST,
@@ -177,6 +180,12 @@ const writeOrReadGolden = (law: LawName, profile: string, markdown: string): str
   return readFileSync(path, 'utf8');
 };
 
+const markdownBody = (markdown: string): string => {
+  const end = markdown.indexOf('\n---\n', 4);
+  if (end < 0) throw new Error('Markdown sem frontmatter canônico.');
+  return markdown.slice(end + 5);
+};
+
 describe('snapshots oficiais offline da Feature 009', () => {
   it.each(['l9099', 'l9605'] as const)('%s preserva hashes e reproduz a entrada', (law) => {
     const manifest = readManifest(law);
@@ -222,6 +231,44 @@ describe('projeções reais completas e vigentes', () => {
       expect(current).toContain('projection_profile: "current_only"');
       expect(current).not.toContain('~~');
       expect(blockIds(ast).every((id) => complete.includes(`^${id}`))).toBe(true);
+    },
+  );
+
+  it.each(['l9099', 'l9605', 'l10826'] as const)(
+    '%s preserva as duas projeções canônicas após edição de frontmatter',
+    (law) => {
+      const ast = identifiedLaw(law);
+      const original = structuredClone(ast);
+      const originalComplete = format(ast, 'complete_with_history');
+      const originalCurrent = format(ast, 'current_only');
+      const reviewedBranch = `${ast.ramo} revisado`;
+      const command: EditorialCommand = {
+        schemaVersion: 1,
+        commandId: '11111111-1111-4111-8111-111111111111',
+        localActorId: 'editor-local-real-laws',
+        occurredAt: '2026-08-14T12:00:00.000-03:00',
+        expectedRevisionHash: calculateRevisionHash(ast, sha256),
+        operation: {
+          kind: 'set_law_metadata',
+          changes: { ramo: reviewedBranch },
+          reason: 'Regressão editorial nas leis reais de referência.',
+        },
+      };
+
+      const applied = applyEditorialCommand(ast, command, sha256);
+
+      expect(applied.ok).toBe(true);
+      expect(ast).toEqual(original);
+      if (!applied.ok) throw new Error(`Edição de metadados rejeitada para ${law}.`);
+      const complete = format(applied.ast, 'complete_with_history');
+      const current = format(applied.ast, 'current_only');
+      expect(complete).toContain(`ramo: ${JSON.stringify(reviewedBranch)}`);
+      expect(current).toContain(`ramo: ${JSON.stringify(reviewedBranch)}`);
+      expect(markdownBody(complete)).toBe(markdownBody(originalComplete));
+      expect(markdownBody(current)).toBe(markdownBody(originalCurrent));
+      expect(validarMarkdownCanonico(complete, applied.ast, 'complete_with_history')).toEqual([]);
+      expect(validarMarkdownCanonico(current, applied.ast, 'current_only')).toEqual([]);
+      expect(blockIds(applied.ast)).toEqual(blockIds(original));
     },
   );
 

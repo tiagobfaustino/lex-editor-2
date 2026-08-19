@@ -8,6 +8,13 @@ import { isPlanaltoNetworkError } from '../import/planalto-source.js';
 
 export const DEFAULT_MAX_IPC_PAYLOAD_BYTES = 16 * 1024;
 
+export class DesktopIpcError extends Error {
+  constructor(readonly code: DesktopErrorCode) {
+    super(code);
+    this.name = 'DesktopIpcError';
+  }
+}
+
 type MaybePromise<Value> = Promise<Value> | Value;
 
 export type ValidatedIpcHandlerOptions<Input, Output> = Readonly<{
@@ -33,6 +40,10 @@ const errorDetails: Record<DesktopErrorCode, Readonly<{ message: string; retryab
   NOT_ALLOWED: {
     message: 'A operação não é permitida neste contexto.',
     retryable: false,
+  },
+  CONFLICT: {
+    message: 'A revisão mudou; recarregue os dados antes de confirmar novamente.',
+    retryable: true,
   },
   NETWORK_NOT_ALLOWED: {
     message: 'A URL ou o destino de rede não é permitido.',
@@ -154,6 +165,9 @@ export const executeValidatedIpcHandler = async <Input, Output>(
       value: parsedOutput.data,
     };
   } catch (error) {
+    if (error instanceof DesktopIpcError) {
+      return failed(error.code);
+    }
     if (isPlanaltoNetworkError(error) && error.code !== 'NETWORK_FAILED') {
       const message =
         error.code === 'NETWORK_HTTP' && error.httpStatus !== undefined

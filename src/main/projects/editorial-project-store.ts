@@ -5,9 +5,11 @@ import { lstat, mkdir, open, realpath, rename, unlink } from 'node:fs/promises';
 import { z } from 'zod';
 
 import {
+  calculateRevisionHash,
   editorialCheckpointSchema,
   parseEditorialJournal,
   replayEditorialJournal,
+  revisionHashSchema,
   type EditorialCheckpoint,
   type EditorialJournal,
   type IdentifiedNormaAST,
@@ -26,6 +28,32 @@ const PROJECT_ID_PATTERN =
 const sha256 = (value: string): string => createHash('sha256').update(value, 'utf8').digest('hex');
 
 type CheckpointIssue = 'missing_checkpoint' | 'invalid_checkpoint' | 'corrupt_checkpoint';
+
+export const REPROCESSING_STATUSES = [
+  'running',
+  'awaiting_promotion',
+  'completed',
+  'conflicted',
+  'failed',
+  'cancelled',
+] as const;
+
+export const ReprocessingStateSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  projectId: z.uuid(),
+  requestId: z.uuid(),
+  incidentId: z.uuid().nullable(),
+  plan: z.enum(['from_source_snapshot', 'from_identified_revision']),
+  reason: z.string().min(1).max(500),
+  expectedRevisionHash: revisionHashSchema,
+  status: z.enum(REPROCESSING_STATUSES),
+  createdAt: z.iso.datetime({ offset: true }),
+  updatedAt: z.iso.datetime({ offset: true }),
+  resultingRevisionHash: revisionHashSchema.nullable(),
+  conflictCode: z.string().min(1).max(200).nullable(),
+});
+
+export type ReprocessingState = z.infer<typeof ReprocessingStateSchema>;
 
 export type EditorialProjectRecoveryResult =
   | Readonly<{
@@ -53,12 +81,18 @@ export type EditorialProjectRecoveryResult =
 export type EditorialProjectStore = Readonly<{
   saveJournal(rawJournal: unknown): Promise<EditorialJournal>;
   saveCheckpoint(projectId: string, rawCheckpoint: unknown): Promise<EditorialCheckpoint>;
+  saveRevision(
+    rawJournal: unknown,
+    rawCheckpoint: unknown,
+  ): Promise<Readonly<{ journal: EditorialJournal; checkpoint: EditorialCheckpoint }>>;
   saveProjectionPreference(
     projectId: string,
     projectionProfile: ContentProjectionProfileDto,
   ): Promise<ContentProjectionProfileDto>;
   loadProjectionPreference(projectId: string): Promise<ContentProjectionProfileDto | null>;
   recover(projectId: string): Promise<EditorialProjectRecoveryResult>;
+  saveReprocessingState(rawState: unknown): Promise<ReprocessingState>;
+  loadReprocessingState(projectId: string): Promise<ReprocessingState | null>;
 }>;
 
 const ProjectionPreferenceFileSchema = z.strictObject({
@@ -261,6 +295,31 @@ export const createEditorialProjectStore = (storageRoot: string): EditorialProje
       return checkpoint;
     },
 
+    async saveRevision(rawJournal, rawCheckpoint) {
+      const journal = parseEditorialJournal(rawJournal, sha256);
+      const checkpoint = editorialCheckpointSchema.parse(rawCheckpoint);
+      if (
+        checkpoint.projectId !== journal.projectId ||
+        checkpoint.journalId !== journal.journalId ||
+        checkpoint.throughSequence !== journal.entries.length ||
+        checkpoint.revisionHash !==
+          (journal.entries.at(-1)?.resultRevisionHash ?? journal.base.revisionHash) ||
+        calculateRevisionHash(checkpoint.ast, sha256) !== checkpoint.revisionHash
+      ) {
+        throw new StoreError(
+          'journal_corrupt',
+          'O checkpoint não representa a revisão final do diário informado.',
+        );
+      }
+      const directory = await prepareProjectDirectory(projectsRoot, journal.projectId, true);
+      // O checkpoint futuro é escrito primeiro. Se a segunda escrita falhar, o
+      // diário anterior continua sendo a autoridade e o checkpoint é ignorado
+      // com segurança na recuperação.
+      await writeJsonAtomically(join(directory, 'checkpoint.json'), checkpoint);
+      await writeJsonAtomically(join(directory, 'journal.json'), journal);
+      return { journal, checkpoint };
+    },
+
     async saveProjectionPreference(projectId, projectionProfile) {
       assertProjectId(projectId);
       const preference = ProjectionPreferenceFileSchema.parse({
@@ -278,6 +337,20 @@ export const createEditorialProjectStore = (storageRoot: string): EditorialProje
       const rawPreference = await readJsonFile(join(directory, 'projection-preference.json'), true);
       if (rawPreference === undefined) return null;
       return ProjectionPreferenceFileSchema.parse(rawPreference).projectionProfile;
+    },
+
+    async saveReprocessingState(rawState) {
+      const state = ReprocessingStateSchema.parse(rawState);
+      const directory = await prepareProjectDirectory(projectsRoot, state.projectId, true);
+      await writeJsonAtomically(join(directory, 'reprocessing.json'), state);
+      return state;
+    },
+
+    async loadReprocessingState(projectId) {
+      const directory = await prepareProjectDirectory(projectsRoot, projectId, false);
+      const rawState = await readJsonFile(join(directory, 'reprocessing.json'), true);
+      if (rawState === undefined) return null;
+      return ReprocessingStateSchema.parse(rawState);
     },
 
     async recover(projectId) {

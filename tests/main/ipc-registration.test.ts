@@ -24,6 +24,7 @@ import {
   type DesktopUpdateIpcCapabilities,
 } from '../../src/main/ipc/register.js';
 import { PlanaltoNetworkError } from '../../src/main/import/planalto-source.js';
+import { DesktopIpcError } from '../../src/main/ipc/validated-handler.js';
 import { resolveRendererLocation } from '../../src/main/renderer-location.js';
 import {
   APP_GET_VERSION_CHANNEL,
@@ -56,6 +57,23 @@ import {
   SOURCE_IMPORT_URL_CHANNEL,
 } from '../../src/shared/ipc/import.js';
 import type { SourceSummaryDto } from '../../src/shared/ipc/import.js';
+import {
+  REPROCESSING_GET_STATE_CHANNEL,
+  REPROCESSING_REQUEST_CHANNEL,
+} from '../../src/shared/ipc/reprocessing.js';
+import {
+  AUDIT_GET_DETAIL_CHANNEL,
+  AUDIT_GET_INCIDENT_CHANNEL,
+  AUDIT_GET_TIMELINE_CHANNEL,
+  AUDIT_OPEN_EVIDENCE_CHANNEL,
+  AUDIT_QUERY_CHANNEL,
+  AUDIT_RECORD_INCIDENT_NOTE_CHANNEL,
+} from '../../src/shared/ipc/audit.js';
+import {
+  METADATA_GET_STATE_CHANNEL,
+  METADATA_UPDATE_CHANNEL,
+  type MetadataStateDto,
+} from '../../src/shared/ipc/metadata.js';
 import {
   PUBLICATION_EXECUTE_CHANNEL,
   PUBLICATION_GET_ATTEMPT_CHANNEL,
@@ -92,6 +110,7 @@ const DESTINATION_ID = '44444444-4444-4444-8444-444444444444';
 const UPDATE_ID = '55555555-5555-4555-8555-555555555555';
 const REFERENCE_ID = 'a'.repeat(64);
 const TEST_EVIDENCE_ID = '66666666-6666-4666-8666-666666666666';
+const REQUEST_ID = '77777777-7777-4777-8777-777777777777';
 
 const source: SourceSummaryDto = {
   sourceId: SOURCE_ID,
@@ -118,6 +137,97 @@ const editorialState: EditorialStateDto = {
   canExport: false,
   diagnostics: [],
   reviewTargets: [],
+};
+
+const editableField = <Value>(
+  value: Value,
+  origin: 'import' | 'official_source' | 'editorial',
+) => ({
+  value,
+  origin,
+  mutability: 'editable' as const,
+  editable: true,
+  blockedReason: null,
+});
+const readOnlyField = <Value>(
+  value: Value,
+  origin:
+    | 'source_catalog'
+    | 'formatter'
+    | 'ast_structure'
+    | 'publication'
+    | 'projection'
+    | 'reference_catalog'
+    | 'reconciliation',
+) => ({
+  value,
+  origin,
+  mutability: 'read_only' as const,
+  editable: false,
+  blockedReason:
+    origin === 'source_catalog' ? ('source_managed' as const) : ('system_managed' as const),
+});
+const metadataState: MetadataStateDto = {
+  projectId: PROJECT_ID,
+  revisionHash: 'c'.repeat(64),
+  journalSequence: 0,
+  publicationHistoryState: 'unknown',
+  fields: {
+    titulo: editableField('Código Penal', 'import'),
+    sigla: {
+      value: 'cp',
+      origin: 'import',
+      mutability: 'prepublication_only',
+      editable: false,
+      blockedReason: 'publication_history_unknown',
+    },
+    tipoNorma: {
+      value: 'código',
+      origin: 'import',
+      mutability: 'prepublication_only',
+      editable: false,
+      blockedReason: 'publication_history_unknown',
+    },
+    numero: {
+      value: '2848',
+      origin: 'official_source',
+      mutability: 'prepublication_only',
+      editable: false,
+      blockedReason: 'publication_history_unknown',
+    },
+    ano: {
+      value: 1940,
+      origin: 'official_source',
+      mutability: 'prepublication_only',
+      editable: false,
+      blockedReason: 'publication_history_unknown',
+    },
+    ramo: editableField('direito penal', 'editorial'),
+    fonte: readOnlyField('https://www.planalto.gov.br/', 'source_catalog'),
+    dataPublicacao: editableField('1940-12-07', 'official_source'),
+    dataAtualizacaoLegal: editableField('2026-08-14', 'official_source'),
+    dataFormatacaoVinculex: readOnlyField('2026-08-14', 'formatter'),
+    totalArtigos: readOnlyField(1, 'ast_structure'),
+    versaoVinculex: readOnlyField('1.0.0', 'publication'),
+    legalStatus: editableField('vigente', 'editorial'),
+    publicationStatus: readOnlyField('draft', 'publication'),
+    tags: editableField([], 'editorial'),
+    revogadaPor: editableField(null, 'editorial'),
+    redacoesDadasPor: readOnlyField(0, 'ast_structure'),
+    idsDepreciados: {
+      ...readOnlyField(0, 'reconciliation'),
+      blockedReason: 'derived_value',
+    },
+    fontesSecundarias: readOnlyField(0, 'source_catalog'),
+    projectionProfile: {
+      ...readOnlyField('complete_with_history', 'projection'),
+      blockedReason: 'derived_value',
+    },
+    aliases: {
+      ...readOnlyField([], 'reference_catalog'),
+      blockedReason: 'derived_value',
+    },
+  },
 };
 
 const capabilities = (): DesktopImportIpcCapabilities => ({
@@ -206,6 +316,14 @@ const capabilities = (): DesktopImportIpcCapabilities => ({
     authorize: vi.fn(() => true),
     handle: vi.fn(() => ({ ...editorialState, reviewApprovalStatus: 'approved' as const })),
   },
+  getMetadataState: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => metadataState),
+  },
+  updateMetadata: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => ({ ...metadataState, revisionHash: 'd'.repeat(64), journalSequence: 1 })),
+  },
   chooseExportDestination: {
     authorize: vi.fn(() => true),
     handle: vi.fn(() => ({ destinationId: DESTINATION_ID, displayName: 'Documentos' })),
@@ -214,6 +332,7 @@ const capabilities = (): DesktopImportIpcCapabilities => ({
     authorize: vi.fn(() => true),
     handle: vi.fn(() => ({
       projectId: PROJECT_ID,
+      revisionHash: 'c'.repeat(64),
       destinationId: DESTINATION_ID,
       fileName: 'codigo-penal.md',
       projectionProfile: 'complete_with_history' as const,
@@ -238,6 +357,7 @@ const capabilities = (): DesktopImportIpcCapabilities => ({
           title: 'Código Penal',
           sigla: 'cp',
           batchExportStatus: 'succeeded' as const,
+          revisionHash: 'c'.repeat(64),
           directoryName: 'codigo-penal',
           markdownFileName: 'cp.md',
           updateFileName: 'UPDATE.md' as const,
@@ -246,6 +366,24 @@ const capabilities = (): DesktopImportIpcCapabilities => ({
         },
       ],
     })),
+  },
+  requestReprocessing: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => ({
+      requestId: REQUEST_ID,
+      projectId: PROJECT_ID,
+      incidentId: null,
+      jobId: JOB_ID,
+      plan: 'from_source_snapshot' as const,
+      reason: 'Nova versão do parser.',
+      status: 'running' as const,
+      resultingRevisionHash: null,
+      conflictCode: null,
+    })),
+  },
+  getReprocessingState: {
+    authorize: vi.fn(() => true),
+    handle: vi.fn(() => null),
   },
 });
 
@@ -467,10 +605,14 @@ describe('registerIpcHandlers', () => {
       EDITORIAL_CONFIRM_WARNING_CHANNEL,
       EDITORIAL_VALIDATE_CHANNEL,
       EDITORIAL_APPROVE_CHANNEL,
+      METADATA_GET_STATE_CHANNEL,
+      METADATA_UPDATE_CHANNEL,
       EXPORT_CHOOSE_DESTINATION_CHANNEL,
       EXPORT_WRITE_CHANNEL,
       EXPORT_CHOOSE_BATCH_DESTINATION_CHANNEL,
       EXPORT_WRITE_BATCH_CHANNEL,
+      REPROCESSING_REQUEST_CHANNEL,
+      REPROCESSING_GET_STATE_CHANNEL,
       PUBLICATION_PREPARE_CHANNEL,
       PUBLICATION_EXECUTE_CHANNEL,
       PUBLICATION_GET_ATTEMPT_CHANNEL,
@@ -493,6 +635,12 @@ describe('registerIpcHandlers', () => {
       SOURCES_ARCHIVE_CHANNEL,
       SOURCES_RESTORE_CHANNEL,
       SOURCES_REQUEST_CHECK_CHANNEL,
+      AUDIT_QUERY_CHANNEL,
+      AUDIT_GET_DETAIL_CHANNEL,
+      AUDIT_GET_TIMELINE_CHANNEL,
+      AUDIT_GET_INCIDENT_CHANNEL,
+      AUDIT_RECORD_INCIDENT_NOTE_CHANNEL,
+      AUDIT_OPEN_EVIDENCE_CHANNEL,
     ];
 
     expect([...handlers.keys()]).toEqual(expectedChannels);
@@ -536,6 +684,9 @@ describe('registerIpcHandlers', () => {
       handlers.get(EDITORIAL_GET_STATE_CHANNEL)?.(event, { projectId: PROJECT_ID }),
     ).resolves.toMatchObject({ ok: true, value: { canApprove: true } });
     await expect(
+      handlers.get(METADATA_GET_STATE_CHANNEL)?.(event, { projectId: PROJECT_ID }),
+    ).resolves.toMatchObject({ ok: true, value: { revisionHash: 'c'.repeat(64) } });
+    await expect(
       handlers.get(EXPORT_CHOOSE_DESTINATION_CHANNEL)?.(event, {
         projectId: PROJECT_ID,
         projectionProfile: 'complete_with_history',
@@ -558,6 +709,19 @@ describe('registerIpcHandlers', () => {
     await expect(
       handlers.get(EXPORT_WRITE_BATCH_CHANNEL)?.(event, { destinationId: DESTINATION_ID }),
     ).resolves.toMatchObject({ ok: true, value: { succeeded: 1 } });
+    await expect(
+      handlers.get(REPROCESSING_REQUEST_CHANNEL)?.(event, {
+        projectId: PROJECT_ID,
+        requestId: REQUEST_ID,
+        plan: 'from_source_snapshot',
+        expectedRevisionHash: 'c'.repeat(64),
+        reason: 'Nova versão do parser.',
+        incidentId: null,
+      }),
+    ).resolves.toMatchObject({ ok: true, value: { status: 'running' } });
+    await expect(
+      handlers.get(REPROCESSING_GET_STATE_CHANNEL)?.(event, { projectId: PROJECT_ID }),
+    ).resolves.toEqual({ ok: true, value: null });
     await expect(
       handlers.get(SOURCES_LIST_CHANNEL)?.(event, { cursor: null, limit: 25 }),
     ).resolves.toEqual({
@@ -597,6 +761,10 @@ describe('registerIpcHandlers', () => {
       },
       navigateLegalReference: {
         ...defaults.navigateLegalReference,
+        authorize: vi.fn(() => false),
+      },
+      requestReprocessing: {
+        ...defaults.requestReprocessing,
         authorize: vi.fn(() => false),
       },
     };
@@ -641,6 +809,27 @@ describe('registerIpcHandlers', () => {
       }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
     await expect(
+      handlers.get(REPROCESSING_REQUEST_CHANNEL)?.(forgedEvent, {
+        projectId: PROJECT_ID,
+        requestId: REQUEST_ID,
+        plan: 'from_source_snapshot',
+        expectedRevisionHash: 'c'.repeat(64),
+        reason: 'Tentativa forjada.',
+        incidentId: null,
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'NOT_ALLOWED' } });
+    await expect(
+      handlers.get(REPROCESSING_REQUEST_CHANNEL)?.(event, {
+        projectId: PROJECT_ID,
+        requestId: REQUEST_ID,
+        plan: 'from_source_snapshot',
+        expectedRevisionHash: 'c'.repeat(64),
+        reason: 'Tentativa direta.',
+        incidentId: null,
+        jobId: JOB_ID,
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+    await expect(
       handlers.get(EDITORIAL_CORRECT_TEXT_CHANNEL)?.(event, {
         projectId: PROJECT_ID,
         previewNodeId: SOURCE_ID,
@@ -649,6 +838,25 @@ describe('registerIpcHandlers', () => {
         domainNodeId: 'no-art-1',
       }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+    await expect(
+      handlers.get(METADATA_GET_STATE_CHANNEL)?.(forgedEvent, { projectId: PROJECT_ID }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'NOT_ALLOWED' } });
+    await expect(
+      handlers.get(METADATA_UPDATE_CHANNEL)?.(event, {
+        projectId: PROJECT_ID,
+        expectedRevisionHash: 'c'.repeat(64),
+        changes: { fonte: 'https://example.com/forjada' },
+        reason: 'Tentativa direta.',
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+    await expect(
+      handlers.get(METADATA_UPDATE_CHANNEL)?.(event, {
+        projectId: PROJECT_ID,
+        expectedRevisionHash: 'c'.repeat(64),
+        changes: { titulo: 'x'.repeat(40_000) },
+        reason: 'Payload excessivo.',
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'PAYLOAD_TOO_LARGE' } });
     await expect(
       handlers.get(EXPORT_WRITE_CHANNEL)?.(event, {
         projectId: PROJECT_ID,
@@ -668,6 +876,7 @@ describe('registerIpcHandlers', () => {
     expect(importCapabilities.importFromUrl.handle).not.toHaveBeenCalled();
     expect(importCapabilities.startProcessing.handle).not.toHaveBeenCalled();
     expect(importCapabilities.correctEditorialText.handle).not.toHaveBeenCalled();
+    expect(importCapabilities.updateMetadata.handle).not.toHaveBeenCalled();
     expect(importCapabilities.writeExport.handle).not.toHaveBeenCalled();
     expect(importCapabilities.writeBatchExport.handle).not.toHaveBeenCalled();
     expect(importCapabilities.getLegalReference.handle).not.toHaveBeenCalled();
@@ -691,6 +900,49 @@ describe('registerIpcHandlers', () => {
       }),
     ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
     expect(updates.rejectUpdate.handle).not.toHaveBeenCalled();
+  });
+
+  it('preserva conflito de revisão e recusa resposta de metadados excessiva', async () => {
+    const defaults = capabilities();
+    const conflicted: DesktopImportIpcCapabilities = {
+      ...defaults,
+      updateMetadata: {
+        authorize: vi.fn(() => true),
+        handle: vi.fn(() => {
+          throw new DesktopIpcError('CONFLICT');
+        }),
+      },
+    };
+    const { event, handlers } = setup(conflicted);
+    await expect(
+      handlers.get(METADATA_UPDATE_CHANNEL)?.(event, {
+        projectId: PROJECT_ID,
+        expectedRevisionHash: 'c'.repeat(64),
+        changes: { titulo: 'Código Penal revisado' },
+        reason: 'Conferido na fonte oficial.',
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'CONFLICT' } });
+
+    const leaking: DesktopImportIpcCapabilities = {
+      ...defaults,
+      getMetadataState: {
+        authorize: vi.fn(() => true),
+        handle: vi.fn(
+          () =>
+            ({
+              ...metadataState,
+              ast: { astPhase: 'identified' },
+              repositoryPath: '/tmp/segredo',
+            }) as unknown as MetadataStateDto,
+        ),
+      },
+    };
+    const leakedSetup = setup(leaking);
+    const leaked = await leakedSetup.handlers.get(METADATA_GET_STATE_CHANNEL)?.(leakedSetup.event, {
+      projectId: PROJECT_ID,
+    });
+    expect(leaked).toMatchObject({ ok: false, error: { code: 'FAILED' } });
+    expect(JSON.stringify(leaked)).not.toMatch(/astPhase|repositoryPath|segredo/iu);
   });
 
   it('valida intenção administrativa sem aceitar ator, papel, token ou resposta privilegiada', async () => {

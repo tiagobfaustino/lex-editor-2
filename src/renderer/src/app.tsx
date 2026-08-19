@@ -17,10 +17,17 @@ import type {
   EditorialStateDto,
 } from '../../shared/ipc/editorial.js';
 import type { IpcResult } from '../../shared/ipc/desktop-api.js';
+import type {
+  MetadataStateDto,
+  UpdateMetadataCommand,
+  UpdateMetadataResult,
+} from '../../shared/ipc/metadata.js';
+import { MetadataPanel } from './features/metadata/metadata-panel.js';
 import { PublicationPanel } from './features/publication/publication-panel.js';
 import { LegalReferenceText } from './features/preview/legal-reference-link.js';
 import { SourcesPanel } from './features/sources/sources-panel.js';
 import { UpdatesPanel } from './features/updates/updates-panel.js';
+import { AuditPanel } from './features/audit/audit-panel.js';
 
 type DesktopIntegrationState =
   | Readonly<{ kind: 'loading' }>
@@ -55,6 +62,7 @@ const BATCH_EXPORT_FAILURE_LABELS: Readonly<Record<BatchExportFailureCode, strin
 const navigationItems = [
   { label: 'Importação', detail: 'Nova fonte', href: '#importacao' },
   { label: 'Preview e edição', detail: 'Revisão jurídica', href: '#preview' },
+  { label: 'Metadados', detail: 'Frontmatter validado', href: '#metadados' },
   { label: 'Publicação', detail: 'Release seguro', href: '#publicacao' },
   {
     label: 'Fila de atualizações',
@@ -66,6 +74,7 @@ const navigationItems = [
     detail: 'Origens oficiais',
     href: '#fontes',
   },
+  { label: 'Logs e diagnóstico', detail: 'Auditoria operacional', href: '#auditoria' },
 ] as const;
 
 const Navigation = ({ hasDocument }: { hasDocument: boolean }): React.JSX.Element => (
@@ -345,7 +354,9 @@ const PreviewPanel = ({
       <header className="panel-header preview-header">
         <div>
           <p className="eyebrow">Documento</p>
-          <h2 id="preview-title">Preview</h2>
+          <h2 id="preview-title" tabIndex={-1}>
+            Preview
+          </h2>
         </div>
         <div className="document-state">
           <span className="state-dot" aria-hidden="true" />
@@ -774,6 +785,7 @@ export const App = (): React.JSX.Element => {
   const [pages, setPages] = useState<ReadonlyMap<string, PreviewPageDto>>(() => new Map());
   const [diagnostics, setDiagnostics] = useState<readonly DiagnosticDto[]>([]);
   const [editorial, setEditorial] = useState<EditorialStateDto | null>(null);
+  const [metadata, setMetadata] = useState<MetadataStateDto | null>(null);
   const [editorialSaveState, setEditorialSaveState] = useState<EditorialSaveState>('idle');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -828,21 +840,29 @@ export const App = (): React.JSX.Element => {
   const loadProject = useCallback(async (projectId: string, revealPreviewNodeId?: string) => {
     const api = window.lexDesktop;
     if (api === undefined) return false;
-    const [documentResult, pageResult, diagnosticsResult, editorialResult, revealResult] =
-      await Promise.all([
-        api.preview.getDocument({ projectId }),
-        api.preview.getPage({ projectId, parentPreviewNodeId: null, cursor: null, limit: 25 }),
-        api.diagnostics.getPage({ projectId, cursor: null, limit: 100 }),
-        api.editorial.getState({ projectId }),
-        revealPreviewNodeId === undefined
-          ? Promise.resolve(null)
-          : api.preview.revealNode({ projectId, previewNodeId: revealPreviewNodeId }),
-      ]);
+    const [
+      documentResult,
+      pageResult,
+      diagnosticsResult,
+      editorialResult,
+      metadataResult,
+      revealResult,
+    ] = await Promise.all([
+      api.preview.getDocument({ projectId }),
+      api.preview.getPage({ projectId, parentPreviewNodeId: null, cursor: null, limit: 25 }),
+      api.diagnostics.getPage({ projectId, cursor: null, limit: 100 }),
+      api.editorial.getState({ projectId }),
+      api.metadata.getState({ projectId }),
+      revealPreviewNodeId === undefined
+        ? Promise.resolve(null)
+        : api.preview.revealNode({ projectId, previewNodeId: revealPreviewNodeId }),
+    ]);
     if (
       !documentResult.ok ||
       !pageResult.ok ||
       !diagnosticsResult.ok ||
       !editorialResult.ok ||
+      !metadataResult.ok ||
       (revealPreviewNodeId !== undefined && revealResult?.ok !== true)
     ) {
       setError('O processamento terminou sem um preview disponível. Consulte os diagnósticos.');
@@ -871,6 +891,7 @@ export const App = (): React.JSX.Element => {
       setPages(nextPages);
       setDiagnostics(diagnosticsResult.value.items);
       setEditorial(editorialResult.value);
+      setMetadata(metadataResult.value);
       setEditorialSaveState('saved');
       setSelectedId(revealPreviewNodeId ?? null);
       setBatchProjects((current) => {
@@ -1171,6 +1192,37 @@ export const App = (): React.JSX.Element => {
     [document, runEditorialAction],
   );
 
+  const saveMetadata = useCallback(
+    async (command: UpdateMetadataCommand): Promise<UpdateMetadataResult> => {
+      const api = window.lexDesktop;
+      if (api === undefined) {
+        return {
+          ok: false,
+          error: {
+            code: 'FAILED',
+            message: 'A integração desktop não está disponível.',
+            retryable: true,
+          },
+        };
+      }
+      const result = await api.metadata.update(command);
+      if (!result.ok) return result;
+      setMetadata(result.value);
+      await loadProject(result.value.projectId);
+      return result;
+    },
+    [loadProject],
+  );
+
+  const reloadMetadata = useCallback(async (): Promise<MetadataStateDto | null> => {
+    const api = window.lexDesktop;
+    if (api === undefined || document === null) return null;
+    const result = await api.metadata.getState({ projectId: document.projectId });
+    if (!result.ok) return null;
+    setMetadata(result.value);
+    return result.value;
+  }, [document]);
+
   const exportMarkdown = useCallback(async () => {
     if (document === null || window.lexDesktop === undefined) return;
     setExportMessage(null);
@@ -1314,6 +1366,7 @@ export const App = (): React.JSX.Element => {
             }
             onReturnToReference={() => void returnToLegalReference()}
           />
+          <MetadataPanel state={metadata} onSave={saveMetadata} onReload={reloadMetadata} />
           <PublicationPanel
             key={document?.projectId ?? 'no-project'}
             projectId={document?.projectId ?? null}
@@ -1324,6 +1377,7 @@ export const App = (): React.JSX.Element => {
           />
           <UpdatesPanel />
           <SourcesPanel />
+          <AuditPanel currentProjectId={document?.projectId ?? null} />
           <ValidationPanel
             diagnostics={diagnostics}
             editorial={editorial}

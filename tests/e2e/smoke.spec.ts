@@ -155,13 +155,16 @@ test('não entrega Node, Electron ou ipcRenderer ao renderer', async () => {
   expect(reachable.electron).toBe('undefined');
   expect(reachable.bridgeKeys).toEqual([
     'app',
+    'audit',
     'capabilities',
     'diagnostics',
     'editorial',
     'export',
+    'metadata',
     'pipeline',
     'preview',
     'publication',
+    'reprocessing',
     'source',
     'sources',
     'updates',
@@ -181,6 +184,7 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
           preview: Record<string, unknown>;
           diagnostics: Record<string, unknown>;
           editorial: Record<string, unknown>;
+          metadata: Record<string, unknown>;
           publication: Record<string, unknown>;
           updates: Record<string, unknown>;
           sources: Record<string, unknown>;
@@ -209,6 +213,7 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
       previewKeys: Object.keys(api.preview).sort(),
       diagnosticKeys: Object.keys(api.diagnostics).sort(),
       editorialKeys: Object.keys(api.editorial).sort(),
+      metadataKeys: Object.keys(api.metadata).sort(),
       publicationKeys: Object.keys(api.publication).sort(),
       updatesKeys: Object.keys(api.updates).sort(),
       sourcesKeys: Object.keys(api.sources).sort(),
@@ -239,10 +244,14 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
     'editorial.confirmWarning',
     'editorial.validate',
     'editorial.approve',
+    'metadata.getState',
+    'metadata.update',
     'export.chooseDestination',
     'export.write',
     'export.chooseBatchDestination',
     'export.writeBatch',
+    'reprocessing.request',
+    'reprocessing.getState',
     'publication.prepare',
     'publication.execute',
     'publication.getAttempt',
@@ -265,6 +274,12 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
     'sources.archive',
     'sources.restore',
     'sources.requestCheck',
+    'audit.query',
+    'audit.getDetail',
+    'audit.getTimeline',
+    'audit.getIncidentDetail',
+    'audit.recordIncidentNote',
+    'audit.openEvidence',
   ]);
   expect(bridge?.appKeys).toEqual(['getVersion']);
   expect(bridge?.sourceKeys).toEqual(['importFromUrl', 'selectLocal']);
@@ -286,6 +301,7 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
     'getState',
     'validate',
   ]);
+  expect(bridge?.metadataKeys).toEqual(['getState', 'update']);
   expect(bridge?.publicationKeys).toEqual([
     'execute',
     'getAttempt',
@@ -433,6 +449,8 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
       'export:write',
       'export:choose-batch-destination',
       'export:write-batch',
+      'reprocessing:request',
+      'reprocessing:get-state',
       'updates:list',
       'updates:get-detail',
       'updates:get-counts',
@@ -448,6 +466,12 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
       'sources:archive',
       'sources:restore',
       'sources:request-check',
+      'audit:query',
+      'audit:get-detail',
+      'audit:get-timeline',
+      'audit:get-incident',
+      'audit:record-incident-note',
+      'audit:open-evidence',
       'execute',
       'shell',
       'readFile',
@@ -491,6 +515,8 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
     'export:write',
     'export:choose-batch-destination',
     'export:write-batch',
+    'reprocessing:request',
+    'reprocessing:get-state',
     'updates:list',
     'updates:get-detail',
     'updates:get-counts',
@@ -506,5 +532,11 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
     'sources:archive',
     'sources:restore',
     'sources:request-check',
+    'audit:query',
+    'audit:get-detail',
+    'audit:get-timeline',
+    'audit:get-incident',
+    'audit:record-incident-note',
+    'audit:open-evidence',
   ]);
 });

@@ -11,6 +11,7 @@ import {
   calculateRevisionHash,
   decodificarHtmlPlanalto,
   collectConfirmedWarningFingerprints,
+  createEditorialCheckpoint,
   createLegalNormCatalog,
   detectLegalReferences,
   contarBlockIds,
@@ -26,7 +27,12 @@ import {
   percorrer,
   projectContent,
   processar,
+  projectFrontmatterMetadata,
+  provePublicationHistory,
+  reconciliar,
+  reconcileEditorialReprocessing,
   reconhecer,
+  registrarPublicacao,
   resolveLegalReferences,
   runEditorialValidation,
   situarProblemas,
@@ -46,7 +52,14 @@ import {
   type SourceRole,
   type SourceVariant,
   type ContentProjectionProfile,
+  type MetadataWorkspaceContext,
+  type PublicationHistoryAuthority,
+  type PublicationHistoryEvidence,
 } from '@lex-editor/legal-domain';
+import {
+  createOperationalAuditEvent,
+  type OperationalAuditDetail,
+} from '@lex-editor/operational-audit';
 import {
   sourceConfigurationEvidenceSchema,
   type ActiveSourceImportConfiguration,
@@ -79,16 +92,27 @@ import type {
   EditorialReviewTargetDto,
   EditorialStateDto,
 } from '../shared/ipc/editorial.js';
+import type { MetadataStateDto } from '../shared/ipc/metadata.js';
+import type { ReprocessingStateDto } from '../shared/ipc/reprocessing.js';
 import type { DesktopImportIpcCapabilities } from './ipc/register.js';
+import {
+  createLocalAuditJournalStore,
+  type LocalAuditJournalStore,
+} from './audit/local-audit-journal.js';
+import { DesktopIpcError } from './ipc/validated-handler.js';
 import { defuddleSnapshot, SourceExtractionError } from './import/defuddle.js';
 import {
   fetchPlanaltoSourceSet,
   PlanaltoNetworkError,
   type PlanaltoNetworkPorts,
 } from './import/planalto-source.js';
-import { createEditorialProjectStore } from './projects/editorial-project-store.js';
+import {
+  createEditorialProjectStore,
+  type ReprocessingState,
+} from './projects/editorial-project-store.js';
 
 const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
+const DEFAULT_EVIDENCE_LINES = 200;
 
 type DialogPort = Readonly<{
   showOpenDialog(
@@ -111,6 +135,7 @@ type SourceArtifactRecord = Readonly<{
 }>;
 
 type SourceRecord = Readonly<{
+  projectId: string;
   summary: SourceSummaryDto;
   primary: SourceArtifactRecord;
   artifacts: readonly SourceArtifactRecord[];
@@ -148,6 +173,7 @@ interface JobRecord {
   readonly projectId: string;
   cancelled: boolean;
   sequence: number;
+  readonly startedAt: number;
 }
 
 type CursorRecord = Readonly<{
@@ -165,11 +191,24 @@ export type LocalProjectServiceOptions = Readonly<{
   now?(): Date;
   networkPorts?: PlanaltoNetworkPorts;
   activeSourceImportResolver?: ActiveSourceImportResolver;
+  publicationHistoryAuthority?: PublicationHistoryAuthority;
+  auditJournalStore?: LocalAuditJournalStore;
 }>;
 
 export interface ActiveSourceImportResolver {
   resolve(sourceUrl: string): Promise<ActiveSourceImportConfiguration | null>;
 }
+
+export type LocalProjectService = DesktopImportIpcCapabilities &
+  Readonly<{
+    hasProject(projectId: string): boolean;
+    getApprovedRevision(projectId: string): Readonly<{
+      revisionHash: string;
+      lawTitle: string;
+      sigla: string;
+      version: string;
+    }> | null;
+  }>;
 
 export class SourceConfigurationResolutionError extends Error {
   constructor() {
@@ -612,13 +651,23 @@ export const createLocalProjectService = ({
   now = () => new Date(),
   networkPorts,
   activeSourceImportResolver,
-}: LocalProjectServiceOptions): DesktopImportIpcCapabilities => {
+  publicationHistoryAuthority = {
+    inspect: () =>
+      Promise.resolve({ availability: 'unavailable', reason: 'not_configured' as const }),
+  },
+  auditJournalStore,
+}: LocalProjectServiceOptions): LocalProjectService => {
   const sources = new Map<string, SourceRecord>();
   const projects = new Map<string, ProjectRecord>();
   const jobs = new Map<string, JobRecord>();
   const destinations = new Map<
     string,
-    Readonly<{ projectId: string; path: string; projectionProfile: ContentProjectionProfile }>
+    Readonly<{
+      projectId: string;
+      path: string;
+      projectionProfile: ContentProjectionProfile;
+      revisionHash: string;
+    }>
   >();
   const batchDestinations = new Map<
     string,
@@ -630,6 +679,67 @@ export const createLocalProjectService = ({
     Omit<LegalReferencePreviewDto, 'referenceId' | 'external'>
   >();
   const editorialStore = createEditorialProjectStore(storageRoot);
+  const auditJournal = auditJournalStore ?? createLocalAuditJournalStore(storageRoot);
+
+  const appendAuditEvent = async (
+    projectId: string,
+    correlationId: string,
+    runId: string | null,
+    detail: Extract<OperationalAuditDetail, { kind: 'pipeline' }>,
+  ): Promise<void> => {
+    await auditJournal.append(
+      projectId,
+      createOperationalAuditEvent({
+        eventId: randomUUID(),
+        occurredAt: now().toISOString(),
+        correlationId,
+        actor: { actorId: null, actorRole: 'system' },
+        lawId: null,
+        projectId,
+        runId,
+        incidentId: detail.outcome === 'failed' ? randomUUID() : null,
+        detail,
+      }),
+    );
+  };
+
+  const pipelineDetail = (
+    eventCode: Extract<OperationalAuditDetail, { kind: 'pipeline' }>['eventCode'],
+    stage: Extract<OperationalAuditDetail, { kind: 'pipeline' }>['stage'],
+    outcome: Extract<OperationalAuditDetail, { kind: 'pipeline' }>['outcome'],
+    sourceArtifactSha256: string | null,
+    options: Readonly<{
+      durationMs?: number | null;
+      processedUnits?: number;
+      nodeCount?: number;
+      warningCount?: number;
+      errorCount?: number;
+      fragmentSha256?: string | null;
+      includeEvidence?: boolean;
+    }> = {},
+  ): Extract<OperationalAuditDetail, { kind: 'pipeline' }> => ({
+    kind: 'pipeline',
+    eventCode,
+    stage,
+    outcome,
+    durationMs: options.durationMs ?? null,
+    processedUnits: options.processedUnits ?? 0,
+    nodeCount: options.nodeCount ?? 0,
+    warningCount: options.warningCount ?? 0,
+    errorCount: options.errorCount ?? 0,
+    sourceArtifactSha256,
+    fragmentSha256: options.fragmentSha256 ?? null,
+    evidence:
+      options.includeEvidence === true && sourceArtifactSha256 !== null
+        ? {
+            evidenceLocatorId: randomUUID(),
+            sourceArtifactSha256,
+            fragmentSha256: null,
+            startLine: 1,
+            endLine: DEFAULT_EVIDENCE_LINES,
+          }
+        : null,
+  });
 
   const persistArtifact = async (
     sourceId: string,
@@ -828,6 +938,7 @@ export const createLocalProjectService = ({
     roots.push(...projectedAst.children.map((node, index) => build(node, null, 0, index)));
     const document: PreviewDocumentDto = {
       projectId: project.projectId,
+      revisionHash: calculateRevisionHash(ast, sha256),
       projectionProfile: project.projectionProfile,
       source: project.source.summary,
       title: projectedAst.titulo.slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
@@ -1245,6 +1356,50 @@ export const createLocalProjectService = ({
     return 'texto';
   };
 
+  const metadataWorkspaceFor = (currentProjectId: string): MetadataWorkspaceContext => ({
+    currentDocumentId: currentProjectId,
+    documents: [...projects.values()].flatMap((candidate) =>
+      candidate.ast === undefined
+        ? []
+        : [
+            {
+              documentId: candidate.projectId,
+              ast: candidate.ast,
+              aliases: conventionalLegalAliases(candidate.ast),
+            },
+          ],
+    ),
+  });
+
+  const metadataState = async (
+    project: ProjectRecord & { ast: IdentifiedNormaAST; journal: EditorialJournal },
+    evidence?: PublicationHistoryEvidence,
+  ): Promise<MetadataStateDto> => {
+    const trustedEvidence =
+      evidence ?? (await provePublicationHistory(project.ast, publicationHistoryAuthority));
+    const projection = projectFrontmatterMetadata(project.ast, {
+      publicationHistoryState: trustedEvidence.state,
+      projectionProfile: project.projectionProfile,
+      aliases: conventionalLegalAliases(project.ast),
+    });
+    const count = <Value>(field: Value & { value: readonly unknown[] | null }) => ({
+      ...field,
+      value: field.value?.length ?? 0,
+    });
+    return {
+      projectId: project.projectId,
+      revisionHash: calculateRevisionHash(project.ast, sha256),
+      journalSequence: project.journal.entries.length,
+      publicationHistoryState: projection.publicationHistoryState,
+      fields: {
+        ...projection.fields,
+        redacoesDadasPor: count(projection.fields.redacoesDadasPor),
+        idsDepreciados: count(projection.fields.idsDepreciados),
+        fontesSecundarias: count(projection.fields.fontesSecundarias),
+      },
+    };
+  };
+
   const projectCanExport = (project: ProjectRecord | undefined): boolean =>
     project?.ast !== undefined &&
     project.journal !== undefined &&
@@ -1259,8 +1414,19 @@ export const createLocalProjectService = ({
     project: ProjectRecord & { ast: IdentifiedNormaAST; journal: EditorialJournal },
     command: EditorialCommand,
     changedNodeIds: readonly string[],
+    metadataContext?: Readonly<{
+      publicationHistoryEvidence: PublicationHistoryEvidence;
+      workspace: MetadataWorkspaceContext;
+    }>,
   ): Promise<EditorialStateDto> => {
-    const applied = applyEditorialCommand(project.ast, command, sha256);
+    const applied = applyEditorialCommand(project.ast, command, sha256, {
+      ...(metadataContext === undefined
+        ? {}
+        : {
+            publicationHistoryEvidence: metadataContext.publicationHistoryEvidence,
+            metadataWorkspace: metadataContext.workspace,
+          }),
+    });
     if (!applied.ok) throw new Error(`Editorial command rejected: ${applied.error.code}`);
     const formatted = formatar(applied.ast);
     if (!formatted.ok || validarMarkdownCanonico(formatted.valor, applied.ast).length > 0) {
@@ -1271,22 +1437,49 @@ export const createLocalProjectService = ({
       command,
       applied.revisionHash,
       sha256,
+      metadataContext === undefined
+        ? undefined
+        : {
+            publicationHistoryEvidence: metadataContext.publicationHistoryEvidence,
+          },
     );
-    await editorialStore.saveJournal(journal);
+    const checkpoint = createEditorialCheckpoint(
+      journal,
+      applied.ast,
+      randomUUID(),
+      now().toISOString(),
+      sha256,
+    );
+    await editorialStore.saveRevision(journal, checkpoint);
     if (project.approval !== undefined) project.approvalWasInvalidated = true;
     delete project.approval;
+    delete project.validation;
     project.ast = applied.ast;
     delete project.detectedReferenceIndex;
     delete project.referenceIndex;
     delete project.referenceIndexDigest;
     project.journal = journal;
-    refreshLegalReferences(project.projectId);
+    if (applied.metadataDerivatives === undefined) {
+      refreshLegalReferences(project.projectId);
+    } else {
+      referencePreviewCache.clear();
+      for (const derived of applied.metadataDerivatives.documents) {
+        const target = projects.get(derived.documentId);
+        if (target?.ast === undefined) continue;
+        target.ast = derived.ast;
+        target.referenceIndex = derived.referenceIndex;
+        target.referenceIndexDigest = sha256(JSON.stringify(derived.referenceIndex.references));
+        delete target.detectedReferenceIndex;
+        rebuildProjection(target, derived.ast);
+      }
+    }
     runValidation(project, 'incremental', changedNodeIds);
     return editorialState(project);
   };
 
   const run = async (job: JobRecord): Promise<void> => {
     const project = projectOrThrow(job.projectId);
+    let auditStage: Extract<OperationalAuditDetail, { kind: 'pipeline' }>['stage'] = 'extraction';
     const failIfCancelled = (): void => {
       if (job.cancelled) throw new DOMException('Cancelled', 'AbortError');
     };
@@ -1362,6 +1555,22 @@ export const createLocalProjectService = ({
           permitirBaixaConfianca: true,
         });
       }
+      await appendAuditEvent(
+        project.projectId,
+        project.projectId,
+        job.jobId,
+        pipelineDetail(
+          'extraction_completed',
+          'extraction',
+          'completed',
+          project.source.primary.sourceArtifactSha256,
+          {
+            durationMs: Math.max(0, now().getTime() - job.startedAt),
+            processedUnits: primaryBytes.bytes.byteLength,
+          },
+        ),
+      );
+      auditStage = 'parsing';
       emit(job, {
         jobStatus: 'running',
         phase: 'parsing',
@@ -1373,6 +1582,22 @@ export const createLocalProjectService = ({
       failIfCancelled();
       if (!result.relatorio.ok || result.arvore === undefined || result.markdown === undefined) {
         project.diagnostics = result.relatorio.problemas.map(mapProblem);
+        await appendAuditEvent(
+          project.projectId,
+          project.projectId,
+          job.jobId,
+          pipelineDetail(
+            'parsing_failed',
+            'parsing',
+            'failed',
+            project.source.primary.sourceArtifactSha256,
+            {
+              durationMs: Math.max(0, now().getTime() - job.startedAt),
+              errorCount: result.relatorio.problemas.length,
+              includeEvidence: true,
+            },
+          ),
+        );
         emit(job, {
           jobStatus: 'failed',
           phase: 'parsing',
@@ -1382,6 +1607,22 @@ export const createLocalProjectService = ({
         });
         return;
       }
+      await appendAuditEvent(
+        project.projectId,
+        project.projectId,
+        job.jobId,
+        pipelineDetail(
+          'parsing_completed',
+          'parsing',
+          'completed',
+          project.source.primary.sourceArtifactSha256,
+          {
+            durationMs: Math.max(0, now().getTime() - job.startedAt),
+            nodeCount: result.arvore.totalArtigos,
+          },
+        ),
+      );
+      auditStage = 'identification';
       emit(job, {
         jobStatus: 'running',
         phase: 'identification',
@@ -1390,6 +1631,21 @@ export const createLocalProjectService = ({
         message: 'Block IDs identificados',
       });
       const revisionHash = calculateRevisionHash(result.arvore, sha256);
+      await appendAuditEvent(
+        project.projectId,
+        project.projectId,
+        job.jobId,
+        pipelineDetail(
+          'identification_completed',
+          'identification',
+          'completed',
+          project.source.primary.sourceArtifactSha256,
+          {
+            durationMs: Math.max(0, now().getTime() - job.startedAt),
+            nodeCount: contarBlockIds(result.arvore),
+          },
+        ),
+      );
       const journal: EditorialJournal = {
         schemaVersion: 1,
         journalId: randomUUID(),
@@ -1405,9 +1661,27 @@ export const createLocalProjectService = ({
       delete project.referenceIndexDigest;
       project.journal = journal;
       refreshLegalReferences(project.projectId);
-      runValidation(
+      auditStage = 'validation';
+      const validation = runValidation(
         project as ProjectRecord & { ast: IdentifiedNormaAST; journal: EditorialJournal },
         'full',
+      );
+      await appendAuditEvent(
+        project.projectId,
+        project.projectId,
+        job.jobId,
+        pipelineDetail(
+          validation.blockingCount === 0 ? 'validation_completed' : 'validation_blocked',
+          'validation',
+          validation.blockingCount === 0 ? 'completed' : 'blocked',
+          project.source.primary.sourceArtifactSha256,
+          {
+            durationMs: Math.max(0, now().getTime() - job.startedAt),
+            nodeCount: project.document?.totalPreviewNodes ?? 0,
+            warningCount: validation.warningCount,
+            errorCount: validation.blockingCount,
+          },
+        ),
       );
       emit(job, {
         jobStatus: 'running',
@@ -1428,6 +1702,30 @@ export const createLocalProjectService = ({
     } catch (error) {
       const cancelled = error instanceof DOMException && error.name === 'AbortError';
       const unrecognized = error instanceof SourceExtractionError;
+      const failureCode =
+        auditStage === 'parsing'
+          ? 'parsing_failed'
+          : auditStage === 'identification'
+            ? 'identification_failed'
+            : auditStage === 'validation'
+              ? 'validation_failed'
+              : 'extraction_failed';
+      await appendAuditEvent(
+        project.projectId,
+        project.projectId,
+        job.jobId,
+        pipelineDetail(
+          cancelled ? 'pipeline_cancelled' : failureCode,
+          auditStage,
+          cancelled ? 'cancelled' : 'failed',
+          project.source.primary.sourceArtifactSha256,
+          {
+            durationMs: Math.max(0, now().getTime() - job.startedAt),
+            errorCount: cancelled ? 0 : 1,
+            includeEvidence: !cancelled,
+          },
+        ),
+      ).catch(() => undefined);
       emit(job, {
         jobStatus: cancelled ? 'cancelled' : 'failed',
         phase: 'extraction',
@@ -1442,7 +1740,336 @@ export const createLocalProjectService = ({
     }
   };
 
+  const REPROCESSING_TERMINAL_STATUSES = new Set<ReprocessingState['status']>([
+    'completed',
+    'conflicted',
+    'failed',
+    'cancelled',
+  ]);
+
+  // Só rastreia jobs de reprocessamento vivos nesta sessão do processo. Após
+  // reabertura, a ausência de entrada aqui é o sinal de que qualquer estado
+  // não-terminal em disco é órfão e precisa ser reconciliado.
+  const reprocessingJobsByRequestId = new Map<string, string>();
+
+  class ReprocessingConflictError extends Error {
+    constructor(readonly code: string) {
+      super(code);
+    }
+  }
+
+  const reprocessingDetail = (
+    eventCode: Extract<OperationalAuditDetail, { kind: 'reprocessing' }>['eventCode'],
+    requestId: string,
+    plan: Extract<OperationalAuditDetail, { kind: 'reprocessing' }>['plan'],
+    expectedRevisionHash: string,
+    options: Readonly<{
+      resultingRevisionHash?: string | null;
+      conflictCode?: string | null;
+    }> = {},
+  ): Extract<OperationalAuditDetail, { kind: 'reprocessing' }> => ({
+    kind: 'reprocessing',
+    eventCode,
+    requestId,
+    plan,
+    expectedRevisionHash,
+    resultingRevisionHash: options.resultingRevisionHash ?? null,
+    conflictCode: options.conflictCode ?? null,
+  });
+
+  const appendReprocessingAuditEvent = async (
+    projectId: string,
+    requestId: string,
+    incidentId: string | null,
+    detail: Extract<OperationalAuditDetail, { kind: 'reprocessing' }>,
+  ): Promise<void> => {
+    const isFailureLike =
+      detail.eventCode === 'reprocess_failed' || detail.eventCode === 'reprocess_conflicted';
+    await auditJournal.append(
+      projectId,
+      createOperationalAuditEvent({
+        eventId: randomUUID(),
+        occurredAt: now().toISOString(),
+        correlationId: requestId,
+        actor: { actorId: null, actorRole: 'system' },
+        lawId: null,
+        projectId,
+        runId: requestId,
+        incidentId: incidentId ?? (isFailureLike ? randomUUID() : null),
+        detail,
+      }),
+    );
+  };
+
+  const reprocessingStateDto = (state: ReprocessingState): ReprocessingStateDto => ({
+    requestId: state.requestId,
+    projectId: state.projectId,
+    incidentId: state.incidentId,
+    // Um status terminal nunca expõe jobId, independentemente de o registro
+    // em memória já ter sido limpo: evita uma leitura concorrente flagrante
+    // enquanto a limpeza do job e a gravação do status terminal em disco
+    // ainda não convergiram.
+    jobId: REPROCESSING_TERMINAL_STATUSES.has(state.status)
+      ? null
+      : (reprocessingJobsByRequestId.get(state.requestId) ?? null),
+    plan: state.plan,
+    reason: state.reason,
+    status: state.status,
+    resultingRevisionHash: state.resultingRevisionHash,
+    conflictCode: state.conflictCode,
+  });
+
+  /**
+   * Reconcilia um registro de lock possivelmente órfão (crash) contra o
+   * diário/checkpoint canônicos antes de confiar nele. Nunca promove de novo:
+   * só corrige o status registrado quando a promoção já havia acontecido.
+   */
+  const recoverReprocessingLock = async (projectId: string): Promise<ReprocessingState | null> => {
+    const state = await editorialStore.loadReprocessingState(projectId);
+    if (state === null || REPROCESSING_TERMINAL_STATUSES.has(state.status)) return state;
+    if (reprocessingJobsByRequestId.get(state.requestId) !== undefined) return state;
+    if (state.resultingRevisionHash !== null) {
+      const recovered = await editorialStore.recover(projectId);
+      if (recovered.ok && recovered.revisionHash === state.resultingRevisionHash) {
+        const completed: ReprocessingState = {
+          ...state,
+          status: 'completed',
+          updatedAt: now().toISOString(),
+        };
+        await editorialStore.saveReprocessingState(completed);
+        return completed;
+      }
+    }
+    const failed: ReprocessingState = {
+      ...state,
+      status: 'failed',
+      updatedAt: now().toISOString(),
+    };
+    await editorialStore.saveReprocessingState(failed);
+    await appendReprocessingAuditEvent(
+      projectId,
+      state.requestId,
+      state.incidentId,
+      reprocessingDetail(
+        'reprocess_failed',
+        state.requestId,
+        state.plan,
+        state.expectedRevisionHash,
+      ),
+    );
+    return failed;
+  };
+
+  const runReprocessing = async (job: JobRecord, initial: ReprocessingState): Promise<void> => {
+    const { requestId, plan, expectedRevisionHash, incidentId } = initial;
+    const project = editorialProjectOrThrow(job.projectId);
+    const failIfCancelled = (): void => {
+      if (job.cancelled) throw new DOMException('Cancelled', 'AbortError');
+    };
+    const finish = async (
+      status: Exclude<ReprocessingState['status'], 'running' | 'awaiting_promotion'>,
+      resultingRevisionHash: string | null,
+      conflictCode: string | null,
+    ): Promise<void> => {
+      // Grava o status terminal em disco ANTES de remover o job vivo: enquanto
+      // o registro em memória existir, uma leitura concorrente de
+      // recoverReprocessingLock nunca deve concluir que o job está órfão.
+      await editorialStore.saveReprocessingState({
+        ...initial,
+        status,
+        updatedAt: now().toISOString(),
+        resultingRevisionHash,
+        conflictCode,
+      });
+      reprocessingJobsByRequestId.delete(requestId);
+    };
+
+    try {
+      await appendReprocessingAuditEvent(
+        project.projectId,
+        requestId,
+        incidentId,
+        reprocessingDetail('reprocess_started', requestId, plan, expectedRevisionHash),
+      );
+      failIfCancelled();
+
+      let candidateAst: IdentifiedNormaAST = project.ast;
+      let candidateJournal: EditorialJournal = project.journal;
+
+      if (plan === 'from_source_snapshot') {
+        const loadedBytes = await Promise.all(
+          project.source.artifacts.map(async (artifact) => {
+            const bytes = await readFile(artifact.snapshotPath);
+            if (sha256(bytes) !== artifact.sourceArtifactSha256) {
+              throw new Error('Snapshot integrity check failed.');
+            }
+            return {
+              record: artifact,
+              bytes,
+              original:
+                project.source.summary.sourceKind === 'planalto_url'
+                  ? decodificarHtmlPlanalto(bytes)
+                  : decodeText(bytes),
+            };
+          }),
+        );
+        failIfCancelled();
+        const primaryBytes = loadedBytes.find(
+          ({ record }) => record.sourceArtifactId === project.source.primary.sourceArtifactId,
+        );
+        if (primaryBytes === undefined) throw new Error('Primary snapshot is unavailable.');
+        const date = now().toISOString().slice(0, 10);
+        let result: ResultadoDoPipeline;
+        if (project.source.summary.mediaType === 'text/html') {
+          const loaded = await Promise.all(
+            loadedBytes.map(async ({ record, original: artifactOriginal }) => ({
+              record,
+              original: artifactOriginal,
+              content: await extractLegalContent(artifactOriginal, record),
+            })),
+          );
+          result = processHtmlSourceSet(loaded, project.source.summary.displayName, date);
+        } else {
+          const content = normalizeCanonicalMarkdown(primaryBytes.original);
+          const metadata = metadataFor(
+            primaryBytes.original,
+            project.source.summary.displayName,
+            project.source.summary.mediaType,
+            date,
+          );
+          result = processar({
+            conteudo: content,
+            referenciaBase: {
+              sourceType: 'markdown',
+              sourceRole: 'primary_current',
+              sourceVariant: 'other',
+              sourceArtifactSha256: project.source.summary.sourceArtifactSha256,
+              fragmentSha256: project.source.summary.sourceArtifactSha256,
+            },
+            hashDaLinha: sha256,
+            metadados: metadata,
+            permitirBaixaConfianca: true,
+          });
+        }
+        if (!result.relatorio.ok || result.arvore === undefined) {
+          throw new Error('Reprocessing pipeline failed to produce a valid tree.');
+        }
+        const registry = registrarPublicacao(project.ast, project.ast.sigla);
+        const reconciled = reconciliar(result.arvore, registry, project.ast.sigla);
+        if (!reconciled.ok) {
+          throw new Error('Block ID reconciliation failed.');
+        }
+        const reprocessed = reconcileEditorialReprocessing(
+          project.journal,
+          reconciled.valor.arvore,
+          sha256,
+        );
+        if (!reprocessed.ok) {
+          throw new ReprocessingConflictError(reprocessed.error.code);
+        }
+        candidateAst = reprocessed.ast;
+        candidateJournal = reprocessed.journal;
+      }
+
+      failIfCancelled();
+
+      // A candidata precisa ser estruturalmente sólida (AST identificada
+      // válida, Markdown canônico) para ser promovida. Diagnósticos de revisão
+      // humana pendente (blockingCount) não travam a promoção — eles já
+      // existiam (ou passam a existir) na revisão de trabalho normalmente e
+      // continuam exigindo aprovação depois, exatamente como na primeira
+      // importação: reprocessar não é sinônimo de aprovar.
+      const candidateRevisionHash = calculateRevisionHash(candidateAst, sha256);
+      const candidateMarkdown = formatar(candidateAst, 'complete_with_history');
+      if (
+        !candidateMarkdown.ok ||
+        validarMarkdownCanonico(candidateMarkdown.valor, candidateAst, 'complete_with_history')
+          .length > 0
+      ) {
+        throw new Error('Reprocessing candidate produced noncanonical Markdown.');
+      }
+
+      failIfCancelled();
+
+      if (plan === 'from_source_snapshot') {
+        // Ponto de não-retorno: grava o hash resultante antes da gravação
+        // atômica para que a recuperação pós-crash saiba distinguir uma
+        // promoção já concluída de uma tentativa que nunca chegou a gravar.
+        await editorialStore.saveReprocessingState({
+          ...initial,
+          status: 'awaiting_promotion',
+          updatedAt: now().toISOString(),
+          resultingRevisionHash: candidateRevisionHash,
+        });
+        const checkpoint = createEditorialCheckpoint(
+          candidateJournal,
+          candidateAst,
+          randomUUID(),
+          now().toISOString(),
+          sha256,
+        );
+        await editorialStore.saveRevision(candidateJournal, checkpoint);
+        if (project.approval !== undefined) project.approvalWasInvalidated = true;
+        delete project.approval;
+        delete project.validation;
+        project.ast = candidateAst;
+        delete project.detectedReferenceIndex;
+        delete project.referenceIndex;
+        delete project.referenceIndexDigest;
+        project.journal = candidateJournal;
+      }
+      refreshLegalReferences(project.projectId);
+      runValidation(project, 'full');
+
+      await appendReprocessingAuditEvent(
+        project.projectId,
+        requestId,
+        incidentId,
+        reprocessingDetail('reprocess_completed', requestId, plan, expectedRevisionHash, {
+          resultingRevisionHash: candidateRevisionHash,
+        }),
+      );
+      await finish('completed', candidateRevisionHash, null);
+    } catch (error) {
+      const cancelled = error instanceof DOMException && error.name === 'AbortError';
+      const conflict = error instanceof ReprocessingConflictError ? error.code : null;
+      await appendReprocessingAuditEvent(
+        project.projectId,
+        requestId,
+        incidentId,
+        reprocessingDetail(
+          cancelled
+            ? 'reprocess_cancelled'
+            : conflict !== null
+              ? 'reprocess_conflicted'
+              : 'reprocess_failed',
+          requestId,
+          plan,
+          expectedRevisionHash,
+          { conflictCode: conflict },
+        ),
+      ).catch(() => undefined);
+      await finish(
+        cancelled ? 'cancelled' : conflict !== null ? 'conflicted' : 'failed',
+        null,
+        conflict,
+      );
+    }
+  };
+
   return {
+    hasProject: (projectId) => projects.has(projectId),
+    getApprovedRevision: (projectId) => {
+      const project = projects.get(projectId);
+      return projectCanExport(project) && project?.ast !== undefined
+        ? {
+            revisionHash: calculateRevisionHash(project.ast, sha256),
+            lawTitle: project.ast.titulo,
+            sigla: project.ast.sigla,
+            version: project.ast.versaoVinculex,
+          }
+        : null;
+    },
     selectLocal: {
       authorize: () => getMainWindow() !== null,
       handle: async () => {
@@ -1475,101 +2102,174 @@ export const createLocalProjectService = ({
           await sourceFile.close();
         }
         const sourceId = randomUUID();
+        const projectId = randomUUID();
+        await appendAuditEvent(
+          projectId,
+          projectId,
+          null,
+          pipelineDetail('import_started', 'import', 'started', null),
+        );
         const mediaType = extension === '.html' ? 'text/html' : 'text/markdown';
-        const artifact = await persistArtifact(sourceId, bytes, extension as '.html' | '.md', {
-          sourceArtifactId: sourceId,
-          finalUrl: `https://local.lex-editor.invalid/snapshot/${encodeURIComponent(basename(resolved))}`,
-          sourceRole: 'primary_current',
-          sourceVariant:
-            mediaType === 'text/html' && /compilad[oa]/iu.test(decodeText(bytes))
-              ? 'compiled'
-              : 'other',
-        });
-        const summary: SourceSummaryDto = {
-          sourceId,
-          sourceKind: extension === '.html' ? 'local_html' : 'local_markdown',
-          displayName: basename(resolved).slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
-          mediaType,
-          byteLength: bytes.byteLength,
-          sourceArtifactSha256: artifact.sourceArtifactSha256,
-        };
-        sources.set(sourceId, {
-          summary,
-          primary: artifact,
-          artifacts: [artifact],
-          configurationEvidence: null,
-        });
-        return summary;
+        try {
+          const artifact = await persistArtifact(sourceId, bytes, extension as '.html' | '.md', {
+            sourceArtifactId: sourceId,
+            finalUrl: `https://local.lex-editor.invalid/snapshot/${encodeURIComponent(basename(resolved))}`,
+            sourceRole: 'primary_current',
+            sourceVariant:
+              mediaType === 'text/html' && /compilad[oa]/iu.test(decodeText(bytes))
+                ? 'compiled'
+                : 'other',
+          });
+          const summary: SourceSummaryDto = {
+            sourceId,
+            sourceKind: extension === '.html' ? 'local_html' : 'local_markdown',
+            displayName: basename(resolved).slice(
+              0,
+              DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters,
+            ),
+            mediaType,
+            byteLength: bytes.byteLength,
+            sourceArtifactSha256: artifact.sourceArtifactSha256,
+          };
+          sources.set(sourceId, {
+            projectId,
+            summary,
+            primary: artifact,
+            artifacts: [artifact],
+            configurationEvidence: null,
+          });
+          await appendAuditEvent(
+            projectId,
+            projectId,
+            null,
+            pipelineDetail(
+              'import_completed',
+              'import',
+              'completed',
+              artifact.sourceArtifactSha256,
+              {
+                processedUnits: bytes.byteLength,
+              },
+            ),
+          );
+          return summary;
+        } catch (error) {
+          await appendAuditEvent(
+            projectId,
+            projectId,
+            null,
+            pipelineDetail('import_failed', 'import', 'failed', null, { errorCount: 1 }),
+          ).catch(() => undefined);
+          throw error;
+        }
       },
     },
     importFromUrl: {
       authorize: () => getMainWindow() !== null,
       handle: async ({ url }) => {
-        const activeConfiguration =
-          activeSourceImportResolver === undefined
-            ? null
-            : await activeSourceImportResolver.resolve(url);
-        if (activeSourceImportResolver !== undefined && activeConfiguration === null) {
-          throw new SourceConfigurationResolutionError();
-        }
-        const fetched =
-          activeConfiguration === null
-            ? networkPorts === undefined
-              ? await fetchPlanaltoSourceSet(url)
-              : await fetchPlanaltoSourceSet(url, networkPorts)
-            : networkPorts === undefined
-              ? await fetchConfiguredPlanaltoSourceSet(
-                  activeConfiguration.providerRevision,
-                  activeConfiguration.bindingRevision,
-                )
-              : await fetchConfiguredPlanaltoSourceSet(
-                  activeConfiguration.providerRevision,
-                  activeConfiguration.bindingRevision,
-                  networkPorts,
-                );
         const sourceId = randomUUID();
-        const primaryFetched = fetched.find(({ sourceRole }) => sourceRole === 'primary_current');
-        if (primaryFetched === undefined) throw new PlanaltoNetworkError('NETWORK_FAILED');
-        const artifacts = await Promise.all(
-          fetched.map((item) =>
-            persistArtifact(sourceId, item.bytes, '.html', {
-              sourceArtifactId: item.sourceRole === 'primary_current' ? sourceId : randomUUID(),
-              finalUrl: item.finalUrl,
-              sourceRole: item.sourceRole,
-              sourceVariant: item.sourceVariant,
-            }),
-          ),
+        const projectId = randomUUID();
+        await appendAuditEvent(
+          projectId,
+          projectId,
+          null,
+          pipelineDetail('import_started', 'import', 'started', null),
         );
-        const primary = artifacts.find(({ sourceRole }) => sourceRole === 'primary_current');
-        if (primary === undefined) throw new PlanaltoNetworkError('NETWORK_FAILED');
-        const pathName = basename(new URL(primary.finalUrl).pathname) || 'planalto.html';
-        const summary: SourceSummaryDto = {
-          sourceId,
-          sourceKind: 'planalto_url',
-          displayName: pathName.slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
-          mediaType: 'text/html',
-          byteLength: primaryFetched.bytes.byteLength,
-          sourceArtifactSha256: primary.sourceArtifactSha256,
-        };
-        const configurationEvidence =
-          activeConfiguration === null
-            ? null
-            : sourceConfigurationEvidenceSchema.parse({
-                schemaVersion: 1,
-                providerId: activeConfiguration.providerRevision.providerId,
-                providerRevisionId: activeConfiguration.providerRevision.providerRevisionId,
-                providerConfigDigest: activeConfiguration.providerRevision.configDigest,
-                bindingId: activeConfiguration.bindingRevision.bindingId,
-                bindingRevisionId: activeConfiguration.bindingRevision.bindingRevisionId,
-                bindingConfigDigest: activeConfiguration.bindingRevision.configDigest,
-                adapterId: activeConfiguration.providerRevision.adapterId,
-                adapterContractVersion: activeConfiguration.providerRevision.adapterContractVersion,
-              });
-        if (configurationEvidence !== null) {
-          await persistConfiguredImportEvidence(sourceId, configurationEvidence, artifacts);
+        try {
+          const activeConfiguration =
+            activeSourceImportResolver === undefined
+              ? null
+              : await activeSourceImportResolver.resolve(url);
+          if (activeSourceImportResolver !== undefined && activeConfiguration === null) {
+            throw new SourceConfigurationResolutionError();
+          }
+          const fetched =
+            activeConfiguration === null
+              ? networkPorts === undefined
+                ? await fetchPlanaltoSourceSet(url)
+                : await fetchPlanaltoSourceSet(url, networkPorts)
+              : networkPorts === undefined
+                ? await fetchConfiguredPlanaltoSourceSet(
+                    activeConfiguration.providerRevision,
+                    activeConfiguration.bindingRevision,
+                  )
+                : await fetchConfiguredPlanaltoSourceSet(
+                    activeConfiguration.providerRevision,
+                    activeConfiguration.bindingRevision,
+                    networkPorts,
+                  );
+          const primaryFetched = fetched.find(({ sourceRole }) => sourceRole === 'primary_current');
+          if (primaryFetched === undefined) throw new PlanaltoNetworkError('NETWORK_FAILED');
+          const artifacts = await Promise.all(
+            fetched.map((item) =>
+              persistArtifact(sourceId, item.bytes, '.html', {
+                sourceArtifactId: item.sourceRole === 'primary_current' ? sourceId : randomUUID(),
+                finalUrl: item.finalUrl,
+                sourceRole: item.sourceRole,
+                sourceVariant: item.sourceVariant,
+              }),
+            ),
+          );
+          const primary = artifacts.find(({ sourceRole }) => sourceRole === 'primary_current');
+          if (primary === undefined) throw new PlanaltoNetworkError('NETWORK_FAILED');
+          const pathName = basename(new URL(primary.finalUrl).pathname) || 'planalto.html';
+          const summary: SourceSummaryDto = {
+            sourceId,
+            sourceKind: 'planalto_url',
+            displayName: pathName.slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
+            mediaType: 'text/html',
+            byteLength: primaryFetched.bytes.byteLength,
+            sourceArtifactSha256: primary.sourceArtifactSha256,
+          };
+          const configurationEvidence =
+            activeConfiguration === null
+              ? null
+              : sourceConfigurationEvidenceSchema.parse({
+                  schemaVersion: 1,
+                  providerId: activeConfiguration.providerRevision.providerId,
+                  providerRevisionId: activeConfiguration.providerRevision.providerRevisionId,
+                  providerConfigDigest: activeConfiguration.providerRevision.configDigest,
+                  bindingId: activeConfiguration.bindingRevision.bindingId,
+                  bindingRevisionId: activeConfiguration.bindingRevision.bindingRevisionId,
+                  bindingConfigDigest: activeConfiguration.bindingRevision.configDigest,
+                  adapterId: activeConfiguration.providerRevision.adapterId,
+                  adapterContractVersion:
+                    activeConfiguration.providerRevision.adapterContractVersion,
+                });
+          if (configurationEvidence !== null) {
+            await persistConfiguredImportEvidence(sourceId, configurationEvidence, artifacts);
+          }
+          sources.set(sourceId, {
+            projectId,
+            summary,
+            primary,
+            artifacts,
+            configurationEvidence,
+          });
+          await appendAuditEvent(
+            projectId,
+            projectId,
+            null,
+            pipelineDetail(
+              'import_completed',
+              'import',
+              'completed',
+              primary.sourceArtifactSha256,
+              {
+                processedUnits: primaryFetched.bytes.byteLength,
+              },
+            ),
+          );
+          return summary;
+        } catch (error) {
+          await appendAuditEvent(
+            projectId,
+            projectId,
+            null,
+            pipelineDetail('import_failed', 'import', 'failed', null, { errorCount: 1 }),
+          ).catch(() => undefined);
+          throw error;
         }
-        sources.set(sourceId, { summary, primary, artifacts, configurationEvidence });
-        return summary;
       },
     },
     startProcessing: {
@@ -1579,9 +2279,10 @@ export const createLocalProjectService = ({
         if (source === undefined) throw new Error('Source is not authorized.');
         const job: JobRecord = {
           jobId: randomUUID(),
-          projectId: randomUUID(),
+          projectId: source.projectId,
           cancelled: false,
           sequence: 0,
+          startedAt: now().getTime(),
         };
         jobs.set(job.jobId, job);
         projects.set(job.projectId, {
@@ -1707,6 +2408,46 @@ export const createLocalProjectService = ({
       },
       handle: ({ projectId }) => editorialState(editorialProjectOrThrow(projectId)),
     },
+    getMetadataState: {
+      authorize: ({ projectId }) => {
+        const project = projects.get(projectId);
+        return project?.ast !== undefined && project.journal !== undefined;
+      },
+      handle: ({ projectId }) => metadataState(editorialProjectOrThrow(projectId)),
+    },
+    updateMetadata: {
+      authorize: ({ projectId }) => {
+        const project = projects.get(projectId);
+        return project?.ast !== undefined && project.journal !== undefined;
+      },
+      handle: async ({ projectId, expectedRevisionHash, changes, reason }) => {
+        const project = editorialProjectOrThrow(projectId);
+        if (calculateRevisionHash(project.ast, sha256) !== expectedRevisionHash) {
+          throw new DesktopIpcError('CONFLICT');
+        }
+        const publicationHistoryEvidence = await provePublicationHistory(
+          project.ast,
+          publicationHistoryAuthority,
+        );
+        const command: EditorialCommand = {
+          schemaVersion: 1,
+          commandId: randomUUID(),
+          localActorId: 'editor-local',
+          occurredAt: now().toISOString(),
+          expectedRevisionHash,
+          operation: {
+            kind: 'set_law_metadata',
+            changes,
+            reason,
+          },
+        };
+        await applyAndPersist(project, command, [], {
+          publicationHistoryEvidence,
+          workspace: metadataWorkspaceFor(projectId),
+        });
+        return metadataState(project, publicationHistoryEvidence);
+      },
+    },
     correctEditorialText: {
       authorize: ({ projectId, previewNodeId }) =>
         projects.get(projectId)?.nodes.has(previewNodeId) === true,
@@ -1800,10 +2541,42 @@ export const createLocalProjectService = ({
         const project = projects.get(projectId);
         return project?.ast !== undefined && project.journal !== undefined;
       },
-      handle: ({ projectId }) => {
+      handle: async ({ projectId }) => {
         const project = editorialProjectOrThrow(projectId);
-        runValidation(project, 'full');
-        return editorialState(project);
+        try {
+          const validation = runValidation(project, 'full');
+          await appendAuditEvent(
+            projectId,
+            projectId,
+            null,
+            pipelineDetail(
+              validation.blockingCount === 0 ? 'validation_completed' : 'validation_blocked',
+              'validation',
+              validation.blockingCount === 0 ? 'completed' : 'blocked',
+              project.source.primary.sourceArtifactSha256,
+              {
+                nodeCount: project.document?.totalPreviewNodes ?? 0,
+                warningCount: validation.warningCount,
+                errorCount: validation.blockingCount,
+              },
+            ),
+          );
+          return editorialState(project);
+        } catch (error) {
+          await appendAuditEvent(
+            projectId,
+            projectId,
+            null,
+            pipelineDetail(
+              'validation_failed',
+              'validation',
+              'failed',
+              project.source.primary.sourceArtifactSha256,
+              { errorCount: 1 },
+            ),
+          ).catch(() => undefined);
+          throw error;
+        }
       },
     },
     approveEditorial: {
@@ -1859,7 +2632,12 @@ export const createLocalProjectService = ({
         const path = selected.filePath.toLocaleLowerCase('en-US').endsWith('.md')
           ? selected.filePath
           : `${selected.filePath}.md`;
-        destinations.set(destinationId, { projectId, path, projectionProfile });
+        destinations.set(destinationId, {
+          projectId,
+          path,
+          projectionProfile,
+          revisionHash: calculateRevisionHash(project.ast, sha256),
+        });
         return {
           destinationId,
           displayName: basename(path).slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
@@ -1869,6 +2647,9 @@ export const createLocalProjectService = ({
     writeExport: {
       authorize: ({ projectId, destinationId }) =>
         destinations.get(destinationId)?.projectId === projectId &&
+        projects.get(projectId)?.ast !== undefined &&
+        destinations.get(destinationId)?.revisionHash ===
+          calculateRevisionHash(projects.get(projectId)?.ast, sha256) &&
         projectCanExport(projects.get(projectId)),
       handle: async ({ projectId, destinationId }): Promise<ExportResultDto> => {
         const project = projectOrThrow(projectId);
@@ -1899,11 +2680,39 @@ export const createLocalProjectService = ({
         } catch (error) {
           await file?.close().catch(() => undefined);
           await unlink(tempPath).catch(() => undefined);
+          await appendAuditEvent(
+            projectId,
+            projectId,
+            null,
+            pipelineDetail(
+              'export_failed',
+              'export',
+              'failed',
+              project.source.primary.sourceArtifactSha256,
+              { errorCount: 1 },
+            ),
+          ).catch(() => undefined);
           throw error;
         }
         destinations.delete(destinationId);
+        await appendAuditEvent(
+          projectId,
+          projectId,
+          null,
+          pipelineDetail(
+            'export_completed',
+            'export',
+            'completed',
+            project.source.primary.sourceArtifactSha256,
+            {
+              processedUnits: bytes.byteLength,
+              nodeCount: project.document?.totalPreviewNodes ?? 0,
+            },
+          ),
+        );
         return {
           projectId,
+          revisionHash: destination.revisionHash,
           destinationId,
           projectionProfile: destination.projectionProfile,
           fileName: basename(destination.path),
@@ -2059,6 +2868,7 @@ export const createLocalProjectService = ({
               await rename(stageDirectory, targetDirectory);
               return {
                 projectId: identity.projectId,
+                revisionHash: calculateRevisionHash(project.ast, sha256),
                 title: identity.title.slice(0, DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),
                 sigla: identity.sigla,
                 batchExportStatus: 'succeeded',
@@ -2077,6 +2887,28 @@ export const createLocalProjectService = ({
         const succeeded = results.filter(
           (result) => result.batchExportStatus === 'succeeded',
         ).length;
+        await Promise.all(
+          results.map((result) => {
+            const project = projects.get(result.projectId);
+            if (project === undefined) return Promise.resolve();
+            return appendAuditEvent(
+              result.projectId,
+              result.projectId,
+              null,
+              pipelineDetail(
+                result.batchExportStatus === 'succeeded' ? 'export_completed' : 'export_failed',
+                'export',
+                result.batchExportStatus === 'succeeded' ? 'completed' : 'failed',
+                project.source.primary.sourceArtifactSha256,
+                {
+                  processedUnits: result.batchExportStatus === 'succeeded' ? 1 : 0,
+                  nodeCount: project.document?.totalPreviewNodes ?? 0,
+                  errorCount: result.batchExportStatus === 'failed' ? 1 : 0,
+                },
+              ),
+            );
+          }),
+        );
         return {
           destinationId,
           total: results.length,
@@ -2084,6 +2916,67 @@ export const createLocalProjectService = ({
           failed: results.length - succeeded,
           results,
         };
+      },
+    },
+    requestReprocessing: {
+      authorize: ({ projectId }) => {
+        const project = projects.get(projectId);
+        return project?.ast !== undefined && project.journal !== undefined;
+      },
+      handle: async ({ projectId, requestId, plan, expectedRevisionHash, reason, incidentId }) => {
+        const project = editorialProjectOrThrow(projectId);
+        const existing = await recoverReprocessingLock(projectId);
+        if (existing !== null && !REPROCESSING_TERMINAL_STATUSES.has(existing.status)) {
+          // Lock ocupado por outra solicitação: devolve a operação corrente e
+          // permite acompanhar em vez de iniciar uma segunda execução.
+          return reprocessingStateDto(existing);
+        }
+        if (existing !== null && existing.requestId === requestId) {
+          // Idempotência: retry da mesma solicitação já terminal.
+          return reprocessingStateDto(existing);
+        }
+        if (calculateRevisionHash(project.ast, sha256) !== expectedRevisionHash) {
+          throw new DesktopIpcError('CONFLICT');
+        }
+        const initial: ReprocessingState = {
+          schemaVersion: 1,
+          projectId,
+          requestId,
+          incidentId,
+          plan,
+          reason,
+          expectedRevisionHash,
+          status: 'running',
+          createdAt: now().toISOString(),
+          updatedAt: now().toISOString(),
+          resultingRevisionHash: null,
+          conflictCode: null,
+        };
+        await editorialStore.saveReprocessingState(initial);
+        await appendReprocessingAuditEvent(
+          projectId,
+          requestId,
+          incidentId,
+          reprocessingDetail('reprocess_requested', requestId, plan, expectedRevisionHash),
+        );
+        const job: JobRecord = {
+          jobId: randomUUID(),
+          projectId,
+          cancelled: false,
+          sequence: 0,
+          startedAt: now().getTime(),
+        };
+        jobs.set(job.jobId, job);
+        reprocessingJobsByRequestId.set(requestId, job.jobId);
+        setImmediate(() => void runReprocessing(job, initial));
+        return reprocessingStateDto(initial);
+      },
+    },
+    getReprocessingState: {
+      authorize: ({ projectId }) => projects.has(projectId),
+      handle: async ({ projectId }) => {
+        const state = await recoverReprocessingLock(projectId);
+        return state === null ? null : reprocessingStateDto(state);
       },
     },
   };
