@@ -24,6 +24,8 @@
 | 009 | [Projeções completa e vigente](./lex-editor/009-complete-current-projections/spec.md) | P1 | done | 008 | Uma revisão gera Markdown completo ou somente vigente sem perder histórico |
 | 010 | [Referências jurídicas e navegação por dispositivo](./lex-editor/010-legal-reference-navigation/spec.md) | P1 | done | 004, 005, 006, 009 | Menções resolvidas abrem e pré-visualizam o bloco interno ou de outra lei importada |
 | 011 | [Configuração e catálogo de fontes oficiais](./lex-editor/011-official-source-catalog/spec.md) | P3 | done | 005, 008, 009 | Administrador cadastra, testa e ativa uma fonte compatível; importador e worker usam a mesma revisão |
+| 012 | [Edição validada de metadados e frontmatter](./lex-editor/012-validated-frontmatter-editing/spec.md) | P1 | done | 005, 006, 007, 009, 010, 011 | Editor corrige metadados permitidos em formulário tipado; preview, exportação e publicação usam a mesma revisão |
+| 013 | [Auditoria operacional, diagnóstico e reprocessamento](./lex-editor/013-operational-audit-reprocessing/spec.md) | P2 | in_progress | 005, 006, 007, 008, 011, 012 | Administrador pesquisa eventos correlacionados, investiga evidência restrita e reprocessa sem perder a revisão válida |
 
 ## Regra de ativação
 
@@ -50,6 +52,8 @@ Antes de alterar uma feature para `in_progress`:
 | 009 | Extensão das Fases 4–6 |
 | 010 | Extensão das Fases 4–6 |
 | 011 | Fases 6 e 8 |
+| 012 | Extensão das Fases 5–7 |
+| 013 | Extensão transversal das Fases 1–8 (RF-23 e fluxo 7) |
 
 Esse mapeamento não altera o roadmap. Ele reorganiza sua execução para obter
 feedback ponta a ponta antes de generalizar todos os casos jurídicos.

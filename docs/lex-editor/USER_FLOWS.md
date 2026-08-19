@@ -1,6 +1,6 @@
 # Fluxos de Usuário — Lex Editor
 
-> Referências: `../architecture/SYSTEM_ARCHITECTURE.md`, `../architecture/BLOCK_ID_SPEC.md`, `../architecture/MARKDOWN_SPEC.md`, `../architecture/UPDATE_PIPELINE.md`, `../architecture/ADR-013-referencias-juridicas-resolvidas.md`, `./ROADMAP.md`.
+> Referências: `../architecture/SYSTEM_ARCHITECTURE.md`, `../architecture/BLOCK_ID_SPEC.md`, `../architecture/MARKDOWN_SPEC.md`, `../architecture/UPDATE_PIPELINE.md`, `../architecture/ADR-013-referencias-juridicas-resolvidas.md`, `../architecture/ADR-014-auditoria-operacional-e-reprocessamento.md`, `./ROADMAP.md`.
 > Este documento descreve os fluxos operacionais do Lex Editor sob a ótica das duas personas internas: **Editor Jurídico** (revisa fidelidade do texto legal, aprova publicações e atualizações) e **Administrador Técnico** (configura fontes, monitora logs, resolve falhas de parsing). Cada fluxo traz passo a passo numerado (ação do usuário / resposta do sistema) e um diagrama Mermaid correspondente.
 
 ## Sumário
@@ -14,6 +14,7 @@
 7. [Investigar uma falha de parsing](#7-investigar-uma-falha-de-parsing) — Administrador Técnico
 8. [Restaurar uma versão anterior](#8-restaurar-uma-versão-anterior) — Administrador Técnico
 9. [Consultar uma referência jurídica](#9-consultar-uma-referência-jurídica) — Editor Jurídico
+10. [Editar metadados e frontmatter](#10-editar-metadados-e-frontmatter) — Editor Jurídico
 
 ---
 
@@ -476,4 +477,63 @@ flowchart TD
     F -- externa --> H[Abre lei importada e revela bloco]
     G --> I[Retorno preserva a origem]
     H --> I
+```
+
+---
+
+## 10. Editar metadados e frontmatter
+
+**Persona:** Editor Jurídico
+**Pré-condição:** Uma lei importada está aberta em revisão; a cópia de trabalho
+e seu hash foram recuperados do diário local.
+**Pós-condição de sucesso:** A correção foi persistida na `IdentifiedNormaAST`,
+preview e saídas derivam da nova revisão e qualquer aprovação anterior foi
+invalidada.
+
+### Passo a passo
+
+1. O editor abre “Metadados” a partir do preview.
+2. O sistema mostra os campos obrigatórios e opcionais suportados, agrupando
+   valores editoriais, identidade, proveniência e derivados. Cada campo informa
+   sua origem; campos sistêmicos aparecem somente para leitura.
+3. O editor altera um campo permitido. Data, enum, URL, número, tamanho e regras
+   cruzadas são validados no controle correspondente.
+4. Para sigla, tipo, número ou ano, o sistema comprova que a lei nunca foi
+   publicada. Se houver versão publicada ou não for possível provar sua
+   ausência, mantém o campo bloqueado e explica que a identidade é imutável.
+5. Quando a alteração afeta identidade, vigência ou data jurídica, o editor
+   informa motivo. O sistema apresenta um resumo antes/depois e os efeitos
+   derivados esperados.
+6. Ao confirmar, o processo principal revalida remetente, payload, revisão
+   esperada e política de mutabilidade. Campo desconhecido, sistêmico ou revisão
+   obsoleta falha sem acrescentar comando ao diário.
+7. A alteração é aplicada em cópia. Mudança de título/identidade regenera os
+   derivados aplicáveis; sigla pré-publicação reconcilia todos os Block IDs.
+   Qualquer conflito descarta a cópia inteira.
+8. O processo principal promove o comando ao diário durável, invalida validação
+   e aprovação anteriores e devolve a nova projeção. Só então a UI mostra
+   “salvo”.
+9. O editor retorna ao preview, executa validação completa e confere o
+   frontmatter canônico. Exportação e publicação usam exatamente essa revisão.
+
+### Diagrama
+
+```mermaid
+flowchart TD
+    A[Editor abre Metadados] --> B[Sistema projeta campos,
+origem e mutabilidade]
+    B --> C[Editor altera campo permitido]
+    C --> D{Valor e política válidos?}
+    D -- não --> D1[Erro inline + foco no campo] --> C
+    D -- sim --> E[Exibe resumo antes/depois]
+    E --> F[Editor confirma]
+    F --> G{Revisão ainda é a esperada?}
+    G -- não --> G1[Conflito preserva o draft] --> B
+    G -- sim --> H[Aplica em cópia e regenera derivados]
+    H --> I{Reconciliação válida?}
+    I -- não --> I1[Descarta cópia e mostra diagnóstico] --> C
+    I -- sim --> J[Persiste comando no diário]
+    J --> K[Invalida validação/aprovação]
+    K --> L[Preview usa a nova revisão]
+    L --> M[Editor revalida antes de exportar/publicar]
 ```

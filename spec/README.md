@@ -90,7 +90,9 @@ spec/
     ├── 008-legislative-updates/
     ├── 009-complete-current-projections/
     ├── 010-legal-reference-navigation/
-    └── 011-official-source-catalog/
+    ├── 011-official-source-catalog/
+    ├── 012-validated-frontmatter-editing/
+    └── 013-operational-audit-reprocessing/
 ```
 
 O primeiro corte jurídico é deliberadamente vertical. Tipos, parser, IDs e

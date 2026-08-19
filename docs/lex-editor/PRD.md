@@ -3,7 +3,7 @@
 > Versão do documento: 2.2
 > Produto: Lex Editor (ferramenta editorial interna do ecossistema Vinculex)
 > Última atualização: 2026-08-11
-> Documentos relacionados: `../architecture/SYSTEM_ARCHITECTURE.md`, `../architecture/DATA_MODEL.md`, `../architecture/BLOCK_ID_SPEC.md`, `../architecture/MARKDOWN_SPEC.md`, `../architecture/UPDATE_PIPELINE.md`, `../architecture/ADR-013-referencias-juridicas-resolvidas.md`, `./ROADMAP.md`, `./USER_FLOWS.md`
+> Documentos relacionados: `../architecture/SYSTEM_ARCHITECTURE.md`, `../architecture/DATA_MODEL.md`, `../architecture/BLOCK_ID_SPEC.md`, `../architecture/MARKDOWN_SPEC.md`, `../architecture/UPDATE_PIPELINE.md`, `../architecture/ADR-013-referencias-juridicas-resolvidas.md`, `../architecture/ADR-014-auditoria-operacional-e-reprocessamento.md`, `./ROADMAP.md`, `./USER_FLOWS.md`
 
 ## Sumário
 
@@ -189,7 +189,7 @@ O Lex Editor cobre integralmente o pipeline entre a fonte oficial de uma lei e s
 | CU-12 | Como Editor Jurídico, quero revisar o diff gerado pelo worker quando uma lei já publicada sofre alteração legislativa, para decidir se aprovo ou rejeito a nova versão. |
 | CU-13 | Como Administrador Técnico, quero configurar novas fontes de importação (novo domínio, novo formato), para expandir a cobertura de legislação sem alterar código a cada nova fonte. |
 | CU-14 | Como Administrador Técnico, quero consultar o histórico de versões de uma lei e reverter uma publicação problemática, para corrigir rapidamente um erro identificado após publicação. |
-| CU-15 | Como Editor Jurídico, quero editar manualmente o frontmatter de uma lei antes de publicar, para corrigir metadados que o parser não conseguiu inferir com segurança. |
+| CU-15 | Como Editor Jurídico, quero corrigir em formulário os campos editoriais do frontmatter antes de publicar, enquanto valores derivados e identidades já publicadas permanecem protegidos, para revisar metadados sem criar uma segunda fonte de verdade. |
 | CU-16 | Como Administrador Técnico, quero consultar logs de importação, parsing, validação e publicação de forma pesquisável, para diagnosticar falhas sem precisar reproduzir o problema do zero. |
 | CU-17 | Como Editor Jurídico, quero que o sistema gere automaticamente o `UPDATE.md` a cada publicação, para manter um changelog legível sem esforço manual adicional. |
 | CU-18 | Como Editor Jurídico, quero alternar o preview e a exportação entre a lei completa, com histórico e tachados oficiais, e somente o texto vigente, para atender auditoria e leitura corrente sem manter duas versões editáveis. |
@@ -577,7 +577,7 @@ reescrita do Git nem simples troca do Supabase para uma versão histórica.
 | RF-21 | Exibição de diff de atualização legislativa | O sistema deve exibir, de forma clara e lado a lado, o diff textual gerado pelo worker quando detecta divergência entre a fonte oficial e a versão publicada. | Para uma divergência de teste simulada, o diff exibido identifica corretamente os trechos alterados, adicionados e removidos, referenciando os Block IDs afetados. |
 | RF-22 | Aprovação/rejeição de atualização pelo editor | O sistema deve permitir que o Editor Jurídico aprove (disparando nova publicação) ou rejeite (mantendo a versão atual, com motivo registrado) uma atualização legislativa detectada pelo worker. | Ao aprovar uma atualização de teste, uma nova publicação é criada conforme fluxo do capítulo 18; ao rejeitar, nenhuma alteração é publicada e o motivo da rejeição fica registrado em log. |
 | RF-23 | Logs de auditoria pesquisáveis | O sistema deve registrar eventos de importação, parsing, validação e publicação em logs estruturados e pesquisáveis pela UI, filtráveis por lei, por tipo de evento e por período. | Um Administrador Técnico consegue localizar, em até 3 filtros, o log de uma publicação específica realizada em uma lei de teste. |
-| RF-24 | Edição manual de frontmatter | O sistema deve permitir que o Editor Jurídico edite manualmente qualquer campo do frontmatter antes da publicação, com validação de tipo e formato em tempo real. | Ao editar um campo de frontmatter com valor inválido (ex. data mal formatada), o sistema exibe erro de validação e impede a submissão até a correção. |
+| RF-24 | Edição validada de frontmatter | O sistema deve permitir que o Editor Jurídico corrija em formulário estruturado os campos editoriais do frontmatter, com validação de tipo, formato, origem e mutabilidade em tempo real. Campos derivados ou controlados por importação/publicação são somente leitura; sigla e identidade jurídica só podem mudar antes da primeira publicação. | Um valor inválido é associado ao campo e impede a submissão; uma correção válida persiste na revisão e aparece no preview/exportação, enquanto campo sistêmico ou identidade publicada é recusado também fora da UI. |
 | RF-25 | Referências jurídicas navegáveis | O sistema deve detectar remissões no texto canônico, resolver referências internas e a leis importadas por identidade + Block ID e oferecer preview por hover/foco e navegação por clique, sem alterar a NormaAST. | Na Lei nº 14.133/2021, `§ 3º deste artigo` no art. 1º, § 4º abre `nllc-art-1-par-3`, e `caput do art. 37 da Constituição Federal` no § 5º abre `cf1988-art-37`; alvo ausente permanece texto literal com diagnóstico. |
 
 ## 20. Requisitos Não Funcionais
@@ -863,3 +863,8 @@ Esta seção apresenta a visão geral por fases; o detalhamento de entregas, cri
   página compilada como fonte preferencial do texto vigente, a página anotada
   como evidência histórica e a preservação independente dos artefatos. Sustenta
   os capítulos 8, 11 e 12 e o pipeline de atualização legislativa.
+- **`../architecture/ADR-014-auditoria-operacional-e-reprocessamento.md`** —
+  separa diagnóstico corrente de auditoria append-only, mantém cada workload
+  sob sua própria autoridade e define consulta federada, evidência restrita e
+  promoção atômica de candidatas de reprocessamento. Sustenta o fluxo 7,
+  RF-23, RNF-05 e RNF-12.

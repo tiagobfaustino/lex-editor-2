@@ -561,26 +561,49 @@ somente da versão pública atual. O contrato puro correspondente é
 
 Mapeamento entre os campos de frontmatter do Markdown (ver `./MARKDOWN_SPEC.md` para a sintaxe exata) e os campos estruturados do modelo de dados.
 
-| Campo no frontmatter | Campo estruturado equivalente | Tipo | Origem |
-|---|---|---|---|
-| `title` | `LeiNode.titulo` | `string` | Preenchido na importação, editável |
-| `sigla` | `LeiNode.sigla` | `string` | Preenchido na importação, imutável após publicação |
-| `tipo` | `LeiNode.tipoNorma` | `TipoNorma` | Preenchido na importação |
-| `numero` | `LeiNode.numero` | `string` | Extraído da fonte oficial |
-| `ano` | `LeiNode.ano` | `number` | Extraído da fonte oficial |
-| `ramo` | `LeiNode.ramo` | `string` | Classificação editorial |
-| `fonte` | `LeiNode.fonte` | `string` (URL) | URL informada na importação |
-| `data_publicacao` | `LeiNode.dataPublicacao` | `string` (`YYYY-MM-DD`) | Extraído da fonte oficial |
-| `data_atualizacao_legal` | `LeiNode.dataAtualizacaoLegal` | `string` (`YYYY-MM-DD`) | Data da última alteração normativa incorporada |
-| `data_formatacao_vinculex` | `LeiNode.dataFormatacaoVinculex` | `string` (`YYYY-MM-DD`) | Fixado antes da formatação; o Formatter não consulta o relógio |
-| `total_artigos` | `LeiNode.totalArtigos` | `number` | Calculado dos `children` e validado |
-| `versao_vinculex` | `LeiNode.versaoVinculex` | `string` (semver) | Incrementado pelo fluxo editorial |
-| `legal_status` | `LeiNode.legalStatus` | `LegalStatus` | Vigência jurídica da lei; ver `./ADR-005-status-fields.md` |
-| `tags` | `LeiNode.tags` | `string[]` | Classificação editorial opcional |
-| `revogada_por` | `LeiNode.revogadaPor` | `string \| null` | Norma revogadora, quando aplicável |
-| `redacao_dada_por` | `LeiNode.redacoesDadasPor` | `ReferenciaRedacao[]` | Agregação das referências de redação por dispositivo |
-| `ids_depreciados` | `LeiNode.idsDepreciados` | `BlockIdDepreciado[]` | Aliases permanentes de Block IDs publicados |
-| `fonte_secundaria` | `LeiNode.fontesSecundarias` | `string[]` | Fontes opcionais de checagem cruzada |
+| Campo no frontmatter | Campo estruturado equivalente | Tipo | Origem | Mutabilidade no editor |
+|---|---|---|---|---|
+| `title` | `LeiNode.titulo` | `string` | Importação | Editável |
+| `sigla` | `LeiNode.sigla` | `string` | Importação | Somente antes da primeira publicação |
+| `tipo` | `LeiNode.tipoNorma` | `TipoNorma` | Importação | Somente antes da primeira publicação |
+| `numero` | `LeiNode.numero` | `string` | Fonte oficial | Somente antes da primeira publicação |
+| `ano` | `LeiNode.ano` | `number` | Fonte oficial | Somente antes da primeira publicação |
+| `ramo` | `LeiNode.ramo` | `string` | Classificação editorial | Editável |
+| `fonte` | `LeiNode.fonte` | `string` (URL) | Catálogo/importação | Somente leitura |
+| `data_publicacao` | `LeiNode.dataPublicacao` | `string` (`YYYY-MM-DD`) | Fonte oficial | Editável com motivo |
+| `data_atualizacao_legal` | `LeiNode.dataAtualizacaoLegal` | `string` (`YYYY-MM-DD`) | Fonte oficial | Editável com motivo |
+| `data_formatacao_vinculex` | `LeiNode.dataFormatacaoVinculex` | `string` (`YYYY-MM-DD`) | Formatter | Somente leitura |
+| `total_artigos` | `LeiNode.totalArtigos` | `number` | Estrutura da AST | Somente leitura |
+| `versao_vinculex` | `LeiNode.versaoVinculex` | `string` (semver) | Publicação | Somente leitura |
+| `legal_status` | `LeiNode.legalStatus` | `LegalStatus` | Decisão editorial jurídica | Editável com motivo |
+| `tags` | `LeiNode.tags` | `string[]` | Classificação editorial | Editável |
+| `revogada_por` | `LeiNode.revogadaPor` | `string \| null` | Decisão editorial jurídica | Editável com motivo |
+| `redacao_dada_por` | `LeiNode.redacoesDadasPor` | `ReferenciaRedacao[]` | Dispositivos da AST | Somente leitura |
+| `ids_depreciados` | `LeiNode.idsDepreciados` | `BlockIdDepreciado[]` | Reconciliação | Somente leitura |
+| `fonte_secundaria` | `LeiNode.fontesSecundarias` | `string[]` | Catálogo/importação | Somente leitura |
+
+`publicationStatus`, `projection_profile` e `aliases` também aparecem na
+projeção de edição para explicar o estado corrente, mas são controlados,
+respectivamente, por publicação, projeção e catálogo de referências. Eles não
+podem ser alterados por `set_law_metadata`. A ausência de prova sobre o
+histórico de publicação bloqueia somente `sigla`, `tipoNorma`, `numero` e
+`ano`; a política falha fechada e não confia em booleano vindo da interface.
+
+Para liberar esses quatro campos, a camada confiável consulta uma porta de
+histórico pela identidade canônica. Somente uma resposta disponível,
+versionada e com zero versões publicadas produz evidência
+`never_published`; indisponibilidade, erro, payload inválido ou evidência de
+outra identidade resultam em `unknown`. A evidência não integra o comando
+recebido do renderer.
+
+Uma mudança pré-publicação de identidade remove os Block IDs provisórios e os
+regenera com a nova sigla. Antes de devolver sucesso, a mesma transação pura
+precisa validar o catálogo jurídico completo, os layouts dos perfis completo e
+vigente, a re-resolução das referências e o Markdown canônico. Colisão ou
+falha em qualquer derivado descarta a candidata inteira; IDs provisórios
+substituídos não viram aliases históricos. Alteração de título percorre a mesma
+derivação, mas preserva integralmente dispositivos, evidências e Block IDs e
+não executa novamente o Parser.
 
 O frontmatter é a serialização "de leitura humana" desses campos; o Supabase é a serialização "de consulta estruturada". Ambos derivam da mesma fonte: a NormaAST gerada pelo Lex Editor. `publicationStatus` permanece na NormaAST para controlar o fluxo editorial, mas não é serializado no frontmatter; `deviceStatus` é materializado no corpo conforme `MARKDOWN_SPEC.md`. `dataVerificacaoIntegridade`, `avisosAtualizacao` e `notasEditoriais` alimentam callouts do cabeçalho e as colunas privadas correspondentes de `versoes_lei`; não criam novas chaves de frontmatter.
 

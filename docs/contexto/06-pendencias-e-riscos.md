@@ -4,9 +4,10 @@
 > dívida é algo que já está no repositório e precisa de correção; risco é o que
 > pode dar errado adiante.
 
-> Atualização em 2026-08-14: as Features 001–011 estão concluídas. As seções
-> datadas abaixo permanecem como histórico; o estado operacional atual está no
-> `spec/FEATURE_INDEX.md` e nos `review.md` das features encerradas.
+> Atualização em 2026-08-14: as Features 001–012 estão concluídas e a Feature
+> 013 está ativa como `in_progress`. As seções datadas abaixo permanecem como histórico; o
+> estado operacional atual está no `spec/FEATURE_INDEX.md` e nos `review.md` das
+> features encerradas.
 
 ## Resolvido em 2026-08-04
 
@@ -88,11 +89,12 @@ foram revalidadas com funções e variantes explícitas.
 
 ## Escopo concluído desde o levantamento
 
-As Features 002–011 implementaram o domínio jurídico, parser, Block IDs,
+As Features 002–012 implementaram o domínio jurídico, parser, Block IDs,
 Formatter, importação/preview/exportação, revisão editorial, publicação segura,
 atualizações legislativas, projeções completa/vigente e referências jurídicas
-navegáveis, além do catálogo versionado de fontes oficiais. Não há feature
-ativa nem tarefa parcial no índice atual.
+navegáveis, catálogo versionado de fontes oficiais e edição validada de
+metadados. A Feature 013 está ativa e cobre o RF-23, diagnóstico de incidentes
+e reprocessamento seguro.
 
 ## Dívidas menores
 
@@ -124,6 +126,41 @@ ativa nem tarefa parcial no índice atual.
   semântica dos nomes não muda.
 - **`.playwright-mcp/`** existe como diretório de ferramenta local e já está no
   `.gitignore`; não tem relação com a T001-08.
+
+## Pendência aberta — T013-17 (correlação do reprocessamento do worker)
+
+Levantado em 2026-08-19, durante o Grupo 5 da Feature 013. T013-17 pede para
+correlacionar solicitação/claim/resultado do reprocessamento já existente do
+worker de atualização legislativa. Investigação encontrou que **o contrato de
+correlação já existe e já está completo**, só não em TypeScript:
+
+- `supabase/migrations/20260811160000_legislative_update_queue.sql` (Feature
+  008, anterior a esta sessão) já define
+  `private.request_legislative_update_reprocess(p_update_id, p_actor_user_id)`
+  e `private.claim_legislative_update_reprocess_requests(p_limit)` — um claim
+  `SELECT ... FOR UPDATE SKIP LOCKED` — e ambos já inserem em
+  `private.legislative_update_events` com `event_type` `reprocess_requested` /
+  `reprocess_claimed`, chaveado por `update_id`.
+- `supabase/migrations/20260815120000_operational_audit_projection.sql`
+  (Feature 013, T013-04) já expõe essas linhas via
+  `private.list_legislative_update_audit_events` /
+  `get_legislative_update_audit_event`, com `update_id` como
+  `correlation_id`.
+
+O que falta é uma camada acima: **nenhum código TypeScript chama essas duas
+funções SQL**. `services/update-worker/src/queue.ts` só tem
+`InMemoryLegislativeUpdateQueue` (referência/teste); não existe um
+`LegislativeUpdateQueue` de produção sobre Postgres. `src/main/index.ts` nunca
+passa `updateCapabilities` para `registerIpcHandlers` — a capacidade
+`reprocessUpdate` sempre cai no stub `unavailable` — e o processo principal do
+Electron não tem hoje nenhuma conexão com Supabase/Postgres (`grep` por
+`createClient`/`@supabase/supabase-js` em `src/main/` não encontra nada).
+
+Construir essa camada (um `LegislativeUpdateQueue` de produção + a primeira
+conexão do Electron a um banco) é uma decisão de arquitetura própria —
+credencial, papel de acesso, política de rede — e não uma tarefa de "só
+correlacionar eventos". Por isso T013-17 ficou registrada como pendência em
+aberto em vez de fechada nesta sessão; ver `spec/lex-editor/013-operational-audit-reprocessing/tasks.md`.
 
 ## Riscos adiante
 
@@ -166,7 +203,7 @@ necessário.
 
 ## Próxima sequência
 
-1. Manter a suíte e as fixtures reais das Features 001–011 verdes.
-2. Tratar as dívidas menores acima sem misturá-las a uma nova feature.
-3. Planejar a próxima feature antes de ativá-la; não há incremento posterior
-   autorizado ou parcialmente iniciado no índice.
+1. Manter a suíte e as fixtures reais das Features 001–012 verdes.
+2. Executar a Feature 013 por grupos na ordem definida em `tasks.md`.
+3. Tratar as dívidas menores acima sem misturá-las ao RF-23 ou ao
+   reprocessamento seguro.
