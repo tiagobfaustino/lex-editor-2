@@ -80,6 +80,7 @@ export const PublicationChangeSummaryDtoSchema = z.strictObject({
 export const PublicationConfirmationDtoSchema = z.strictObject({
   publicationId: uuidSchema,
   projectId: uuidSchema,
+  revisionHash: digestSchema,
   lawId: uuidSchema,
   lawTitle: safeTextSchema(240),
   sigla: safeTextSchema(40),

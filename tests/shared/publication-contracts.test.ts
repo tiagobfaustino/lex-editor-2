@@ -53,6 +53,7 @@ describe('publication desktop contracts', () => {
     const confirmation = PublicationConfirmationDtoSchema.parse({
       publicationId: PUBLICATION_ID,
       projectId: '44444444-4444-4444-8444-444444444444',
+      revisionHash: 'c'.repeat(64),
       lawId: LAW_ID,
       lawTitle: 'Lei de Demonstração',
       sigla: 'ldem',

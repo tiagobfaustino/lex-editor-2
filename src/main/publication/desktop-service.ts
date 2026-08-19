@@ -13,12 +13,24 @@ import type { DesktopPublicationIpcCapabilities } from '../ipc/register.js';
 
 export interface PublicationProjectAuthorizer {
   hasProject(projectId: string): Promise<boolean> | boolean;
-  hasApprovedProject(projectId: string): Promise<boolean> | boolean;
+  getApprovedRevision(
+    projectId: string,
+  ): Promise<PublicationProjectRevision | null> | PublicationProjectRevision | null;
+}
+
+export interface PublicationProjectRevision {
+  readonly revisionHash: string;
+  readonly lawTitle: string;
+  readonly sigla: string;
+  readonly version: string;
 }
 
 export interface PublicationDesktopOperations {
   canAccessPublication(publicationId: string): Promise<boolean>;
-  prepare(input: PreparePublicationCommand): Promise<PublicationConfirmationDto>;
+  prepare(
+    input: PreparePublicationCommand,
+    revision: PublicationProjectRevision,
+  ): Promise<PublicationConfirmationDto>;
   execute(publicationId: string): Promise<PublicationAttemptDto>;
   getAttempt(publicationId: string): Promise<PublicationAttemptDto>;
   retry(publicationId: string): Promise<PublicationAttemptDto>;
@@ -44,8 +56,22 @@ export const createPublicationDesktopCapabilities = (options: {
 
   return {
     preparePublication: {
-      authorize: ({ projectId }) => options.projects.hasApprovedProject(projectId),
-      handle: async (input) => remember(await options.operations.prepare(input)),
+      authorize: async ({ projectId }) =>
+        (await options.projects.getApprovedRevision(projectId)) !== null,
+      handle: async (input) => {
+        const revision = await options.projects.getApprovedRevision(input.projectId);
+        if (revision === null) throw new Error('The approved project revision changed.');
+        const confirmation = await options.operations.prepare(input, revision);
+        if (
+          confirmation.revisionHash !== revision.revisionHash ||
+          confirmation.lawTitle !== revision.lawTitle ||
+          confirmation.sigla !== revision.sigla ||
+          confirmation.version !== revision.version
+        ) {
+          throw new Error('The publication candidate does not match the approved revision.');
+        }
+        return remember(confirmation);
+      },
     },
     executePublication: {
       authorize: ({ publicationId }) => hasPublication(publicationId),

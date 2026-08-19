@@ -40,6 +40,7 @@ describe('contratos de exportação em lote', () => {
           title: 'Código Penal',
           sigla: 'cp',
           batchExportStatus: 'succeeded',
+          revisionHash: 'c'.repeat(64),
           directoryName: 'codigo-penal',
           markdownFileName: 'cp.md',
           updateFileName: 'UPDATE.md',
@@ -83,6 +84,7 @@ describe('contratos de exportação por projeção', () => {
   it('identifica o perfil gravado sem revelar o destino real', () => {
     const result = {
       projectId: PROJECT_ID,
+      revisionHash: 'c'.repeat(64),
       destinationId: DESTINATION_ID,
       projectionProfile: 'current_only',
       fileName: 'lei-vigente.md',

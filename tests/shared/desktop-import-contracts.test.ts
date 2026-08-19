@@ -236,6 +236,7 @@ describe('projeções paginadas e sanitizadas', () => {
     expect(
       PreviewDocumentDtoSchema.safeParse({
         projectId: PROJECT_ID,
+        revisionHash: 'c'.repeat(64),
         projectionProfile: 'complete_with_history',
         source,
         title: 'Código Penal',

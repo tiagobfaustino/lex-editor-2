@@ -179,6 +179,7 @@ export const DestinationSummaryDtoSchema = z.strictObject({
 
 export const ExportResultDtoSchema = z.strictObject({
   projectId: OpaqueIdSchema,
+  revisionHash: Sha256Schema,
   destinationId: OpaqueIdSchema,
   projectionProfile: ContentProjectionProfileDtoSchema,
   fileName: z
@@ -211,6 +212,7 @@ const BatchExportIdentityDtoSchema = z.strictObject({
 export const BatchExportItemResultDtoSchema = z.discriminatedUnion('batchExportStatus', [
   BatchExportIdentityDtoSchema.extend({
     batchExportStatus: z.literal('succeeded'),
+    revisionHash: Sha256Schema,
     directoryName: z
       .string()
       .min(1)
@@ -332,6 +334,7 @@ export const PreviewCalloutDtoSchema = z.strictObject({
 
 export const PreviewDocumentDtoSchema = z.strictObject({
   projectId: OpaqueIdSchema,
+  revisionHash: Sha256Schema,
   projectionProfile: ContentProjectionProfileDtoSchema,
   source: SourceSummaryDtoSchema,
   title: z.string().min(1).max(DESKTOP_IMPORT_LIMITS.maxDisplayNameCharacters),

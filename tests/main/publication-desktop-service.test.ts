@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createPublicationDesktopCapabilities,
   type PublicationDesktopOperations,
+  type PublicationProjectRevision,
 } from '../../src/main/publication/desktop-service.js';
 import type {
   PublicationAttemptDto,
@@ -15,6 +16,7 @@ const PROJECT_ID = '11111111-1111-4111-8111-111111111111';
 const PUBLICATION_ID = '22222222-2222-4222-8222-222222222222';
 const LAW_ID = '33333333-3333-4333-8333-333333333333';
 const VERSION_ID = '44444444-4444-4444-8444-444444444444';
+const REVISION_HASH = 'c'.repeat(64);
 
 const changes: PublicationChangeSummaryDto = {
   included: 0,
@@ -35,6 +37,7 @@ const changes: PublicationChangeSummaryDto = {
 const confirmation: PublicationConfirmationDto = {
   publicationId: PUBLICATION_ID,
   projectId: PROJECT_ID,
+  revisionHash: REVISION_HASH,
   lawId: LAW_ID,
   lawTitle: 'Lei de Demonstração',
   sigla: 'ldem',
@@ -89,7 +92,15 @@ const operations = (): PublicationDesktopOperations => ({
   canAccessPublication: vi.fn((publicationId: string) =>
     Promise.resolve(publicationId === PUBLICATION_ID),
   ),
-  prepare: vi.fn(() => Promise.resolve(confirmation)),
+  prepare: vi.fn((_input, revision: PublicationProjectRevision) =>
+    Promise.resolve({
+      ...confirmation,
+      revisionHash: revision.revisionHash,
+      lawTitle: revision.lawTitle,
+      sigla: revision.sigla,
+      version: revision.version,
+    }),
+  ),
   execute: vi.fn(() => Promise.resolve(failedAttempt)),
   getAttempt: vi.fn(() => Promise.resolve(failedAttempt)),
   retry: vi.fn(() => Promise.resolve(failedAttempt)),
@@ -109,7 +120,7 @@ describe('publication desktop capabilities', () => {
     const capabilities = createPublicationDesktopCapabilities({
       projects: {
         hasProject: (projectId) => projectId === PROJECT_ID,
-        hasApprovedProject: () => false,
+        getApprovedRevision: () => null,
       },
       operations: operations(),
     });
@@ -134,7 +145,12 @@ describe('publication desktop capabilities', () => {
     const capabilities = createPublicationDesktopCapabilities({
       projects: {
         hasProject: () => true,
-        hasApprovedProject: () => true,
+        getApprovedRevision: () => ({
+          revisionHash: REVISION_HASH,
+          lawTitle: confirmation.lawTitle,
+          sigla: confirmation.sigla,
+          version: confirmation.version,
+        }),
       },
       operations: publicationOperations,
     });
@@ -142,6 +158,13 @@ describe('publication desktop capabilities', () => {
     await capabilities.preparePublication.handle({
       projectId: PROJECT_ID,
       sourceSummary: 'Resumo válido.',
+    });
+    expect(
+      (publicationOperations.prepare as ReturnType<typeof vi.fn>).mock.calls[0]?.[1],
+    ).toMatchObject({
+      revisionHash: REVISION_HASH,
+      lawTitle: confirmation.lawTitle,
+      sigla: confirmation.sigla,
     });
     expect(
       await capabilities.getPublicationAttempt.authorize({ publicationId: PUBLICATION_ID }),
@@ -165,7 +188,15 @@ describe('publication desktop capabilities', () => {
 
   it('does not authorize an unrelated publication ID', async () => {
     const capabilities = createPublicationDesktopCapabilities({
-      projects: { hasProject: () => true, hasApprovedProject: () => true },
+      projects: {
+        hasProject: () => true,
+        getApprovedRevision: () => ({
+          revisionHash: REVISION_HASH,
+          lawTitle: confirmation.lawTitle,
+          sigla: confirmation.sigla,
+          version: confirmation.version,
+        }),
+      },
       operations: operations(),
     });
 
@@ -174,5 +205,31 @@ describe('publication desktop capabilities', () => {
         publicationId: '66666666-6666-4666-8666-666666666666',
       }),
     ).resolves.toBe(false);
+  });
+
+  it('rejeita candidato cuja revisão ou metadados divergem do projeto aprovado', async () => {
+    const publicationOperations = operations();
+    publicationOperations.prepare = vi.fn(() =>
+      Promise.resolve({ ...confirmation, lawTitle: 'Título vindo de estado paralelo' }),
+    );
+    const capabilities = createPublicationDesktopCapabilities({
+      projects: {
+        hasProject: () => true,
+        getApprovedRevision: () => ({
+          revisionHash: REVISION_HASH,
+          lawTitle: confirmation.lawTitle,
+          sigla: confirmation.sigla,
+          version: confirmation.version,
+        }),
+      },
+      operations: publicationOperations,
+    });
+
+    await expect(
+      capabilities.preparePublication.handle({
+        projectId: PROJECT_ID,
+        sourceSummary: 'Resumo válido.',
+      }),
+    ).rejects.toThrow(/approved revision/iu);
   });
 });
