@@ -30,6 +30,7 @@
     "src/shared/**/*.ts",
     "src/renderer/src/features/sources/source-form-validation.ts",
     "src/renderer/src/features/metadata/metadata-form-validation.ts",
+    "services/desktop-gateway/src/**/*.ts",
     "services/publisher/src/**/*.ts",
     "services/source-catalog/src/**/*.ts",
     "services/update-worker/src/**/*.ts",

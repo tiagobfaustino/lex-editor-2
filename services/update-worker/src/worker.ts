@@ -18,9 +18,10 @@ import {
   legislativeUpdateProposalSchema,
   updateDigestSchema,
   updateUuidSchema,
-  type LegislativeUpdateQueue,
+  type LegislativeUpdateWorkerQueue,
   type UpdateOverallConfidence,
 } from './contracts.js';
+import { legislativeCandidateArtifactSchema } from './candidate-artifacts.js';
 import {
   isScheduleDue,
   scheduleAfterFailure,
@@ -84,7 +85,7 @@ const safeErrorCode = (error: unknown): string => {
 
 export const createLegislativeUpdateWorker = (options: {
   collector: LegislativeSourceCollector;
-  queue: LegislativeUpdateQueue;
+  queue: LegislativeUpdateWorkerQueue;
   sha256(value: string): string;
   now(): Date;
   random(): number;
@@ -157,6 +158,18 @@ export const createLegislativeUpdateWorker = (options: {
       const detectionKey = updateDigestSchema.parse(
         options.sha256([job.lawId, job.baseVersionId, hashes.valor.normativeSha256].join('\u0000')),
       );
+      await options.queue.saveCandidateArtifact(
+        legislativeCandidateArtifactSchema.parse({
+          schemaVersion: 1,
+          candidateArtifactId: collected.candidateArtifactId,
+          lawId: job.lawId,
+          baseVersionId: job.baseVersionId,
+          baseNormativeSha256: job.baseNormativeSha256,
+          candidateNormativeSha256: hashes.valor.normativeSha256,
+          ast: reconciled.valor.arvore,
+          snapshots: collected.snapshots,
+        }),
+      );
       const upserted = await options.queue.upsertProposal(
         legislativeUpdateProposalSchema.parse({
           lawId: job.lawId,
@@ -178,7 +191,7 @@ export const createLegislativeUpdateWorker = (options: {
       return {
         kind: upserted.created ? 'proposal_created' : 'proposal_reused',
         schedule: successfulSchedule,
-        updateId: upserted.record.id,
+        updateId: upserted.updateId,
         supersededUpdateIds: upserted.supersededUpdateIds,
       };
     } catch (error) {
@@ -202,7 +215,7 @@ export const createLegislativeUpdateWorker = (options: {
         errorCode,
         occurredAt: now.toISOString(),
       });
-      return { kind: 'error', schedule: failedSchedule, updateId: record.id, errorCode };
+      return { kind: 'error', schedule: failedSchedule, updateId: record.updateId, errorCode };
     }
   },
 });

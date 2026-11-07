@@ -97,29 +97,37 @@ describe('fetch seguro do conjunto Planalto', () => {
     expect(ports.request).toHaveBeenCalledTimes(1);
   });
 
-  it('prefere a contraparte compilada e mantém a anotada como evidência histórica', async () => {
-    const ports = makePorts(({ url, addresses }) => {
-      expect(addresses).toEqual(PUBLIC_ADDRESSES);
-      return Promise.resolve(
-        htmlResponse(
-          url.pathname.includes('compilado') ? '<html>compilada</html>' : '<html>anotada</html>',
-        ),
+  it.each([false, true])(
+    'mantém a URL informada como primária (compilada: %s)',
+    async (compiled) => {
+      const ports = makePorts(({ url, addresses }) => {
+        expect(addresses).toEqual(PUBLIC_ADDRESSES);
+        return Promise.resolve(
+          htmlResponse(
+            url.pathname.includes('compilado') ? '<html>compilada</html>' : '<html>anotada</html>',
+          ),
+        );
+      });
+
+      const artifacts = await fetchPlanaltoSourceSet(
+        `https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657${compiled ? 'compilado' : ''}.htm`,
+        ports,
       );
-    });
 
-    const artifacts = await fetchPlanaltoSourceSet(
-      'https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657.htm',
-      ports,
-    );
-
-    expect(artifacts).toHaveLength(2);
-    expect(artifacts.map(({ sourceRole, sourceVariant }) => [sourceRole, sourceVariant])).toEqual([
-      ['primary_current', 'compiled'],
-      ['historical_auxiliary', 'annotated'],
-    ]);
-    expect(artifacts[0]?.finalUrl).toContain('del4657compilado.htm');
-    expect(artifacts[1]?.finalUrl).toContain('del4657.htm');
-  });
+      expect(artifacts).toHaveLength(2);
+      expect(artifacts.map(({ sourceRole, sourceVariant }) => [sourceRole, sourceVariant])).toEqual(
+        [
+          ['primary_current', compiled ? 'compiled' : 'annotated'],
+          [compiled ? 'historical_auxiliary' : 'cross_check', compiled ? 'annotated' : 'compiled'],
+        ],
+      );
+      expect(artifacts[0]?.finalUrl).toContain(`del4657${compiled ? 'compilado' : ''}.htm`);
+      expect(artifacts[0]?.bytes.toString()).toBe(
+        compiled ? '<html>compilada</html>' : '<html>anotada</html>',
+      );
+      expect(artifacts[1]?.finalUrl).toContain(`del4657${compiled ? '' : 'compilado'}.htm`);
+    },
+  );
 
   it('aceita fonte única quando a contraparte oficial não existe', async () => {
     const ports = makePorts(({ url }) =>
@@ -140,6 +148,46 @@ describe('fetch seguro do conjunto Planalto', () => {
       sourceRole: 'primary_current',
       sourceVariant: 'compiled',
     });
+  });
+
+  it('mantém como primária a resposta após redirect seguro da URL informada', async () => {
+    const ports = makePorts(({ url }) =>
+      Promise.resolve(
+        url.pathname === '/lei.htm'
+          ? {
+              statusCode: 302,
+              headers: { location: 'https://www.planalto.gov.br/ccivil_03/leis/l1.htm' },
+              body: Buffer.alloc(0),
+            }
+          : htmlResponse(
+              url.pathname.includes('compilado')
+                ? '<html>comparação</html>'
+                : '<html>selecionada</html>',
+            ),
+      ),
+    );
+    const sources = await fetchPlanaltoSourceSet('https://www.planalto.gov.br/lei.htm#art1', ports);
+    expect(sources[0]).toMatchObject({
+      requestedUrl: 'https://www.planalto.gov.br/lei.htm',
+      finalUrl: 'https://www.planalto.gov.br/ccivil_03/leis/l1.htm',
+      sourceRole: 'primary_current',
+      sourceVariant: 'annotated',
+    });
+    expect(sources[0]?.bytes.toString()).toBe('<html>selecionada</html>');
+  });
+
+  it('não substitui a URL selecionada quando ela responde 404', async () => {
+    const ports = makePorts(() =>
+      Promise.resolve({
+        statusCode: 404,
+        headers: { 'content-type': 'text/html' },
+        body: Buffer.alloc(0),
+      }),
+    );
+    await expect(
+      fetchPlanaltoSourceSet('https://www.planalto.gov.br/lei.htm', ports),
+    ).rejects.toMatchObject({ code: 'NETWORK_HTTP', httpStatus: 404 });
+    expect(ports.request).toHaveBeenCalledTimes(1);
   });
 
   it('distingue tipo inválido, limite excedido e timeout', async () => {

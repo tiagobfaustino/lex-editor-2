@@ -242,12 +242,19 @@ legal_status: "vigente"
     ).toBe(false);
 
     selectedPath = join(process.cwd(), 'fixtures', 'legal', 'lindb', 'esperado.md');
-    expect(await processSelected()).toMatch(/[0-9a-f-]{36}/u);
+    let lindbId = await processSelected();
+    expect(lindbId).toMatch(/[0-9a-f-]{36}/u);
     selectedPath = join(process.cwd(), 'fixtures', 'legal', 'lindb', 'snapshot.html');
-    expect(await processSelected()).toMatch(/[0-9a-f-]{36}/u);
+    await expect(service.selectLocal.handle({})).rejects.toMatchObject({
+      code: 'LAW_ALREADY_EXISTS',
+    });
+    await service.deleteLocalLaw.handle({ projectId: lindbId });
+    lindbId = await processSelected();
     selectedPath = maliciousPath;
-    expect(await processSelected()).toMatch(/[0-9a-f-]{36}/u);
+    await service.deleteLocalLaw.handle({ projectId: lindbId });
+    lindbId = await processSelected();
     selectedPath = join(process.cwd(), 'fixtures', 'legal', 'lindb', 'esperado.md');
+    await service.deleteLocalLaw.handle({ projectId: lindbId });
     expect(await processSelected()).toMatch(/[0-9a-f-]{36}/u);
     selectedPath = editorialPath;
     expect(await processSelected()).toMatch(/[0-9a-f-]{36}/u);

@@ -1,4 +1,17 @@
 import { z } from 'zod';
+import type {
+  CheckLocalSourceCommand,
+  CheckLocalSourceResult,
+  ApplyLocalSourceUpdateCommand,
+  ApplyLocalSourceUpdateResult,
+  DeleteLocalLawCommand,
+  DeleteLocalLawResult,
+  ListLocalLawsCommand,
+  ListLocalLawsResult,
+  OpenLocalLawCommand,
+  OpenLocalLawResult,
+} from './library.js';
+import type { SessionSignInCommand, SessionStateResult } from './session.js';
 
 import type {
   CancelJobCommand,
@@ -114,6 +127,14 @@ export const DESKTOP_API_VERSION = 1 as const;
 export const APP_GET_VERSION_CHANNEL = 'app:get-version' as const;
 export const DESKTOP_CAPABILITIES = Object.freeze([
   'app.getVersion',
+  'library.list',
+  'library.open',
+  'library.delete',
+  'library.checkSource',
+  'library.applySourceUpdate',
+  'session.getState',
+  'session.signIn',
+  'session.signOut',
   'source.selectLocal',
   'source.importFromUrl',
   'pipeline.start',
@@ -182,7 +203,10 @@ export const DesktopErrorCodeSchema = z.enum([
   'NETWORK_CONTENT_TYPE',
   'NETWORK_TOO_LARGE',
   'NETWORK_CERTIFICATE',
+  'NETWORK_FAILED',
   'FAILED',
+  'PROJECT_UNAVAILABLE',
+  'LAW_ALREADY_EXISTS',
 ]);
 
 export const DesktopErrorDtoSchema = z.strictObject({
@@ -222,6 +246,11 @@ export type LexDesktopApiV1 = Readonly<{
   capabilities: typeof DESKTOP_CAPABILITIES;
   app: Readonly<{
     getVersion(): Promise<AppGetVersionResult>;
+  }>;
+  session: Readonly<{
+    getState(): Promise<SessionStateResult>;
+    signIn(input: SessionSignInCommand): Promise<SessionStateResult>;
+    signOut(): Promise<SessionStateResult>;
   }>;
   source: Readonly<{
     selectLocal(): Promise<SelectLocalSourceResult>;
@@ -309,6 +338,13 @@ export type LexDesktopApiV1 = Readonly<{
     restore(input: ActivateSourceBindingCommand): Promise<ActivateSourceBindingResult>;
     requestCheck(input: RequestSourceCheckCommand): Promise<RequestSourceCheckResult>;
   }>;
+  library: Readonly<{
+    checkSource(input: CheckLocalSourceCommand): Promise<CheckLocalSourceResult>;
+    applySourceUpdate(input: ApplyLocalSourceUpdateCommand): Promise<ApplyLocalSourceUpdateResult>;
+    list(input: ListLocalLawsCommand): Promise<ListLocalLawsResult>;
+    open(input: OpenLocalLawCommand): Promise<OpenLocalLawResult>;
+    delete(input: DeleteLocalLawCommand): Promise<DeleteLocalLawResult>;
+  }>;
   audit: Readonly<{
     query(input: AuditQueryCommand): Promise<AuditQueryResult>;
     getDetail(input: AuditEventIdCommand): Promise<AuditEventDetailResult>;
@@ -326,8 +362,13 @@ export const createFailedResult = <Value>(code: DesktopErrorCode): IpcResult<Val
   error: {
     code,
     message: 'A operação desktop não pôde ser concluída.',
-    retryable: ['FAILED', 'CONFLICT', 'NETWORK_DNS', 'NETWORK_TIMEOUT', 'NETWORK_HTTP'].includes(
-      code,
-    ),
+    retryable: [
+      'FAILED',
+      'CONFLICT',
+      'NETWORK_DNS',
+      'NETWORK_TIMEOUT',
+      'NETWORK_HTTP',
+      'NETWORK_FAILED',
+    ].includes(code),
   },
 });

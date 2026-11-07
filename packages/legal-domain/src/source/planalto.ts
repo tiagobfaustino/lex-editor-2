@@ -9,7 +9,7 @@
 // Planalto mudar o leiaute, o conserto fica contido aqui e nenhuma regra
 // jurídica precisa ser tocada.
 
-import { varrerPedacos } from './pedacos.js';
+import { varrerPedacos, NOTA_EDITORIAL, type Pedaco } from './pedacos.js';
 
 /**
  * Decodifica o mapeamento de um byte usado pelas fixtures históricas do
@@ -159,15 +159,22 @@ export interface OpcoesDeExtracao {
  * faz a rubrica grudar na ementa da divisão. A decisão exige contexto, e é por
  * isso que a gramática entra por parâmetro.
  */
-export const extrairLinhas = (html: string, opcoes: OpcoesDeExtracao = {}): readonly string[] => {
+const extrairPedacos = (
+  pedacos: readonly Pedaco[],
+  opcoes: OpcoesDeExtracao,
+  rubricasConfirmadas: ReadonlySet<string> = new Set(),
+): readonly string[] => {
   const reconhecer = opcoes.reconhecer ?? ((): undefined => undefined);
   const mantidos: string[] = [];
   let anteriorEsperaEmenta = false;
+  let blocoEmenta: number | undefined;
   let emRodapeDeAssinaturas = false;
 
-  for (const pedaco of varrerPedacos(normalizarTabelasSimples(html))) {
+  for (const pedaco of pedacos) {
     const texto = semRodapeDeAssinaturas(pedaco.texto);
     const reconhecido = reconhecer(texto);
+    if (anteriorEsperaEmenta && reconhecido === undefined) blocoEmenta = pedaco.bloco;
+    if (reconhecido !== undefined || blocoEmenta !== pedaco.bloco) blocoEmenta = undefined;
 
     if (/^Brasília,\s+\d{1,2}\s+de\s+\p{L}+/iu.test(texto)) {
       emRodapeDeAssinaturas = true;
@@ -180,7 +187,12 @@ export const extrairLinhas = (html: string, opcoes: OpcoesDeExtracao = {}): read
 
     emRodapeDeAssinaturas = false;
 
-    if (pedaco.todoEmNegrito && reconhecido === undefined && !anteriorEsperaEmenta) {
+    if (
+      (pedaco.todoEmNegrito || rubricasConfirmadas.has(texto)) &&
+      reconhecido === undefined &&
+      !anteriorEsperaEmenta &&
+      blocoEmenta !== pedaco.bloco
+    ) {
       // Rubrica: negrito, não é dispositivo, e nada antes dela espera ementa.
       continue;
     }
@@ -193,7 +205,9 @@ export const extrairLinhas = (html: string, opcoes: OpcoesDeExtracao = {}): read
       continue;
     }
 
-    anteriorEsperaEmenta = reconhecido?.tituloPendente === true;
+    const apenasNota = texto.replace(NOTA_EDITORIAL, '').replace(/[.\s]/gu, '').length === 0;
+    anteriorEsperaEmenta =
+      reconhecido?.tituloPendente === true || (anteriorEsperaEmenta && apenasNota);
     mantidos.push(linha);
   }
 
@@ -216,6 +230,32 @@ export const extrairLinhas = (html: string, opcoes: OpcoesDeExtracao = {}): read
   }
 
   return linhas;
+};
+
+/** Extrai uma fonte isolada sem inferir ênfase ausente. */
+export const extrairLinhas = (html: string, opcoes: OpcoesDeExtracao = {}): readonly string[] =>
+  extrairPedacos(varrerPedacos(normalizarTabelasSimples(html)), opcoes);
+
+/**
+ * Confirma rubricas sem ênfase apenas por correspondência textual exata com
+ * uma rubrica explícita do conjunto. Ementas de divisão e dispositivos nunca
+ * entram no conjunto de rubricas; conteúdo desconhecido continua preservado.
+ */
+export const extrairLinhasConjunto = (
+  htmls: readonly string[],
+  opcoes: OpcoesDeExtracao = {},
+): readonly (readonly string[])[] => {
+  const fontes = htmls.map((html) => varrerPedacos(normalizarTabelasSimples(html)));
+  const rubricas = new Set<string>();
+  for (const pedacos of fontes) {
+    const mantidos = new Set(
+      extrairPedacos(pedacos, opcoes).map((linha) => linha.replace(/^~~|~~$/gu, '')),
+    );
+    for (const pedaco of pedacos) {
+      if (pedaco.todoEmNegrito && !mantidos.has(pedaco.texto)) rubricas.add(pedaco.texto);
+    }
+  }
+  return fontes.map((pedacos) => extrairPedacos(pedacos, opcoes, rubricas));
 };
 
 /**

@@ -17,6 +17,7 @@ import { createLocalAuditJournalStore } from '../../src/main/audit/local-audit-j
 import { createEditorialProjectStore } from '../../src/main/projects/editorial-project-store.js';
 import type { PlanaltoNetworkPorts } from '../../src/main/import/planalto-source.js';
 import type { PreviewNodeDto, ProgressDto } from '../../src/shared/ipc/import.js';
+import { EditorialStateDtoSchema } from '../../src/shared/ipc/editorial.js';
 import type { ReprocessingStateDto } from '../../src/shared/ipc/reprocessing.js';
 
 const roots: string[] = [];
@@ -106,6 +107,131 @@ const readAuditEvents = async (root: string, projectId: string): Promise<unknown
 };
 
 describe('local project service', () => {
+  it.each([true, false])(
+    'importa as duas fontes do Código Penal e encaminha conflitos à revisão sem perder snapshots (compilada selecionada: %s)',
+    async (compiledSelected) => {
+      const root = await makeRoot();
+      const compiled = await readFile(lawFixture('cp', 'import', 'compiled.html'));
+      const annotated = await readFile(lawFixture('cp', 'import', 'annotated.html'));
+      const result = await setup(lawFixture('cp', 'import', 'compiled.html'), join(root, 'cp.md'), {
+        resolveHost: () => Promise.resolve([{ address: '1.1.1.1', family: 4 }]),
+        request: ({ url }) =>
+          Promise.resolve({
+            statusCode: 200,
+            headers: { 'content-type': 'text/html; charset=windows-1252' },
+            body: url.pathname.toLowerCase().includes('compilado') ? compiled : annotated,
+          }),
+      });
+      const source = await result.service.importFromUrl.handle({
+        url: `https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848${compiledSelected ? 'compilado' : ''}.htm`,
+      });
+      const accepted = await result.service.startProcessing.handle({ sourceId: source.sourceId });
+      const terminal = await result.terminal;
+      const diagnostics = await result.service.getDiagnosticPage.handle({
+        projectId: accepted.projectId,
+        cursor: null,
+        limit: 100,
+      });
+      expect(terminal, JSON.stringify(diagnostics.items)).toMatchObject({ jobStatus: 'completed' });
+      expect(
+        diagnostics.items.some(
+          (diagnostic) => diagnostic.code === 'parsing_designador_desconhecido',
+        ),
+      ).toBe(false);
+      const editorial = await result.service.getEditorialState.handle({
+        projectId: accepted.projectId,
+      });
+      expect(
+        editorial.reviewTargets.some((target) =>
+          target.confidenceReasons.includes('source_text_conflict'),
+        ),
+      ).toBe(true);
+      const validation = await result.service.validateEditorial.handle({
+        projectId: accepted.projectId,
+      });
+      expect(validation.canApprove).toBe(false);
+      expect(result.service.getProjectAst(accepted.projectId)?.fonte).toBe(
+        `https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848${compiledSelected ? 'compilado' : ''}.htm`,
+      );
+      if (!compiledSelected) {
+        const veto = editorial.reviewTargets.find((target) =>
+          target.editorialNote?.includes('marcador de veto'),
+        );
+        expect(veto).toMatchObject({ confidence: 'low' });
+      }
+      const tree = JSON.stringify(await semanticTree(result.service, accepted.projectId));
+      expect(tree.includes('Não há crime sem lei anterior que o defina.')).toBe(true);
+      expect(tree.includes('Pena - reclusão, de 5 (cinco) a 12 (doze) anos, e multa.')).toBe(true);
+      expect(tree.includes('Pena - reclusão, de 2 (dois) a 4 (quatro) anos.')).toBe(true);
+      expect(EditorialStateDtoSchema.safeParse(editorial).success).toBe(true);
+      const conflict = editorial.reviewTargets.find((target) =>
+        target.confidenceReasons.includes('source_text_conflict'),
+      );
+      if (conflict === undefined) throw new Error('Conflito ausente');
+      expect(conflict.editorialNote).toContain('Texto da auxiliar');
+      const reviewed = await result.service.confirmEditorialInterpretation.handle({
+        projectId: accepted.projectId,
+        previewNodeId: conflict.previewNodeId,
+        reason: 'Conferidos os snapshots; manter a redação da URL selecionada.',
+      });
+      expect(
+        reviewed.reviewTargets.some((target) => target.previewNodeId === conflict.previewNodeId),
+      ).toBe(false);
+      const metadataBefore = await result.service.getMetadataState.handle({
+        projectId: accepted.projectId,
+      });
+      const metadataSaved = await result.service.updateMetadata.handle({
+        projectId: accepted.projectId,
+        expectedRevisionHash: metadataBefore.revisionHash,
+        changes: { ramo: 'penal', tags: ['codigo-penal', 'penal'] },
+        reason: 'Classificação editorial do Código Penal.',
+      });
+      expect(metadataSaved.fields.ramo.value).toBe('penal');
+      expect(metadataSaved.fields.tags.value).toEqual(['codigo-penal', 'penal']);
+      expect(metadataSaved.revisionHash).not.toBe(metadataBefore.revisionHash);
+      const reader = createLocalProjectService({
+        storageRoot: join(result.root, 'workspace'),
+        dialog: {
+          showOpenDialog: () => Promise.resolve({ canceled: true, filePaths: [] }),
+          showSaveDialog: () => Promise.resolve({ canceled: true }),
+        },
+        getMainWindow: () => ({}) as BrowserWindow,
+        sendProgress: () => undefined,
+      });
+      await reader.openLocalLaw.handle({ projectId: accepted.projectId });
+      expect(reader.getProjectAst(accepted.projectId)).toEqual(
+        result.service.getProjectAst(accepted.projectId),
+      );
+      const snapshotRoot = join(result.root, 'workspace', 'sources', source.sourceId);
+      const bytes = await Promise.all(
+        (await readdir(snapshotRoot))
+          .filter((file) => file.endsWith('.html'))
+          .map((file) => readFile(join(snapshotRoot, file))),
+      );
+      expect(bytes).toHaveLength(2);
+      expect(bytes.some((snapshot) => snapshot.equals(compiled))).toBe(true);
+      expect(bytes.some((snapshot) => snapshot.equals(annotated))).toBe(true);
+    },
+    15_000,
+  );
+
+  it('processa o snapshot vigente integral do Código Penal sem modificar o texto jurídico', async () => {
+    const root = await makeRoot();
+    const result = await setup(lawFixture('cp', 'import', 'compiled.html'), join(root, 'cp.md'));
+    const source = await result.service.selectLocal.handle({});
+    if (source === null) throw new Error('SOURCE_NOT_SELECTED');
+    const accepted = await result.service.startProcessing.handle({ sourceId: source.sourceId });
+    await expect(result.terminal).resolves.toMatchObject({ jobStatus: 'completed' });
+
+    const ast = result.service.getProjectAst(accepted.projectId);
+    expect(ast).toMatchObject({ tipoNorma: 'decreto-lei', numero: '2.848', ano: 1940 });
+    const tree = JSON.stringify(await semanticTree(result.service, accepted.projectId));
+    expect(tree.includes('Não há crime sem lei anterior que o defina.')).toBe(true);
+    expect(tree.includes('Matar alguem:')).toBe(true);
+    expect(tree.includes('del2848-art-1"')).toBe(true);
+    expect(tree.includes('del2848-art-361"')).toBe(true);
+  }, 15_000);
+
   it('persiste metadados, invalida aprovação e usa a mesma revisão no preview e exportação', async () => {
     const root = await makeRoot();
     const sourcePath = join(root, 'lindb.md');
@@ -225,6 +351,69 @@ describe('local project service', () => {
       sigla: 'lindb',
     });
   });
+
+  it.each([0, 1])(
+    'salva metadados com duas importações da mesma lei (projeto %s)',
+    async (editedIndex) => {
+      const root = await makeRoot();
+      const result = await setup(fixture('esperado.md'), join(root, 'out.md'));
+      const ids: string[] = [];
+      const source = await result.service.selectLocal.handle({});
+      if (source === null) throw new Error('Seleção cancelada');
+      const job = await result.service.startProcessing.handle({ sourceId: source.sourceId });
+      await vi.waitFor(() => {
+        expect(
+          result.progress.some(
+            (event) => event.jobId === job.jobId && event.jobStatus === 'completed',
+          ),
+        ).toBe(true);
+      });
+      ids.push(job.projectId);
+      // Duplicata legada persistida diretamente; novas importações são bloqueadas.
+      const store = createEditorialProjectStore(join(result.root, 'workspace'));
+      const recovered = await store.recover(job.projectId);
+      if (!recovered.ok) throw new Error('Fixture missing');
+      const legacyId = randomUUID();
+      await store.saveJournal({
+        ...recovered.journal,
+        projectId: legacyId,
+        journalId: randomUUID(),
+      });
+      await result.service.openLocalLaw.handle({ projectId: legacyId });
+      ids.push(legacyId);
+      const projectId = ids[editedIndex];
+      const otherId = ids[1 - editedIndex];
+      if (projectId === undefined || otherId === undefined) throw new Error('Projeto ausente');
+      const before = await result.service.getMetadataState.handle({ projectId });
+      const otherBefore = await result.service.getMetadataState.handle({ projectId: otherId });
+      const saved = await result.service.updateMetadata.handle({
+        projectId,
+        expectedRevisionHash: before.revisionHash,
+        changes: { titulo: 'LINDB corrigida', ramo: 'penal', tags: ['codigo-penal', 'penal'] },
+        reason: 'Correção editorial com duas revisões importadas.',
+      });
+      expect(saved.journalSequence).toBe(1);
+      expect(saved.fields.ramo.value).toBe('penal');
+      expect(saved.revisionHash).not.toBe(before.revisionHash);
+      expect(await result.service.getPreviewDocument.handle({ projectId })).toMatchObject({
+        title: 'LINDB corrigida',
+        revisionHash: saved.revisionHash,
+      });
+      expect(await result.service.getMetadataState.handle({ projectId: otherId })).toEqual(
+        otherBefore,
+      );
+      const restored = await createEditorialProjectStore(join(result.root, 'workspace')).recover(
+        projectId,
+      );
+      expect(restored.ok).toBe(true);
+      if (!restored.ok) throw new Error(restored.error.code);
+      expect(restored.ast).toMatchObject({
+        titulo: 'LINDB corrigida',
+        ramo: 'penal',
+        tags: ['codigo-penal', 'penal'],
+      });
+    },
+  );
 
   it('bloqueia identidade publicada sem alterar revisão ou Block IDs, mas permite correção editorial', async () => {
     const root = await makeRoot();
@@ -821,6 +1010,39 @@ describe('local project service', () => {
     expect(remoteTree).toEqual(localTree);
   });
 
+  it.each([false, true])(
+    'o preview usa o texto da URL informada quando as fontes divergem (compilada: %s)',
+    async (compiled) => {
+      const root = await makeRoot();
+      const url = `https://www.planalto.gov.br/ccivil_03/decreto-lei/del4657${compiled ? 'compilado' : ''}.htm`;
+      const result = await setup(join(root, 'unused.html'), join(root, 'out.md'), {
+        resolveHost: () => Promise.resolve([{ address: '1.1.1.1', family: 4 }]),
+        request: ({ url }) =>
+          Promise.resolve({
+            statusCode: 200,
+            headers: { 'content-type': 'text/html' },
+            body: Buffer.from(
+              `<html><body><p>DECRETO-LEI Nº 4.657, DE 1942</p><p>Art. 1. Texto ${url.pathname.includes('compilado') ? 'da compilada' : 'da URL anotada'}.</p></body></html>`,
+            ),
+          }),
+      });
+      const source = await result.service.importFromUrl.handle({ url });
+      expect(source.displayName).toBe(compiled ? 'del4657compilado.htm' : 'del4657.htm');
+      const job = await result.service.startProcessing.handle({ sourceId: source.sourceId });
+      await expect(result.terminal).resolves.toMatchObject({ jobStatus: 'completed' });
+      const ast = result.service.getProjectAst(job.projectId);
+      expect(ast?.fonte).toBe(url);
+      const tree = await semanticTree(result.service, job.projectId);
+      expect(tree[0]).toMatchObject({
+        plainText: compiled ? 'Texto da compilada.' : 'Texto da URL anotada.',
+      });
+      const validation = await result.service.validateEditorial.handle({
+        projectId: job.projectId,
+      });
+      expect(validation.canApprove).toBe(false);
+    },
+  );
+
   it('preserva cada variante do conjunto em snapshot imutável separado', async () => {
     const root = await makeRoot();
     const selectedPath = join(root, 'unused.html');
@@ -901,6 +1123,8 @@ describe('local project service', () => {
         createdAt: '2026-08-13T15:01:00.000Z',
       },
     };
+    const htmlFor = (url: string) =>
+      `<html><body><p>LEI Nº 10.826, DE 2003</p><p>Art. 1. Texto de ${new URL(url).pathname}.</p></body></html>`;
     const requestedPaths: string[] = [];
     const ports: PlanaltoNetworkPorts = {
       resolveHost: () => Promise.resolve([{ address: '1.1.1.1', family: 4 }]),
@@ -909,7 +1133,7 @@ describe('local project service', () => {
         return Promise.resolve({
           statusCode: 200,
           headers: { 'content-type': 'text/html' },
-          body: Buffer.from(`<html>${url.pathname}</html>`),
+          body: Buffer.from(htmlFor(url.href)),
         });
       },
     };
@@ -918,10 +1142,20 @@ describe('local project service', () => {
     const source = await result.service.importFromUrl.handle({ url: requestedUrl });
 
     expect(resolver.resolve).toHaveBeenCalledWith(requestedUrl);
+    expect(source.displayName).toBe('l10.826.htm');
+    expect(source.sourceArtifactSha256).toBe(
+      createHash('sha256').update(htmlFor(requestedUrl)).digest('hex'),
+    );
     expect(requestedPaths.sort()).toEqual([
       '/ccivil_03/leis/2003/l10.826.htm',
       '/ccivil_03/leis/2003/l10.826compilado.htm',
     ]);
+    const job = await result.service.startProcessing.handle({ sourceId: source.sourceId });
+    await expect(result.terminal).resolves.toMatchObject({ jobStatus: 'completed' });
+    expect(result.service.getProjectAst(job.projectId)?.fonte).toBe(requestedUrl);
+    expect((await semanticTree(result.service, job.projectId))[0]).toMatchObject({
+      plainText: `Texto de ${new URL(requestedUrl).pathname}.`,
+    });
     const evidencePath = join(
       result.root,
       'workspace',
@@ -1166,6 +1400,27 @@ describe('local project service: reprocessamento', () => {
       revisionHash: editorial.revisionHash,
     };
   };
+
+  it('congela para publicação somente a revisão aprovada e fontes íntegras', async () => {
+    const { service, root, projectId, sourceId } = await importFixture();
+    await expect(service.getPublicationSnapshot(projectId)).rejects.toThrow(
+      'INVALID_APPROVED_REVISION',
+    );
+    await service.validateEditorial.handle({ projectId });
+    await service.approveEditorial.handle({ projectId });
+    const snapshot = await service.getPublicationSnapshot(projectId);
+    expect(snapshot.revisionHash).toBe(service.getApprovedRevision(projectId)?.revisionHash);
+    expect(snapshot.ast).toEqual(service.getProjectAst(projectId));
+    snapshot.ast.titulo = 'Mudança fora da revisão';
+    expect(service.getProjectAst(projectId)?.titulo).not.toBe(snapshot.ast.titulo);
+    const directory = join(root, 'workspace', 'sources', sourceId);
+    const file = (await readdir(directory)).find((name) => name.endsWith('.md'));
+    if (file === undefined) throw new Error('Snapshot ausente');
+    await writeFile(join(directory, file), 'fonte adulterada');
+    await expect(service.getPublicationSnapshot(projectId)).rejects.toThrow(
+      'SOURCE_SNAPSHOT_HASH_MISMATCH',
+    );
+  });
 
   it('reprocessa from_source_snapshot sem mudança de fonte e promove atomicamente', async () => {
     const { service, root, projectId, revisionHash } = await importFixture();

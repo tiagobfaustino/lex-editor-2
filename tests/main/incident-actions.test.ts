@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -191,6 +191,34 @@ describe('createIncidentActions: openEvidence', () => {
     const evidenceLocatorId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
     const artifactSha256 = 'c'.repeat(64);
     await journal.append(projectId, pipelineEventWithEvidence(evidenceLocatorId, artifactSha256));
+
+    await expect(
+      actions.openEvidence(ACTOR, { projectId, evidenceLocatorId }),
+    ).rejects.toMatchObject({
+      code: 'evidence_not_available',
+    } satisfies Partial<FederatedAuditError>);
+
+    const { entries } = await journal.read(projectId);
+    expect(entries).toHaveLength(2);
+    expect(entries[1]?.event.detail).toMatchObject({
+      kind: 'evidence',
+      eventCode: 'evidence_excerpt_denied',
+      result: 'denied',
+      evidenceLocatorId,
+    });
+  });
+
+  it('nega e audita o acesso quando o artefato é um symlink para fora da raiz', async () => {
+    const { journal, actions, storageRoot } = await setup();
+    const evidenceLocatorId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+    const content = 'artefato fora da raiz\n';
+    const artifactSha256 = sha256(Buffer.from(content, 'utf8'));
+    await journal.append(projectId, pipelineEventWithEvidence(evidenceLocatorId, artifactSha256));
+    const sourceDirectory = join(storageRoot, 'sources', 'law-1');
+    const externalArtifact = join(storageRoot, 'artifact-fora-da-raiz');
+    await mkdir(sourceDirectory, { recursive: true });
+    await writeFile(externalArtifact, content, 'utf8');
+    await symlink(externalArtifact, join(sourceDirectory, `artifact-${artifactSha256}`));
 
     await expect(
       actions.openEvidence(ACTOR, { projectId, evidenceLocatorId }),

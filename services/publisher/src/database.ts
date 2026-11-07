@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { validarIdentifiedNormaAst } from '@lex-editor/legal-domain';
 import { z } from 'zod';
 
@@ -7,6 +8,10 @@ import {
 } from '../../../src/shared/publication/approval.js';
 import {
   publicationIdentifiedAstRelativePath,
+  publicationManifestRelativePath,
+  publicationSourceSnapshotRelativePath,
+  parseCanonicalPublicationManifest,
+  serializeCanonicalJson,
   publicationUuidSchema,
 } from '../../../src/shared/publication/manifest.js';
 import type { PublicationApprovalRepository, PublisherIdentityRepository } from './approval.js';
@@ -84,21 +89,24 @@ export const createPublisherDatabase = (options: {
 }> => {
   const identities: PublisherIdentityRepository = {
     async findByUserId(userId) {
-      const rows = await options.sql.query<{
-        user_id: string;
-        account_status: string;
-        papel: string;
-      }>(
-        `select user_id::text, account_status, papel
-         from public.usuarios_perfil where user_id = $1::uuid`,
+      const rows = await options.sql.query<Record<string, unknown>>(
+        'select private.get_publisher_editor_identity($1::uuid) as value',
         [publicationUuidSchema.parse(userId)],
       );
-      const row = rows[0];
-      if (row === undefined) return null;
+      if (rows.length !== 1) throw new PublisherDatabaseError();
+      const value = rows[0]?.['value'];
+      if (value === null) return null;
+      const identity = z
+        .strictObject({
+          userId: publicationUuidSchema,
+          accountStatus: z.enum(['active', 'suspended']),
+          papel: z.string(),
+        })
+        .parse(value);
       return {
-        userId: publicationUuidSchema.parse(row.user_id),
-        accountStatus: z.enum(['active', 'suspended']).parse(row.account_status),
-        roles: row.papel === 'curador' ? ['editor_juridico'] : [],
+        userId: identity.userId,
+        accountStatus: identity.accountStatus,
+        roles: identity.papel === 'curador' ? ['editor_juridico'] : [],
       };
     },
   };
@@ -139,16 +147,7 @@ export const createPublisherDatabase = (options: {
     async getByLawId(lawId, lawDirectoryName) {
       const parsedLawId = publicationUuidSchema.parse(lawId);
       const rows = await options.sql.query<Record<string, unknown>>(
-        `select pg_catalog.jsonb_build_object(
-           'lawId', law.id,
-           'publishedVersionId', law.versao_publicada_id,
-           'gitCommitSha', version.git_commit_sha,
-           'version', version.versao_vinculex,
-           'publicationNumber', version.numero_publicacao
-         ) as value
-         from public.leis as law
-         left join public.versoes_lei as version on version.id = law.versao_publicada_id
-         where law.id = $1::uuid`,
+        'select private.get_publisher_publication_baseline($1::uuid) as value',
         [parsedLawId],
       );
       if (rows.length !== 1) throw new PublisherDatabaseError('A lei publicada não existe.');
@@ -162,19 +161,10 @@ export const createPublisherDatabase = (options: {
             .nullable(),
           version: z.string().nullable(),
           publicationNumber: z.number().int().positive().nullable(),
+          historicalBlockIds: z.array(z.string()),
+          redirects: z.array(z.strictObject({ antigo: z.string(), novo: z.string() })),
         })
         .parse(rows[0]?.['value']);
-      const [blockRows, redirectRows] = await Promise.all([
-        options.sql.query<{ block_id: string }>(
-          `select block_id from public.block_ids where lei_id = $1::uuid order by block_id`,
-          [parsedLawId],
-        ),
-        options.sql.query<{ antigo: string; novo: string }>(
-          `select origem_block_id as antigo, destino_block_id as novo
-           from public.block_id_redirects where lei_id = $1::uuid order by origem_block_id`,
-          [parsedLawId],
-        ),
-      ]);
       let ast = null;
       if (base.gitCommitSha !== null && base.version !== null && base.publicationNumber !== null) {
         const bytes = await options.git.readBlob(
@@ -200,18 +190,85 @@ export const createPublisherDatabase = (options: {
       return {
         ...base,
         ast,
-        historicalBlockIds: blockRows.map((row) => row.block_id),
-        redirects: redirectRows,
+        historicalBlockIds: base.historicalBlockIds,
+        redirects: base.redirects,
       };
     },
     async versionBelongsToLaw(lawId, versionId) {
-      const rows = await options.sql.query<{ found: boolean }>(
-        `select exists(
-           select 1 from public.versoes_lei where lei_id = $1::uuid and id = $2::uuid
-         ) as found`,
+      const rows = await options.sql.query<Record<string, unknown>>(
+        'select private.get_publisher_historical_version($1::uuid,$2::uuid) as value',
         [publicationUuidSchema.parse(lawId), publicationUuidSchema.parse(versionId)],
       );
-      return rows[0]?.found === true;
+      if (rows.length !== 1) throw new PublisherDatabaseError();
+      return rows[0]?.['value'] !== null;
+    },
+    async getHistoricalVersion(lawId, versionId, lawDirectoryName) {
+      const rows = await options.sql.query<Record<string, unknown>>(
+        'select private.get_publisher_historical_version($1::uuid,$2::uuid) as value',
+        [publicationUuidSchema.parse(lawId), publicationUuidSchema.parse(versionId)],
+      );
+      if (rows.length === 1 && rows[0]?.['value'] === null) return null;
+      if (rows.length !== 1) throw new PublisherDatabaseError('A versão histórica é ambígua.');
+      const stored = z
+        .strictObject({
+          lawId: publicationUuidSchema,
+          versionId: publicationUuidSchema,
+          gitCommitSha: z.string().regex(/^[0-9a-f]{40}(?:[0-9a-f]{24})?$/u),
+          version: z.string(),
+          publicationNumber: z.number().int().positive(),
+          publicationId: publicationUuidSchema,
+          manifestDigest: z.string().regex(/^[0-9a-f]{64}$/u),
+        })
+        .parse(rows[0]?.['value']);
+      const digest = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
+      const manifestBytes = await options.git.readBlob(
+        stored.gitCommitSha,
+        publicationManifestRelativePath(lawDirectoryName, stored.publicationNumber, stored.version),
+      );
+      const manifest = parseCanonicalPublicationManifest(manifestBytes);
+      if (
+        digest(manifestBytes) !== stored.manifestDigest ||
+        manifest.publicationId !== stored.publicationId ||
+        manifest.law.lawId !== stored.lawId ||
+        manifest.law.directoryName !== lawDirectoryName ||
+        manifest.target.version !== stored.version ||
+        manifest.target.publicationNumber !== stored.publicationNumber
+      ) {
+        throw new PublisherDatabaseError(
+          'O manifesto histórico não corresponde à versão publicada.',
+        );
+      }
+      const astBytes = await options.git.readBlob(
+        stored.gitCommitSha,
+        publicationIdentifiedAstRelativePath(
+          lawDirectoryName,
+          stored.publicationNumber,
+          stored.version,
+        ),
+      );
+      const astText = new TextDecoder('utf-8', { fatal: true }).decode(astBytes);
+      const validated = validarIdentifiedNormaAst(JSON.parse(astText) as unknown);
+      if (
+        !validated.ok ||
+        serializeCanonicalJson(validated.valor) !== astText ||
+        digest(astBytes) !== manifest.artifacts.identifiedAstSha256 ||
+        validated.valor.versaoVinculex !== stored.version ||
+        validated.valor.publicationStatus !== 'approved'
+      ) {
+        throw new PublisherDatabaseError('A AST histórica não corresponde ao manifesto publicado.');
+      }
+      for (const snapshot of manifest.sourceSnapshots) {
+        const bytes = await options.git.readBlob(
+          stored.gitCommitSha,
+          publicationSourceSnapshotRelativePath(lawDirectoryName, snapshot.sourceArtifactSha256),
+        );
+        if (digest(bytes) !== snapshot.sourceArtifactSha256) {
+          throw new PublisherDatabaseError(
+            'Uma fonte histórica não corresponde ao manifesto publicado.',
+          );
+        }
+      }
+      return { lawId: stored.lawId, versionId: stored.versionId, ast: validated.valor, manifest };
     },
   };
 

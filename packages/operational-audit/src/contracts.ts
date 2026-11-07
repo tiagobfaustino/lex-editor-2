@@ -81,6 +81,8 @@ const legislativeUpdateEventCodeSchema = z.enum([
   'legislative_update_error_recorded',
   'legislative_update_reprocess_requested',
   'legislative_update_reprocess_claimed',
+  'legislative_update_reprocess_completed',
+  'legislative_update_reprocess_failed',
 ]);
 const sourceCatalogEventCodeSchema = z.enum([
   'source_catalog_provider_revision_created',
@@ -452,6 +454,18 @@ export const operationalAuditDefinitionByCode = {
     module: 'legislative_update',
     origin: 'update_worker',
     message: 'Reprocessamento legislativo assumido.',
+  },
+  legislative_update_reprocess_completed: {
+    level: 'info',
+    module: 'legislative_update',
+    origin: 'update_worker',
+    message: 'Reprocessamento legislativo concluído.',
+  },
+  legislative_update_reprocess_failed: {
+    level: 'error',
+    module: 'legislative_update',
+    origin: 'update_worker',
+    message: 'Reprocessamento legislativo falhou.',
   },
   source_catalog_provider_revision_created: {
     level: 'info',

@@ -454,7 +454,7 @@ I  durante a gestação, nos 3 (três) meses posteriores ao parto ou se a vít
 II  contra pessoa menor de 14 (catorze) anos, maior de 60 (sessenta) anos, com deficiência ou portadora de doenças degenerativas que acarretem condição limitante ou de vulnerabilidade física ou mental; (Incluído pela Lei nº 14.994, de 2024)
 III  na presença física ou virtual de descendente ou de ascendente da vítima; (Incluído pela Lei nº 14.994, de 2024)
 IV  em descumprimento das medidas protetivas de urgência previstas nos incisos I, II e III do caput do art. 22 da Lei nº 11.340, de 7 de agosto de 2006 (Lei Maria da Penha); (Incluído pela Lei nº 14.994, de 2024)
-V  nas circunstâncias previstas nos incisos III, IV e VIII do § 2º do art. 121 deste Código. (Incluído pela Lei nº 14.994, de 2024) Coautoria (Incluído pela Lei nº 14.994, de 2024)
+V  nas circunstâncias previstas nos incisos III, IV e VIII do § 2º do art. 121 deste Código. (Incluído pela Lei nº 14.994, de 2024)
 § 3º Comunicam-se ao coautor ou partícipe as circunstâncias pessoais elementares do crime previstas no § 1º deste artigo. (Incluído pela Lei nº 14.994, de 2024)
 Art. 121-B. Matar descendente, ascendente, dependente, enteado ou pessoa sob guarda ou responsabilidade direta da mulher, com o fim específico de causar-lhe sofrimento, punição ou controle, no contexto de violência doméstica e familiar. (Incluído pela Lei nº 15.384, de 2026)
 Pena  reclusão, de 20 (vinte) a 40 (quarenta) anos. (Incluído pela Lei nº 15.384, de 2026)
@@ -560,7 +560,7 @@ Pena - detenção, de um a três anos.
 Pena - detenção, de dois a seis anos.
 Art. 135 - Deixar de prestar assistência, quando possível fazê-lo sem risco pessoal, à criança abandonada ou extraviada, ou à pessoa inválida ou ferida, ao desamparo ou em grave e iminente perigo; ou não pedir, nesses casos, o socorro da autoridade pública:
 Pena - detenção, de um a seis meses, ou multa.
-Parágrafo único - A pena é aumentada de metade, se da omissão resulta lesão corporal de natureza grave, e triplicada, se resulta a morte. Condicionamento de atendimento médico-hospitalar emergencial (Incluído pela Lei nº 12.653, de 2012).
+Parágrafo único - A pena é aumentada de metade, se da omissão resulta lesão corporal de natureza grave, e triplicada, se resulta a morte.
 Art. 135-A. Exigir cheque-caução, nota promissória ou qualquer garantia, bem como o preenchimento prévio de formulários administrativos, como condição para o atendimento médico-hospitalar emergencial: (Incluído pela Lei nº 12.653, de 2012).
 Pena - detenção, de 3 (três) meses a 1 (um) ano, e multa. (Incluído pela Lei nº 12.653, de 2012).
 Parágrafo único. A pena é aumentada até o dobro se da negativa de atendimento resulta lesão corporal de natureza grave, e até o triplo se resulta a morte. (Incluído pela Lei nº 12.653, de 2012).
@@ -693,7 +693,7 @@ III - compartimento não aberto ao público, onde alguém exerce profissão ou a
 § 5º - Não se compreendem na expressão "casa":
 I - hospedaria, estalagem ou qualquer outra habitação coletiva, enquanto aberta, salvo a restrição do n.º II do parágrafo anterior;
 II - taverna, casa de jogo e outras do mesmo gênero.
-SEÇÃO III DOS CRIMES CONTRA A
+SEÇÃO III DOS CRIMES CONTRA A INVIOLABILIDADE DE CORRESPONDÊNCIA
 Art. 151 - Devassar indevidamente o conteúdo de correspondência fechada, dirigida a outrem:
 Pena - detenção, de um a seis meses, ou multa.
 § 1º - Na mesma pena incorre:
@@ -729,7 +729,7 @@ Pena  reclusão, de 2 (dois) a 5 (cinco) anos, e multa. (Redação dada pela L
 I - Presidente da República, governadores e prefeitos; (Incluído pela Lei nº 12.737, de 2012) Vigência
 II - Presidente do Supremo Tribunal Federal; (Incluído pela Lei nº 12.737, de 2012) Vigência
 III - Presidente da Câmara dos Deputados, do Senado Federal, de Assembleia Legislativa de Estado, da Câmara Legislativa do Distrito Federal ou de Câmara Municipal; ou (Incluído pela Lei nº 12.737, de 2012) Vigência
-IV - dirigente máximo da administração direta e indireta federal, estadual, municipal ou do Distrito Federal. (Incluído pela Lei nº 12.737, de 2012) Vigência Ação penal (Incluído pela Lei nº 12.737, de 2012) Vigência
+IV - dirigente máximo da administração direta e indireta federal, estadual, municipal ou do Distrito Federal. (Incluído pela Lei nº 12.737, de 2012) Vigência
 Art. 154-B. Nos crimes definidos no art. 154-A, somente se procede mediante representação, salvo se o crime é cometido contra a administração pública direta ou indireta de qualquer dos Poderes da União, Estados, Distrito Federal ou Municípios ou contra empresas concessionárias de serviços públicos. (Incluído pela Lei nº 12.737, de 2012) Vigência
 TÍTULO II DOS CRIMES CONTRA O PATRIMÔNIO
 CAPÍTULO I DO FURTO
@@ -869,10 +869,10 @@ III - defrauda, mediante alienação não consentida pelo credor ou por outro mo
 IV - defrauda substância, qualidade ou quantidade de coisa que deve entregar a alguém;
 V - destrói, total ou parcialmente, ou oculta coisa própria, ou lesa o próprio corpo ou a saúde, ou agrava as conseqüências da lesão ou doença, com o intuito de haver indenização ou valor de seguro;
 VI - emite cheque, sem suficiente provisão de fundos em poder do sacado, ou lhe frustra o pagamento.
-VII  cede, gratuita ou onerosamente, conta bancária para que nela transitem recursos destinados ao financiamento de atividade criminosa ou que dela sejam fruto. (Incluído pela Lei nº 15.397, de 2026) Fraude eletrônica
+VII  cede, gratuita ou onerosamente, conta bancária para que nela transitem recursos destinados ao financiamento de atividade criminosa ou que dela sejam fruto. (Incluído pela Lei nº 15.397, de 2026)
 § 2º-A. A pena é de reclusão, de 4 (quatro) a 8 (oito) anos, e multa, se a fraude é cometida com a utilização de informações fornecidas pela vítima ou por terceiro induzido a erro por meio de redes sociais, contatos telefônicos, envio de correio eletrônico fraudulento, duplicação de dispositivo eletrônico ou aplicação de internet, ou por qualquer outro meio fraudulento análogo. (Redação dada pela Lei nº 15.397, de 2026)
 § 2º-B. A pena prevista no § 2º-A deste artigo, considerada a relevância do resultado gravoso, aumenta-se de 1/3 (um terço) a 2/3 (dois terços), se o crime é praticado mediante a utilização de servidor mantido fora do território nacional. (Incluído pela Lei nº 14.155, de 2021)
-§ 3º - A pena aumenta-se de um terço, se o crime é cometido em detrimento de entidade de direito público ou de instituto de economia popular, assistência social ou beneficência. Estelionato contra idoso ou vulnerável (Redação dada pela Lei nº 14.155, de 2021)
+§ 3º - A pena aumenta-se de um terço, se o crime é cometido em detrimento de entidade de direito público ou de instituto de economia popular, assistência social ou beneficência.
 § 4º A pena aumenta-se de 1/3 (um terço) ao dobro, se o crime é cometido contra idoso ou vulnerável, considerada a relevância do resultado gravoso. (Redação dada pela Lei nº 14.155, de 2021)
 § 5º (Revogado). (Redação dada pela Lei nº 15.397, de 2026)
 I  (Revogado); (Redação dada pela Lei nº 15.397, de 2026)
@@ -966,14 +966,14 @@ Art 188. (Revogado pela Lei nº 9.279, de 14.5.1996)
 Art. 189. (Revogado pela Lei nº 9.279, de 14.5.1996)
 Art. 190. (Revogado pela Lei nº 9.279, de 14.5.1996)
 Art. 191. (Revogado pela Lei nº 9.279, de 14.5.1996)
-CAPÍTULO III DOS CRIMES CONTRA AS
+CAPÍTULO III DOS CRIMES CONTRA AS MARCAS DE INDÚSTRIA E COMÉRCIO
 Art. 192. (Revogado pela Lei nº 9.279, de 14.5.1996)
 Art. 193. (Revogado pela Lei nº 9.279, de 14.5.1996)
 Art. 194. (Revogado pela Lei nº 9.279, de 14.5.1996)
 Art. 195. (Revogado pela Lei nº 9.279, de 14.5.1996)
 CAPÍTULO IV DOS CRIMES DE CONCORRÊNCIA DESLEAL
 Art. 196. (Revogado pela Lei nº 9.279, de 14.5.1996)
-TÍTULO IV DOS CRIMES CONTRA
+TÍTULO IV DOS CRIMES CONTRA A ORGANIZAÇÃO DO TRABALHO
 Art. 197 - Constranger alguém, mediante violência ou grave ameaça:
 I - a exercer ou não exercer arte, ofício, profissão ou indústria, ou a trabalhar ou não trabalhar durante certo período ou em determinados dias:
 Pena - detenção, de um mês a um ano, e multa, além da pena correspondente à violência;
@@ -1006,7 +1006,7 @@ Art. 207 - Aliciar trabalhadores, com o fim de levá-los de uma para outra local
 Pena - detenção de um a três anos, e multa. (Redação dada pela Lei nº 9.777, de 29.12.1998)
 § 1º Incorre na mesma pena quem recrutar trabalhadores fora da localidade de execução do trabalho, dentro do território nacional, mediante fraude ou cobrança de qualquer quantia do trabalhador, ou, ainda, não assegurar condições do seu retorno ao local de origem. (Incluído pela Lei nº 9.777, de 1998)
 § 2º A pena é aumentada de um sexto a um terço se a vítima é menor de dezoito anos, idosa, gestante, indígena ou portadora de deficiência física ou mental. (Incluído pela Lei nº 9.777, de 1998)
-TÍTULO V DOS CRIMES CONTRA O SENTIMENTO
+TÍTULO V DOS CRIMES CONTRA O SENTIMENTO RELIGIOSO E CONTRA O RESPEITO AOS MORTOS
 CAPÍTULO I DOS CRIMES CONTRA O SENTIMENTO RELIGIOSO
 Art. 208 - Escarnecer de alguém publicamente, por motivo de crença ou função religiosa; impedir ou perturbar cerimônia ou prática de culto religioso; vilipendiar publicamente ato ou objeto de culto religioso:
 Pena - detenção, de um mês a um ano, ou multa.
@@ -1022,7 +1022,7 @@ Pena - reclusão, de um a três anos, e multa.
 Art. 212 - Vilipendiar cadáver ou suas cinzas:
 Pena - detenção, de um a três anos, e multa.
 TÍTULO VI DOS CRIMES CONTRA A DIGNIDADE SEXUAL (Redação dada pela Lei nº 12.015, de 2009)
-CAPÍTULO I DOS CRIMES CONTRA A LIBERDADE SEXUAL (Redação dada pela Lei nº 12.015, de 2009) Estupro
+CAPÍTULO I DOS CRIMES CONTRA A LIBERDADE SEXUAL (Redação dada pela Lei nº 12.015, de 2009)
 Art. 213. Constranger alguém, mediante violência ou grave ameaça, a ter conjunção carnal ou a praticar ou permitir que com ele se pratique outro ato libidinoso: (Redação dada pela Lei nº 12.015, de 2009)
 Pena - reclusão, de 6 (seis) a 10 (dez) anos. (Redação dada pela Lei nº 12.015, de 2009)
 § 1o Se da conduta resulta lesão corporal de natureza grave ou se a vítima é menor de 18 (dezoito) ou maior de 14 (catorze) anos: (Incluído pela Lei nº 12.015, de 2009)
@@ -1183,7 +1183,7 @@ II - freqüente espetáculo capaz de pervertê-lo ou de ofender-lhe o pudor, ou 
 III - resida ou trabalhe em casa de prostituição;
 IV - mendigue ou sirva a mendigo para excitar a comiseração pública:
 Pena - detenção, de um a três meses, ou multa.
-CAPÍTULO IV DOS CRIMES CONTRA O
+CAPÍTULO IV DOS CRIMES CONTRA O PÁTRIO PODER, TUTELA CURATELA
 Art. 248 - Induzir menor de dezoito anos, ou interdito, a fugir do lugar em que se acha por determinação de quem sobre ele exerce autoridade, em virtude de lei ou de ordem judicial; confiar a outrem sem ordem do pai, do tutor ou do curador algum menor de dezoito anos ou interdito, ou deixar, sem justa causa, de entregá-lo a quem legitimamente o reclame:
 Pena - detenção, de um mês a um ano, ou multa.
 Art. 249 - Subtrair menor de dezoito anos ou interdito ao poder de quem o tem sob sua guarda em virtude de lei ou de ordem judicial:
@@ -1232,7 +1232,7 @@ Art. 258 - Se do crime doloso de perigo comum resulta lesão corporal de naturez
 Art. 259 - Difundir doença ou praga que possa causar dano a floresta, plantação ou animais de utilidade econômica:
 Pena - reclusão, de dois a cinco anos, e multa.
 Parágrafo único - No caso de culpa, a pena é de detenção, de um a seis meses, ou multa.
-CAPÍTULO II DOS CRIMES CONTRA A
+CAPÍTULO II DOS CRIMES CONTRA A SEGURANÇA DOS MEIOS DE COMUNICAÇÃO E TRANSPORTE E OUTROS SERVIÇOS PÚBLICOS
 Art. 260 - Impedir ou perturbar serviço de estrada de ferro:
 I - destruindo, danificando ou desarranjando, total ou parcialmente, linha férrea, material rodante ou de tração, obra-de-arte ou instalação;
 II - colocando obstáculo na linha;
@@ -1262,7 +1262,7 @@ Pena - detenção, de um a seis meses.
 Parágrafo único - Se do fato resulta lesão corporal, a pena é de detenção, de seis meses a dois anos; se resulta morte, a pena é a do art. 121, § 3º, aumentada de um terço.
 Art. 265 - Atentar contra a segurança ou o funcionamento de serviço de água, luz, força ou calor, ou qualquer outro de utilidade pública:
 Pena - reclusão, de um a cinco anos, e multa.
-Parágrafo único - Aumentar-se-á a pena de 1/3 (um terço) até a metade, se o dano ocorrer em virtude de subtração de material essencial ao funcionamento dos serviços. (Incluído pela Lei nº 5.346, de 3.11.1967) Interrupção ou perturbação de serviço telegráfico, telefônico, informático, telemático ou de informação de utilidade pública (Redação dada pela Lei nº 12.737, de 2012) Vigência
+Parágrafo único - Aumentar-se-á a pena de 1/3 (um terço) até a metade, se o dano ocorrer em virtude de subtração de material essencial ao funcionamento dos serviços. (Incluído pela Lei nº 5.346, de 3.11.1967)
 Art. 266 - Interromper ou perturbar serviço telegráfico, radiotelegráfico ou telefônico, impedir ou dificultar-lhe o restabelecimento:
 Pena  reclusão, de 2 (dois) a 4 (quatro) anos, e multa. (Redação dada pela Lei nº 15.397, de 2026)
 § 1o Incorre na mesma pena quem interrompe serviço telemático ou de informação de utilidade pública, ou impede ou dificulta-lhe o restabelecimento. (Incluído pela Lei nº 12.737, de 2012) Vigência
@@ -1346,11 +1346,11 @@ Art. 286 - Incitar, publicamente, a prática de crime:
 Pena - detenção, de três a seis meses, ou multa.
 Parágrafo único. Incorre na mesma pena quem incita, publicamente, animosidade entre as Forças Armadas, ou delas contra os poderes constitucionais, as instituições civis ou a sociedade. (Incluído pela Lei nº 14.197, de 2021) (Vigência)
 Art. 287 - Fazer, publicamente, apologia de fato criminoso ou de autor de crime:
-Pena - detenção, de três a seis meses, ou multa. Associação Criminosa
+Pena - detenção, de três a seis meses, ou multa.
 Art. 288. Associarem-se 3 (três) ou mais pessoas, para o fim específico de cometer crimes: (Redação dada pela Lei nº 12.850, de 2013) (Vigência)
 Pena - reclusão, de 1 (um) a 3 (três) anos. (Redação dada pela Lei nº 12.850, de 2013) (Vigência)
 § 1º A pena aumenta-se até a metade se a associação é armada ou se houver a participação de criança ou adolescente. (Incluído pela Lei nº 15.245, de 2025)
-§ 2º Incorre na pena prevista no caput deste artigo quem, de qualquer modo, solicitar ou contratar o cometimento de crime a integrante de associação criminosa, independentemente da aplicação da pena correspondente ao crime solicitado ou contratado. (Incluído pela Lei nº 15.245, de 2025) Constituição de milícia privada (Incluído dada pela Lei nº 12.720, de 2012)
+§ 2º Incorre na pena prevista no caput deste artigo quem, de qualquer modo, solicitar ou contratar o cometimento de crime a integrante de associação criminosa, independentemente da aplicação da pena correspondente ao crime solicitado ou contratado. (Incluído pela Lei nº 15.245, de 2025)
 Art. 288-A. Constituir, organizar, integrar, manter ou custear organização paramilitar, milícia particular, grupo ou esquadrão com a finalidade de praticar qualquer dos crimes previstos neste Código: (Incluído dada pela Lei nº 12.720, de 2012)
 Pena - reclusão, de 4 (quatro) a 8 (oito) anos. (Incluído dada pela Lei nº 12.720, de 2012)
 TÍTULO X DOS CRIMES CONTRA A FÉ PÚBLICA
@@ -1461,7 +1461,7 @@ III  aquele que adquire, recebe, transporta, conduz, oculta, mantém em depós
 § 3º Praticar as condutas de que tratam os incisos II ou III do § 2º deste artigo no exercício de atividade comercial ou industrial: (Incluído pela Lei nº 14.562, de 2023)
 Pena - reclusão, de 4 (quatro) a 8 (oito) anos, e multa. (Incluído pela Lei nº 14.562, de 2023)
 § 4º Equipara-se a atividade comercial, para efeito do disposto no § 3º deste artigo, qualquer forma de comércio irregular ou clandestino, inclusive aquele exercido em residência. (Incluído pela Lei nº 14.562, de 2023)
-CAPÍTULO V (Incluído pela Lei 12.550. de 2011) das fraudes em certames de interesse público (Incluído pela Lei 12.550. de 2011) Fraudes em certames de interesse público (Incluído pela Lei 12.550. de 2011)
+CAPÍTULO V (Incluído pela Lei 12.550. de 2011) das fraudes em certames de interesse público (Incluído pela Lei 12.550. de 2011)
 Art. 311-A. Utilizar ou divulgar, indevidamente, com o fim de beneficiar a si ou a outrem, ou de comprometer a credibilidade do certame, conteúdo sigiloso de: (Incluído pela Lei 12.550. de 2011)
 I - concurso público; (Incluído pela Lei 12.550. de 2011)
 II - avaliação ou exame públicos; (Incluído pela Lei 12.550. de 2011)
@@ -1473,7 +1473,7 @@ Pena - reclusão, de 1 (um) a 4 (quatro) anos, e multa. (Incluído pela Lei 12.5
 Pena - reclusão, de 2 (dois) a 6 (seis) anos, e multa. (Incluído pela Lei 12.550. de 2011)
 § 3o Aumenta-se a pena de 1/3 (um terço) se o fato é cometido por funcionário público. (Incluído pela Lei 12.550. de 2011)
 TÍTULO XI DOS CRIMES CONTRA A ADMINISTRAÇÃO PÚBLICA
-CAPÍTULO I DOS CRIMES PRATICADOS
+CAPÍTULO I DOS CRIMES PRATICADOS POR FUNCIONÁRIO PÚBLICO CONTRA A ADMINISTRAÇÃO EM GERAL
 Art. 312 - Apropriar-se o funcionário público de dinheiro, valor ou qualquer outro bem móvel, público ou particular, de que tem a posse em razão do cargo, ou desviá-lo, em proveito próprio ou alheio:
 Pena - reclusão, de dois a doze anos, e multa.
 § 1º - Aplica-se a mesma pena, se o funcionário público, embora não tendo a posse do dinheiro, valor ou bem, o subtrai, ou concorre para que seja subtraído, em proveito próprio ou alheio, valendo-se de facilidade que lhe proporciona a qualidade de funcionário.
@@ -1536,7 +1536,7 @@ Pena - Detenção, de três meses a um ano, e multa.
 Art. 327 - Considera-se funcionário público, para os efeitos penais, quem, embora transitoriamente ou sem remuneração, exerce cargo, emprego ou função pública.
 § 1º - Equipara-se a funcionário público quem exerce cargo, emprego ou função em entidade paraestatal, e quem trabalha para empresa prestadora de serviço contratada ou conveniada para a execução de atividade típica da Administração Pública. (Incluído pela Lei nº 9.983, de 2000)
 § 2º - A pena será aumentada da terça parte quando os autores dos crimes previstos neste Capítulo forem ocupantes de cargos em comissão ou de função de direção ou assessoramento de órgão da administração direta, sociedade de economia mista, empresa pública ou fundação instituída pelo poder público. (Incluído pela Lei nº 6.799, de 1980)
-CAPÍTULO II DOS CRIMES PRATICADOS POR
+CAPÍTULO II DOS CRIMES PRATICADOS POR PARTICULAR CONTRA A ADMINISTRAÇÃO EM GERAL
 Art. 328 - Usurpar o exercício de função pública:
 Pena - detenção, de três meses a dois anos, e multa.
 Parágrafo único - Se do fato o agente aufere vantagem:
@@ -1564,7 +1564,7 @@ II - pratica fato assimilado, em lei especial, a descaminho; (Redação dada pel
 III - vende, expõe à venda, mantém em depósito ou, de qualquer forma, utiliza em proveito próprio ou alheio, no exercício de atividade comercial ou industrial, mercadoria de procedência estrangeira que introduziu clandestinamente no País ou importou fraudulentamente ou que sabe ser produto de introdução clandestina no território nacional ou de importação fraudulenta por parte de outrem; (Redação dada pela Lei nº 13.008, de 26.6.2014)
 IV - adquire, recebe ou oculta, em proveito próprio ou alheio, no exercício de atividade comercial ou industrial, mercadoria de procedência estrangeira, desacompanhada de documentação legal ou acompanhada de documentos que sabe serem falsos. (Redação dada pela Lei nº 13.008, de 26.6.2014)
 § 2o Equipara-se às atividades comerciais, para os efeitos deste artigo, qualquer forma de comércio irregular ou clandestino de mercadorias estrangeiras, inclusive o exercido em residências. (Redação dada pela Lei nº 13.008, de 26.6.2014)
-§ 3o A pena aplica-se em dobro se o crime de descaminho é praticado em transporte aéreo, marítimo ou fluvial. (Redação dada pela Lei nº 13.008, de 26.6.2014) Contrabando
+§ 3o A pena aplica-se em dobro se o crime de descaminho é praticado em transporte aéreo, marítimo ou fluvial. (Redação dada pela Lei nº 13.008, de 26.6.2014)
 Art. 334-A. Importar ou exportar mercadoria proibida: (Incluído pela Lei nº 13.008, de 26.6.2014)
 Pena - reclusão, de 2 (dois) a 5 ( cinco) anos. (Incluído pela Lei nº 13.008, de 26.6.2014)
 § 1o Incorre na mesma pena quem: (Incluído pela Lei nº 13.008, de 26.6.2014)
@@ -1595,7 +1595,7 @@ II  o valor das contribuições devidas, inclusive acessórios, seja igual ou 
 § 4o O valor a que se refere o parágrafo anterior será reajustado nas mesmas datas e nos mesmos índices do reajuste dos benefícios da previdência social. (Incluído pela Lei nº 9.983, de 2000)
 § 5º A extinção de punibilidade de que trata o § 1º deste artigo não se aplica ao agente declarado devedor contumaz em decisão administrativa definitiva e inscrito no Cadastro Informativo dos créditos não quitados do setor público federal (Cadin), previsto na Lei nº 10.522, de 19 de julho de 2002. (Incluído pela Lei Complementar nº 225, de 2026)
 § 6º O fato de o agente deixar de ser considerado devedor contumaz não afasta o disposto no § 5º deste artigo em relação aos atos praticados no período em que era assim considerado. (Incluído pela Lei Complementar nº 225, de 2026)
-CAPÍTULO II-A (Incluído pela Lei nº 10.467, de 11.6.2002)
+CAPÍTULO II-A (Incluído pela Lei nº 10.467, de 11.6.2002) DOS CRIMES PRATICADOS POR PARTICULAR CONTRA A ADMINISTRAÇÃO PÚBLICA ESTRANGEIRA
 Art. 337-B. Prometer, oferecer ou dar, direta ou indiretamente, vantagem indevida a funcionário público estrangeiro, ou a terceira pessoa, para determiná-lo a praticar, omitir ou retardar ato de ofício relacionado à transação comercial internacional: (Incluído pela Lei nº 10.467, de 11.6.2002)
 Pena  reclusão, de 1 (um) a 8 (oito) anos, e multa. (Incluído pela Lei nº 10.467, de 11.6.2002)
 Parágrafo único. A pena é aumentada de 1/3 (um terço), se, em razão da vantagem ou promessa, o funcionário público estrangeiro retarda ou omite o ato de ofício, ou o pratica infringindo dever funcional. (Incluído pela Lei nº 10467, de 11.6.2002)

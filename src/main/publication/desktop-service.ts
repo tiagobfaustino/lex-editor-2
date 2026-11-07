@@ -65,8 +65,7 @@ export const createPublicationDesktopCapabilities = (options: {
         if (
           confirmation.revisionHash !== revision.revisionHash ||
           confirmation.lawTitle !== revision.lawTitle ||
-          confirmation.sigla !== revision.sigla ||
-          confirmation.version !== revision.version
+          confirmation.sigla !== revision.sigla
         ) {
           throw new Error('The publication candidate does not match the approved revision.');
         }

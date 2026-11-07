@@ -1,3 +1,8 @@
+import { ConfirmationCard, AttemptCard } from '../publication/publication-panel.js';
+import type {
+  PublicationConfirmationDto,
+  PublicationAttemptDto,
+} from '../../../../shared/ipc/publication.js';
 import { useCallback, useEffect, useState } from 'react';
 
 import type {
@@ -94,6 +99,10 @@ export const UpdatesPanel = (): React.JSX.Element => {
   const [message, setMessage] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
 
+  const [publicationConfirmation, setPublicationConfirmation] =
+    useState<PublicationConfirmationDto | null>(null);
+  const [publicationAttempt, setPublicationAttempt] = useState<PublicationAttemptDto | null>(null);
+
   const refresh = useCallback(async (): Promise<void> => {
     const api = window.lexDesktop;
     if (api === undefined) return;
@@ -138,11 +147,39 @@ export const UpdatesPanel = (): React.JSX.Element => {
     setBusy(false);
     if (result.ok) {
       setDetail(result.value);
+      setPublicationConfirmation(result.value.publicationConfirmation ?? null);
+      setPublicationAttempt(null);
       setAcknowledged(false);
       setReason('');
     } else setError(result.error.message);
   }, []);
 
+  const runPublication = async (action: 'execute' | 'query' | 'retry'): Promise<void> => {
+    const api = window.lexDesktop;
+    const publicationId =
+      publicationConfirmation?.publicationId ??
+      publicationAttempt?.publicationId ??
+      detail?.publicationId;
+    if (api === undefined || publicationId === null || publicationId === undefined) return;
+    setBusy(true);
+    setError(null);
+    const result = await (action === 'execute'
+      ? api.publication.execute({ publicationId })
+      : action === 'retry'
+        ? api.publication.retry({ publicationId })
+        : api.publication.getAttempt({ publicationId }));
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.error.message);
+      return;
+    }
+    setPublicationAttempt(result.value);
+    if (result.value.publicationAttemptStatus === 'published') {
+      setPublicationConfirmation(null);
+      setDetail(null);
+      await refresh();
+    }
+  };
   const decide = useCallback(
     async (action: 'approve' | 'reject' | 'reprocess'): Promise<void> => {
       const api = window.lexDesktop;
@@ -160,6 +197,10 @@ export const UpdatesPanel = (): React.JSX.Element => {
         setError(result.error.message);
         return;
       }
+      if (result.value.publicationConfirmation !== undefined) {
+        setPublicationConfirmation(result.value.publicationConfirmation);
+        setPublicationAttempt(null);
+      }
       setMessage(
         action === 'approve'
           ? 'Atualização aprovada e encaminhada ao fluxo seguro de publicação.'
@@ -173,6 +214,7 @@ export const UpdatesPanel = (): React.JSX.Element => {
     [detail, reason, refresh],
   );
 
+  const preparedPublication = publicationConfirmation ?? detail?.publicationConfirmation ?? null;
   return (
     <section className="panel updates-panel" id="atualizacoes" aria-labelledby="updates-title">
       <header className="panel-header">
@@ -184,6 +226,26 @@ export const UpdatesPanel = (): React.JSX.Element => {
           {String(counts.actionable)}
         </span>
       </header>
+      {preparedPublication === null ? null : (
+        <ConfirmationCard
+          key={preparedPublication.publicationId}
+          confirmation={preparedPublication}
+          busy={busy}
+          onCancel={() => {
+            setPublicationConfirmation(null);
+            setDetail(null);
+          }}
+          onConfirm={() => void runPublication('execute')}
+        />
+      )}
+      {publicationAttempt === null ? null : (
+        <AttemptCard
+          attempt={publicationAttempt}
+          busy={busy}
+          onQuery={() => void runPublication('query')}
+          onRetry={() => void runPublication('retry')}
+        />
+      )}
       <div className="panel-content updates-content">
         <div className="update-counts" aria-label="Resumo da fila">
           <span>{String(counts.pending)} pendente(s)</span>

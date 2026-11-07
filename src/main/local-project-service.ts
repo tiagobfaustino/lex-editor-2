@@ -4,6 +4,7 @@ import { basename, dirname, extname, join } from 'node:path';
 import { lstat, mkdir, open, readFile, realpath, rename, rm, unlink } from 'node:fs/promises';
 
 import {
+  prepareLocalSourceUpdate,
   analisar,
   appendEditorialJournalEntry,
   applyEditorialCommand,
@@ -16,7 +17,7 @@ import {
   detectLegalReferences,
   contarBlockIds,
   deriveStructuredChanges,
-  extrairLinhas,
+  extrairLinhasConjunto,
   formatar,
   generateUpdateMarkdown,
   identificar,
@@ -49,8 +50,6 @@ import {
   type NormaChildNode,
   type ProblemaDeEtapa,
   type ResultadoDoPipeline,
-  type SourceRole,
-  type SourceVariant,
   type ContentProjectionProfile,
   type MetadataWorkspaceContext,
   type PublicationHistoryAuthority,
@@ -92,13 +91,27 @@ import type {
   EditorialReviewTargetDto,
   EditorialStateDto,
 } from '../shared/ipc/editorial.js';
+import {
+  LocalSourceCheckDtoSchema,
+  type LocalSourceCheckDto,
+  type OpenLocalLawDto,
+} from '../shared/ipc/library.js';
 import type { MetadataStateDto } from '../shared/ipc/metadata.js';
 import type { ReprocessingStateDto } from '../shared/ipc/reprocessing.js';
-import type { DesktopImportIpcCapabilities } from './ipc/register.js';
+import {
+  recoverSourceRecord,
+  type SourceArtifactRecord,
+  type SourceRecord,
+} from './projects/source-record.js';
+import type {
+  DesktopLibraryIpcCapabilities,
+  DesktopImportIpcCapabilities,
+} from './ipc/register.js';
 import {
   createLocalAuditJournalStore,
   type LocalAuditJournalStore,
 } from './audit/local-audit-journal.js';
+import { generateLocalChangeReport } from './projects/local-change-report.js';
 import { DesktopIpcError } from './ipc/validated-handler.js';
 import { defuddleSnapshot, SourceExtractionError } from './import/defuddle.js';
 import {
@@ -108,6 +121,7 @@ import {
 } from './import/planalto-source.js';
 import {
   createEditorialProjectStore,
+  type LocalSourceProposal,
   type ReprocessingState,
 } from './projects/editorial-project-store.js';
 
@@ -125,23 +139,6 @@ type DialogPort = Readonly<{
   ): Promise<{ canceled: boolean; filePath?: string }>;
 }>;
 
-type SourceArtifactRecord = Readonly<{
-  sourceArtifactId: string;
-  snapshotPath: string;
-  finalUrl: string;
-  sourceRole: SourceRole;
-  sourceVariant: SourceVariant;
-  sourceArtifactSha256: string;
-}>;
-
-type SourceRecord = Readonly<{
-  projectId: string;
-  summary: SourceSummaryDto;
-  primary: SourceArtifactRecord;
-  artifacts: readonly SourceArtifactRecord[];
-  configurationEvidence: SourceConfigurationEvidence | null;
-}>;
-
 type PreviewRecord = Readonly<{
   dto: PreviewNodeDto;
   children: readonly string[];
@@ -150,7 +147,7 @@ type PreviewRecord = Readonly<{
 
 interface ProjectRecord {
   readonly projectId: string;
-  readonly source: SourceRecord;
+  source: SourceRecord;
   markdown?: string;
   projectionProfile: ContentProjectionProfile;
   document?: PreviewDocumentDto;
@@ -176,6 +173,8 @@ interface JobRecord {
   readonly startedAt: number;
 }
 
+type PublicationSnapshot = import('./publication/operations.js').PublicationSnapshot;
+
 type CursorRecord = Readonly<{
   projectId: string;
   kind: 'preview' | 'diagnostics';
@@ -200,8 +199,11 @@ export interface ActiveSourceImportResolver {
 }
 
 export type LocalProjectService = DesktopImportIpcCapabilities &
+  DesktopLibraryIpcCapabilities &
   Readonly<{
     hasProject(projectId: string): boolean;
+    getPublicationSnapshot(projectId: string): Promise<PublicationSnapshot>;
+    getProjectAst(projectId: string): IdentifiedNormaAST | null;
     getApprovedRevision(projectId: string): Readonly<{
       revisionHash: string;
       lawTitle: string;
@@ -361,9 +363,12 @@ const metadataFor = (
   sourceUrl?: string,
 ): MetadadosDaNorma => {
   const frontmatter = mediaType === 'text/markdown' ? readFrontmatter(text) : {};
-  const plain = text.replace(/<[^>]+>/gu, ' ');
+  const plain = text
+    .replace(/<[^>]+>/gu, ' ')
+    .replace(/&nbsp;|&#160;/giu, ' ')
+    .replace(/\s+/gu, ' ');
   const header =
-    /(?<type>DECRETO-LEI|LEI COMPLEMENTAR|LEI|DECRETO)\s+(?:N[º°o]\s*)?(?<number>[\d.]+)[^\d]{0,80}(?<year>19\d{2}|20\d{2})/iu.exec(
+    /(?<type>DECRETO-LEI|LEI COMPLEMENTAR|LEI|DECRETO)\s+(?:N\s*[º°o]\s*)?(?<number>[\d.]+)[^\d]{0,80}(?:\d{1,2}\s+de\s+\p{L}+\s+de\s+)?(?<year>19\d{2}|20\d{2})/iu.exec(
       plain,
     );
   const hrefIdentity = /(?:DEL|LEI)%20(?<number>[\d.]+)-(?<year>19\d{2}|20\d{2})/iu.exec(text);
@@ -441,23 +446,27 @@ type LoadedArtifact = Readonly<{
   content: string;
 }>;
 
-const extractLegalContent = async (
-  original: string,
-  artifact: SourceArtifactRecord,
-): Promise<string> => {
-  const defuddled = await defuddleSnapshot(original, artifact.finalUrl);
-  const lines = extrairLinhas(defuddled.cleanedHtml, { reconhecer });
-  const first = lines.findIndex((line) => reconhecer(line) !== undefined);
-
-  if (first < 0) throw new SourceExtractionError();
-
-  const content = juntarContinuacoes(
-    lines.slice(first),
-    (line) => reconhecer(line) !== undefined,
-  ).join('\n');
-
-  if (content.trim().length === 0) throw new SourceExtractionError();
-  return content;
+const extractLegalSourceSet = async (
+  artifacts: readonly Readonly<{ record: SourceArtifactRecord; original: string }>[],
+): Promise<readonly LoadedArtifact[]> => {
+  const cleaned = await Promise.all(
+    artifacts.map(({ original, record }) => defuddleSnapshot(original, record.finalUrl)),
+  );
+  const sources = extrairLinhasConjunto(
+    cleaned.map(({ cleanedHtml }) => cleanedHtml),
+    { reconhecer },
+  );
+  return artifacts.map((artifact, index) => {
+    const lines = sources[index] ?? [];
+    const first = lines.findIndex((line) => reconhecer(line) !== undefined);
+    if (first < 0) throw new SourceExtractionError();
+    const content = juntarContinuacoes(
+      lines.slice(first),
+      (line) => reconhecer(line) !== undefined,
+    ).join('\n');
+    if (content.trim().length === 0) throw new SourceExtractionError();
+    return { ...artifact, content };
+  });
 };
 
 const successfulReport = (
@@ -539,7 +548,9 @@ const processHtmlSourceSet = (
   const auxiliaries = parsed.flatMap(({ record, result }) =>
     record.sourceRole !== 'primary_current' && result.ok ? [result.valor] : [],
   );
-  const merged = mesclarFontes(primaryParsed.valor, auxiliaries);
+  const merged = mesclarFontes(primaryParsed.valor, auxiliaries, {
+    permitirConflitosParaRevisao: true,
+  });
   if (!merged.ok) {
     return {
       relatorio: {
@@ -659,6 +670,8 @@ export const createLocalProjectService = ({
 }: LocalProjectServiceOptions): LocalProjectService => {
   const sources = new Map<string, SourceRecord>();
   const projects = new Map<string, ProjectRecord>();
+  const revokedProjects = new Set<string>();
+  const openingProjects = new Map<string, Promise<OpenLocalLawDto>>();
   const jobs = new Map<string, JobRecord>();
   const destinations = new Map<
     string,
@@ -679,6 +692,16 @@ export const createLocalProjectService = ({
     Omit<LegalReferencePreviewDto, 'referenceId' | 'external'>
   >();
   const editorialStore = createEditorialProjectStore(storageRoot);
+  let libraryMutation: Promise<unknown> = Promise.resolve();
+  const serializeLibraryMutation = <T>(operation: () => Promise<T>): Promise<T> => {
+    const next = libraryMutation.then(operation, operation);
+    libraryMutation = next.catch(() => undefined);
+    return next;
+  };
+  const assertUniqueLaw = async (identity: MetadadosDaNorma, sourceHash: string): Promise<void> => {
+    if ((await editorialStore.findByIdentity(identity, sourceHash)) !== null)
+      throw new DesktopIpcError('LAW_ALREADY_EXISTS');
+  };
   const auditJournal = auditJournalStore ?? createLocalAuditJournalStore(storageRoot);
 
   const appendAuditEvent = async (
@@ -740,6 +763,9 @@ export const createLocalProjectService = ({
           }
         : null,
   });
+
+  const issuedSourceChecks = new Map<string, string>();
+  const sourceChecksInFlight = new Map<string, Promise<LocalSourceCheckDto>>();
 
   const persistArtifact = async (
     sourceId: string,
@@ -1050,7 +1076,10 @@ export const createLocalProjectService = ({
   ): PreviewRecord | undefined =>
     [...project.nodes.values()].find((record) => record.domainNodeId === nodeId);
 
-  const refreshLegalReferences = (changedProjectId: string): void => {
+  // Um projeto importado é uma revisão local, não uma nova identidade jurídica.
+  // O catálogo seleciona a última revisão por lei; uma transação de metadados
+  // precisa selecionar a própria revisão editada, mesmo se ela for anterior.
+  const projectsForLegalCatalog = (preferredProjectId?: string) => {
     const readyProjects = [...projects.values()].filter(
       (project): project is ProjectRecord & { ast: IdentifiedNormaAST } =>
         project.ast !== undefined,
@@ -1066,8 +1095,27 @@ export const createLocalProjectService = ({
         project,
       );
     }
+    const preferred = readyProjects.find(({ projectId }) => projectId === preferredProjectId);
+    if (preferred !== undefined) {
+      latestProjectByIdentity.set(
+        legalNormIdentityKey({
+          tipoNorma: preferred.ast.tipoNorma,
+          numero: preferred.ast.numero,
+          ano: preferred.ast.ano,
+        }),
+        preferred,
+      );
+    }
+    return [...latestProjectByIdentity.values()];
+  };
+
+  const refreshLegalReferences = (changedProjectId?: string): void => {
+    const readyProjects = [...projects.values()].filter(
+      (project): project is ProjectRecord & { ast: IdentifiedNormaAST } =>
+        project.ast !== undefined,
+    );
     const catalogResult = createLegalNormCatalog(
-      [...latestProjectByIdentity.values()].map(({ ast }) => ({
+      projectsForLegalCatalog().map(({ ast }) => ({
         ast,
         aliases: conventionalLegalAliases(ast),
       })),
@@ -1076,12 +1124,10 @@ export const createLocalProjectService = ({
     if (!catalogResult.ok) throw new Error('The local legal norm catalog is invalid.');
 
     const changedProject = readyProjects.find(({ projectId }) => projectId === changedProjectId);
-    if (changedProject === undefined) throw new Error('Changed legal project is unavailable.');
-    const changedIdentityKey = legalNormIdentityKey({
-      tipoNorma: changedProject.ast.tipoNorma,
-      numero: changedProject.ast.numero,
-      ano: changedProject.ast.ano,
-    });
+    if (changedProjectId !== undefined && changedProject === undefined)
+      throw new Error('Changed legal project is unavailable.');
+    const changedIdentityKey =
+      changedProject === undefined ? null : legalNormIdentityKey(changedProject.ast);
     const changedAliases = new Set(
       catalogResult.valor.entries
         .find(({ canonicalKey }) => canonicalKey === changedIdentityKey)
@@ -1091,6 +1137,7 @@ export const createLocalProjectService = ({
     const changedProjects: (ProjectRecord & { ast: IdentifiedNormaAST })[] = [];
     for (const project of readyProjects) {
       const mustResolve =
+        changedProjectId === undefined ||
         project.projectId === changedProjectId ||
         project.referenceIndex === undefined ||
         project.referenceIndex.references.some((reference) =>
@@ -1309,6 +1356,14 @@ export const createLocalProjectService = ({
               ? record['reasons'].filter((reason): reason is string => typeof reason === 'string')
               : [],
             requiresHumanReview: true,
+            ...(typeof record['editorialNote'] === 'string'
+              ? {
+                  editorialNote: record['editorialNote'].slice(
+                    0,
+                    DESKTOP_EDITORIAL_LIMITS.maxTextCharacters,
+                  ),
+                }
+              : {}),
             sourceRange: preview.dto.sourceRange,
           },
         ];
@@ -1358,17 +1413,11 @@ export const createLocalProjectService = ({
 
   const metadataWorkspaceFor = (currentProjectId: string): MetadataWorkspaceContext => ({
     currentDocumentId: currentProjectId,
-    documents: [...projects.values()].flatMap((candidate) =>
-      candidate.ast === undefined
-        ? []
-        : [
-            {
-              documentId: candidate.projectId,
-              ast: candidate.ast,
-              aliases: conventionalLegalAliases(candidate.ast),
-            },
-          ],
-    ),
+    documents: projectsForLegalCatalog(currentProjectId).map((candidate) => ({
+      documentId: candidate.projectId,
+      ast: candidate.ast,
+      aliases: conventionalLegalAliases(candidate.ast),
+    })),
   });
 
   const metadataState = async (
@@ -1418,64 +1467,72 @@ export const createLocalProjectService = ({
       publicationHistoryEvidence: PublicationHistoryEvidence;
       workspace: MetadataWorkspaceContext;
     }>,
-  ): Promise<EditorialStateDto> => {
-    const applied = applyEditorialCommand(project.ast, command, sha256, {
-      ...(metadataContext === undefined
-        ? {}
-        : {
-            publicationHistoryEvidence: metadataContext.publicationHistoryEvidence,
-            metadataWorkspace: metadataContext.workspace,
-          }),
-    });
-    if (!applied.ok) throw new Error(`Editorial command rejected: ${applied.error.code}`);
-    const formatted = formatar(applied.ast);
-    if (!formatted.ok || validarMarkdownCanonico(formatted.valor, applied.ast).length > 0) {
-      throw new Error('Editorial command produced noncanonical output.');
-    }
-    const journal = appendEditorialJournalEntry(
-      project.journal,
-      command,
-      applied.revisionHash,
-      sha256,
-      metadataContext === undefined
-        ? undefined
-        : {
-            publicationHistoryEvidence: metadataContext.publicationHistoryEvidence,
-          },
-    );
-    const checkpoint = createEditorialCheckpoint(
-      journal,
-      applied.ast,
-      randomUUID(),
-      now().toISOString(),
-      sha256,
-    );
-    await editorialStore.saveRevision(journal, checkpoint);
-    if (project.approval !== undefined) project.approvalWasInvalidated = true;
-    delete project.approval;
-    delete project.validation;
-    project.ast = applied.ast;
-    delete project.detectedReferenceIndex;
-    delete project.referenceIndex;
-    delete project.referenceIndexDigest;
-    project.journal = journal;
-    if (applied.metadataDerivatives === undefined) {
-      refreshLegalReferences(project.projectId);
-    } else {
-      referencePreviewCache.clear();
-      for (const derived of applied.metadataDerivatives.documents) {
-        const target = projects.get(derived.documentId);
-        if (target?.ast === undefined) continue;
-        target.ast = derived.ast;
-        target.referenceIndex = derived.referenceIndex;
-        target.referenceIndexDigest = sha256(JSON.stringify(derived.referenceIndex.references));
-        delete target.detectedReferenceIndex;
-        rebuildProjection(target, derived.ast);
+    newSource?: SourceRecord,
+  ): Promise<EditorialStateDto> =>
+    serializeLibraryMutation(async () => {
+      if (projects.get(project.projectId) !== project)
+        throw new DesktopIpcError('PROJECT_UNAVAILABLE');
+      const applied = applyEditorialCommand(project.ast, command, sha256, {
+        ...(metadataContext === undefined
+          ? {}
+          : {
+              publicationHistoryEvidence: metadataContext.publicationHistoryEvidence,
+              metadataWorkspace: metadataContext.workspace,
+            }),
+      });
+      if (!applied.ok) {
+        if (applied.error.code === 'stale_revision') throw new DesktopIpcError('CONFLICT');
+        throw new Error(`Editorial command rejected: ${applied.error.code}`);
       }
-    }
-    runValidation(project, 'incremental', changedNodeIds);
-    return editorialState(project);
-  };
+      const formatted = formatar(applied.ast);
+      if (!formatted.ok || validarMarkdownCanonico(formatted.valor, applied.ast).length > 0) {
+        throw new Error('Editorial command produced noncanonical output.');
+      }
+      const journal = appendEditorialJournalEntry(
+        project.journal,
+        command,
+        applied.revisionHash,
+        sha256,
+        metadataContext === undefined
+          ? undefined
+          : {
+              publicationHistoryEvidence: metadataContext.publicationHistoryEvidence,
+            },
+      );
+      const checkpoint = createEditorialCheckpoint(
+        journal,
+        applied.ast,
+        randomUUID(),
+        now().toISOString(),
+        sha256,
+      );
+      await editorialStore.saveRevision(journal, checkpoint);
+      if (project.approval !== undefined) project.approvalWasInvalidated = true;
+      delete project.approval;
+      delete project.validation;
+      if (newSource !== undefined) project.source = newSource;
+      project.ast = applied.ast;
+      delete project.detectedReferenceIndex;
+      delete project.referenceIndex;
+      delete project.referenceIndexDigest;
+      project.journal = journal;
+      if (applied.metadataDerivatives === undefined) {
+        refreshLegalReferences(project.projectId);
+      } else {
+        referencePreviewCache.clear();
+        for (const derived of applied.metadataDerivatives.documents) {
+          const target = projects.get(derived.documentId);
+          if (target?.ast === undefined) continue;
+          target.ast = derived.ast;
+          target.referenceIndex = derived.referenceIndex;
+          target.referenceIndexDigest = sha256(JSON.stringify(derived.referenceIndex.references));
+          delete target.detectedReferenceIndex;
+          rebuildProjection(target, derived.ast);
+        }
+      }
+      runValidation(project, 'incremental', changedNodeIds);
+      return editorialState(project);
+    });
 
   const run = async (job: JobRecord): Promise<void> => {
     const project = projectOrThrow(job.projectId);
@@ -1525,13 +1582,7 @@ export const createLocalProjectService = ({
       failIfCancelled();
       let result: ResultadoDoPipeline;
       if (project.source.summary.mediaType === 'text/html') {
-        const loaded = await Promise.all(
-          loadedBytes.map(async ({ record, original: artifactOriginal }) => ({
-            record,
-            original: artifactOriginal,
-            content: await extractLegalContent(artifactOriginal, record),
-          })),
-        );
+        const loaded = await extractLegalSourceSet(loadedBytes);
         result = processHtmlSourceSet(loaded, project.source.summary.displayName, date);
       } else {
         const content = normalizeCanonicalMarkdown(original);
@@ -1630,7 +1681,8 @@ export const createLocalProjectService = ({
         totalUnits: 6,
         message: 'Block IDs identificados',
       });
-      const revisionHash = calculateRevisionHash(result.arvore, sha256);
+      const importedAst = result.arvore;
+      const revisionHash = calculateRevisionHash(importedAst, sha256);
       await appendAuditEvent(
         project.projectId,
         project.projectId,
@@ -1654,7 +1706,12 @@ export const createLocalProjectService = ({
         base: { revisionHash, ast: result.arvore },
         entries: [],
       };
-      await editorialStore.saveJournal(journal);
+      await serializeLibraryMutation(async () => {
+        failIfCancelled();
+        await assertUniqueLaw(importedAst, project.source.primary.sourceArtifactSha256);
+        await editorialStore.saveSourceSummary(project.projectId, project.source.summary);
+        await editorialStore.saveJournal(journal);
+      });
       project.ast = result.arvore;
       delete project.detectedReferenceIndex;
       delete project.referenceIndex;
@@ -1735,7 +1792,9 @@ export const createLocalProjectService = ({
           ? 'Processamento cancelado'
           : unrecognized
             ? 'A fonte não contém uma norma jurídica reconhecível'
-            : 'Não foi possível processar a fonte',
+            : error instanceof DesktopIpcError && error.code === 'LAW_ALREADY_EXISTS'
+              ? 'Esta lei já existe na base de dados. Abra-a na aba Minhas leis.'
+              : 'Não foi possível processar a fonte',
       });
     }
   };
@@ -1921,13 +1980,7 @@ export const createLocalProjectService = ({
         const date = now().toISOString().slice(0, 10);
         let result: ResultadoDoPipeline;
         if (project.source.summary.mediaType === 'text/html') {
-          const loaded = await Promise.all(
-            loadedBytes.map(async ({ record, original: artifactOriginal }) => ({
-              record,
-              original: artifactOriginal,
-              content: await extractLegalContent(artifactOriginal, record),
-            })),
-          );
+          const loaded = await extractLegalSourceSet(loadedBytes);
           result = processHtmlSourceSet(loaded, project.source.summary.displayName, date);
         } else {
           const content = normalizeCanonicalMarkdown(primaryBytes.original);
@@ -1992,31 +2045,39 @@ export const createLocalProjectService = ({
       failIfCancelled();
 
       if (plan === 'from_source_snapshot') {
-        // Ponto de não-retorno: grava o hash resultante antes da gravação
-        // atômica para que a recuperação pós-crash saiba distinguir uma
-        // promoção já concluída de uma tentativa que nunca chegou a gravar.
-        await editorialStore.saveReprocessingState({
-          ...initial,
-          status: 'awaiting_promotion',
-          updatedAt: now().toISOString(),
-          resultingRevisionHash: candidateRevisionHash,
+        await serializeLibraryMutation(async () => {
+          failIfCancelled();
+          if (
+            projects.get(project.projectId) !== project ||
+            calculateRevisionHash(project.ast, sha256) !== expectedRevisionHash
+          )
+            throw new ReprocessingConflictError('stale_revision');
+          // Ponto de não-retorno: grava o hash resultante antes da gravação
+          // atômica para que a recuperação pós-crash saiba distinguir uma
+          // promoção já concluída de uma tentativa que nunca chegou a gravar.
+          await editorialStore.saveReprocessingState({
+            ...initial,
+            status: 'awaiting_promotion',
+            updatedAt: now().toISOString(),
+            resultingRevisionHash: candidateRevisionHash,
+          });
+          const checkpoint = createEditorialCheckpoint(
+            candidateJournal,
+            candidateAst,
+            randomUUID(),
+            now().toISOString(),
+            sha256,
+          );
+          await editorialStore.saveRevision(candidateJournal, checkpoint);
+          if (project.approval !== undefined) project.approvalWasInvalidated = true;
+          delete project.approval;
+          delete project.validation;
+          project.ast = candidateAst;
+          delete project.detectedReferenceIndex;
+          delete project.referenceIndex;
+          delete project.referenceIndexDigest;
+          project.journal = candidateJournal;
         });
-        const checkpoint = createEditorialCheckpoint(
-          candidateJournal,
-          candidateAst,
-          randomUUID(),
-          now().toISOString(),
-          sha256,
-        );
-        await editorialStore.saveRevision(candidateJournal, checkpoint);
-        if (project.approval !== undefined) project.approvalWasInvalidated = true;
-        delete project.approval;
-        delete project.validation;
-        project.ast = candidateAst;
-        delete project.detectedReferenceIndex;
-        delete project.referenceIndex;
-        delete project.referenceIndexDigest;
-        project.journal = candidateJournal;
       }
       refreshLegalReferences(project.projectId);
       runValidation(project, 'full');
@@ -2057,7 +2118,7 @@ export const createLocalProjectService = ({
     }
   };
 
-  return {
+  const service: LocalProjectService = {
     hasProject: (projectId) => projects.has(projectId),
     getApprovedRevision: (projectId) => {
       const project = projects.get(projectId);
@@ -2069,6 +2130,422 @@ export const createLocalProjectService = ({
             version: project.ast.versaoVinculex,
           }
         : null;
+    },
+    checkLocalSource: {
+      authorize: () => true,
+      handle: async ({ projectId }) => {
+        await service.openLocalLaw.handle({ projectId });
+        const project = editorialProjectOrThrow(projectId);
+        const expectedRevisionHash = calculateRevisionHash(project.ast, sha256);
+        const key = `${projectId}:${expectedRevisionHash}`;
+        const existing = sourceChecksInFlight.get(key);
+        if (existing !== undefined) return existing;
+        const checking = (async (): Promise<LocalSourceCheckDto> => {
+          const lastUpdate = project.journal.entries
+            .map((entry) => entry.command.operation)
+            .reverse()
+            .find((operation) => operation.kind === 'apply_source_update');
+          const sourceBase =
+            lastUpdate?.kind === 'apply_source_update'
+              ? lastUpdate.incoming
+              : project.journal.base.ast;
+          const url =
+            project.source.summary.sourceKind === 'planalto_url'
+              ? project.source.primary.finalUrl
+              : project.ast.fonte;
+          const configuration =
+            activeSourceImportResolver === undefined
+              ? null
+              : await activeSourceImportResolver.resolve(url);
+          if (activeSourceImportResolver !== undefined && configuration === null)
+            throw new SourceConfigurationResolutionError();
+          const fetched =
+            configuration === null
+              ? await fetchPlanaltoSourceSet(url, networkPorts)
+              : await fetchConfiguredPlanaltoSourceSet(
+                  configuration.providerRevision,
+                  configuration.bindingRevision,
+                  networkPorts,
+                  url,
+                );
+          const sourceId = randomUUID();
+          const artifacts = await Promise.all(
+            fetched.map((item) =>
+              persistArtifact(sourceId, item.bytes, '.html', {
+                sourceArtifactId: item.sourceRole === 'primary_current' ? sourceId : randomUUID(),
+                finalUrl: item.finalUrl,
+                sourceRole: item.sourceRole,
+                sourceVariant: item.sourceVariant,
+              }),
+            ),
+          );
+          const primary = artifacts.find((artifact) => artifact.sourceRole === 'primary_current');
+          const primaryFetched = fetched.find(
+            (artifact) => artifact.sourceRole === 'primary_current',
+          );
+          if (primary === undefined || primaryFetched === undefined)
+            throw new SourceExtractionError();
+          const checkedAt = now().toISOString();
+          const loaded = await extractLegalSourceSet(
+            artifacts.map((record, i) => {
+              const item = fetched[i];
+              if (item === undefined) throw new SourceExtractionError();
+              return { record, original: decodificarHtmlPlanalto(item.bytes) };
+            }),
+          );
+          const result = processHtmlSourceSet(
+            loaded,
+            project.source.summary.displayName,
+            checkedAt.slice(0, 10),
+          );
+          if (!result.relatorio.ok || result.arvore === undefined)
+            throw new SourceExtractionError();
+          const incoming = result.arvore;
+          // Verify the existing set through the same safe recovery path before copying bytes.
+          const oldSource = await recoverSourceRecord(
+            storageRoot,
+            projectId,
+            project.ast,
+            project.source.summary,
+          );
+          const historicalRefs = [];
+          for (const old of oldSource.artifacts) {
+            if (
+              artifacts.some(
+                (artifact) => artifact.sourceArtifactSha256 === old.sourceArtifactSha256,
+              )
+            )
+              continue;
+            const handle = await open(
+              old.snapshotPath,
+              fileConstants.O_RDONLY | fileConstants.O_NOFOLLOW,
+            );
+            let bytes: Buffer;
+            try {
+              bytes = await handle.readFile();
+            } finally {
+              await handle.close();
+            }
+            if (bytes.length > MAX_SOURCE_BYTES || sha256(bytes) !== old.sourceArtifactSha256)
+              throw new Error('SOURCE_HASH_MISMATCH');
+            const artifact = await persistArtifact(
+              sourceId,
+              bytes,
+              old.snapshotPath.endsWith('.md') ? '.md' : '.html',
+              {
+                sourceArtifactId: randomUUID(),
+                finalUrl: old.finalUrl,
+                sourceRole: 'historical_auxiliary',
+                sourceVariant: old.sourceVariant,
+              },
+            );
+            artifacts.push(artifact);
+            const ref = [project.ast.sourceRef, ...(project.ast.supportingSourceRefs ?? [])].find(
+              (item) => item.sourceArtifactSha256 === old.sourceArtifactSha256,
+            );
+            if (ref === undefined) throw new Error('MISSING_SOURCE_REFERENCE');
+            historicalRefs.push({
+              ...ref,
+              sourceRole: 'historical_auxiliary' as const,
+              sourceUrl: old.finalUrl,
+            });
+          }
+          incoming.supportingSourceRefs = [
+            ...(incoming.supportingSourceRefs ?? []),
+            ...historicalRefs,
+          ];
+          const configurationEvidence =
+            configuration === null
+              ? null
+              : sourceConfigurationEvidenceSchema.parse({
+                  schemaVersion: 1,
+                  providerId: configuration.providerRevision.providerId,
+                  providerRevisionId: configuration.providerRevision.providerRevisionId,
+                  providerConfigDigest: configuration.providerRevision.configDigest,
+                  bindingId: configuration.bindingRevision.bindingId,
+                  bindingRevisionId: configuration.bindingRevision.bindingRevisionId,
+                  bindingConfigDigest: configuration.bindingRevision.configDigest,
+                  adapterId: configuration.providerRevision.adapterId,
+                  adapterContractVersion: configuration.providerRevision.adapterContractVersion,
+                });
+          if (configurationEvidence !== null)
+            await persistConfiguredImportEvidence(sourceId, configurationEvidence, artifacts);
+          const source: SourceSummaryDto = {
+            sourceId,
+            sourceKind: 'planalto_url',
+            displayName: project.source.summary.displayName,
+            mediaType: 'text/html',
+            byteLength: primaryFetched.bytes.byteLength,
+            sourceArtifactSha256: primary.sourceArtifactSha256,
+          };
+          if (projects.get(projectId) !== project) throw new DesktopIpcError('PROJECT_UNAVAILABLE');
+          if (calculateRevisionHash(project.ast, sha256) !== expectedRevisionHash)
+            throw new DesktopIpcError('CONFLICT');
+          const prepared = prepareLocalSourceUpdate(
+            project.ast,
+            sourceBase,
+            incoming,
+            checkedAt.slice(0, 10),
+            sha256,
+          );
+          const checkId = randomUUID();
+          const dto = LocalSourceCheckDtoSchema.parse({
+            projectId,
+            checkId,
+            expectedRevisionHash,
+            checkedAt,
+            sourceUrl: url,
+            hasChanges: prepared.hasChanges,
+            canApply: prepared.hasChanges,
+            conflictingBlockIds: prepared.conflictingBlockIds,
+            missingBlockIds: prepared.diff.missingPublished.map((side) => side.blockId),
+            entries: prepared.diff.entries
+              .filter(
+                (entry) =>
+                  entry.category !== 'unchanged' ||
+                  prepared.diff.missingPublished.some(
+                    (missing) => missing.blockId === entry.affectedBlockId,
+                  ),
+              )
+              .map((entry) => ({
+                category: entry.category,
+                affectedBlockId: entry.affectedBlockId,
+                before:
+                  entry.before === null
+                    ? null
+                    : { ...entry.before, path: entry.before.path.map((segment) => segment.label) },
+                after:
+                  entry.after === null
+                    ? null
+                    : { ...entry.after, path: entry.after.path.map((segment) => segment.label) },
+                confidence: entry.confidence,
+                confidenceReasons: entry.confidenceReasons,
+                requiresHumanReview: entry.requiresHumanReview,
+                renumberingEvidence: entry.renumberingEvidence,
+              })),
+          });
+          if (Buffer.byteLength(JSON.stringify(dto)) > 1900000)
+            throw new DesktopIpcError('PAYLOAD_TOO_LARGE');
+          const proposal = await editorialStore.saveLocalSourceProposal({
+            schemaVersion: 1,
+            checkId,
+            projectId,
+            expectedRevisionHash,
+            checkedAt,
+            source,
+            sourceBase,
+            incoming,
+            incomingRevisionHash: calculateRevisionHash(incoming, sha256),
+          });
+          issuedSourceChecks.set(checkId, sha256(JSON.stringify(proposal)));
+          return dto;
+        })();
+        sourceChecksInFlight.set(key, checking);
+        try {
+          return await checking;
+        } finally {
+          sourceChecksInFlight.delete(key);
+        }
+      },
+    },
+    applyLocalSourceUpdate: {
+      authorize: ({ projectId, checkId }) =>
+        projects.has(projectId) && issuedSourceChecks.has(checkId),
+      handle: async ({ projectId, checkId, expectedRevisionHash, overwriteConflicts, reason }) => {
+        const project = editorialProjectOrThrow(projectId);
+        const proposal: LocalSourceProposal = await editorialStore.loadLocalSourceProposal(
+          projectId,
+          checkId,
+        );
+        if (issuedSourceChecks.get(checkId) !== sha256(JSON.stringify(proposal)))
+          throw new DesktopIpcError('NOT_ALLOWED');
+        if (
+          proposal.expectedRevisionHash !== expectedRevisionHash ||
+          calculateRevisionHash(project.ast, sha256) !== expectedRevisionHash
+        )
+          throw new DesktopIpcError('CONFLICT');
+        const source = await recoverSourceRecord(
+          storageRoot,
+          projectId,
+          proposal.incoming,
+          proposal.source,
+        );
+        const command: EditorialCommand = {
+          schemaVersion: 1,
+          commandId: randomUUID(),
+          localActorId: 'editor-local',
+          occurredAt: now().toISOString(),
+          expectedRevisionHash,
+          operation: {
+            kind: 'apply_source_update',
+            checkId,
+            sourceBase: proposal.sourceBase,
+            incoming: proposal.incoming,
+            checkedOn: proposal.checkedAt.slice(0, 10),
+            overwriteConflicts,
+            reason,
+          },
+        };
+        const state = await applyAndPersist(project, command, [], undefined, source);
+        issuedSourceChecks.delete(checkId);
+        return state;
+      },
+    },
+    listLocalLaws: {
+      authorize: () => true,
+      handle: async ({ query, offset, limit }) => {
+        const normalize = (value: string) =>
+          value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+        const needle = normalize(query.trim());
+        const all = (await editorialStore.list()).filter((item) =>
+          normalize(`${item.title} ${item.recoveryState === 'ready' ? item.sigla : ''}`).includes(
+            needle,
+          ),
+        );
+        const items = all.slice(offset, offset + limit);
+        return {
+          items,
+          totalItems: all.length,
+          nextOffset: offset + items.length < all.length ? offset + items.length : null,
+        };
+      },
+    },
+    openLocalLaw: {
+      authorize: () => true,
+      handle: async ({ projectId }) => {
+        if (revokedProjects.has(projectId)) throw new DesktopIpcError('PROJECT_UNAVAILABLE');
+        const loaded = projects.get(projectId);
+        if (loaded?.ast !== undefined && loaded.document !== undefined)
+          return { projectId, source: loaded.source.summary };
+        const pending = openingProjects.get(projectId);
+        if (pending !== undefined) return pending;
+        const opening = (async () => {
+          try {
+            const recovered = await editorialStore.recover(projectId);
+            if (!recovered.ok) throw new Error('RECOVERY_FAILED');
+            const lastUpdate = recovered.journal.entries
+              .map((entry) => entry.command.operation)
+              .reverse()
+              .find((operation) => operation.kind === 'apply_source_update');
+            const savedSummary =
+              lastUpdate?.kind === 'apply_source_update'
+                ? (await editorialStore.loadLocalSourceProposal(projectId, lastUpdate.checkId))
+                    .source
+                : await editorialStore.loadSourceSummary(projectId);
+            const source = await recoverSourceRecord(
+              storageRoot,
+              projectId,
+              lastUpdate === undefined ? recovered.journal.base.ast : recovered.ast,
+              savedSummary,
+            );
+            const projectionProfile =
+              (await editorialStore.loadProjectionPreference(projectId)) ?? 'complete_with_history';
+            const project: ProjectRecord = {
+              projectId,
+              source,
+              projectionProfile,
+              ast: recovered.ast,
+              journal: recovered.journal,
+              nodes: new Map(),
+              roots: [],
+              diagnostics: [],
+              approvalWasInvalidated: false,
+              editorialDiagnosticIds: new Map(),
+            };
+            rebuildProjection(project, recovered.ast);
+            if (revokedProjects.has(projectId)) throw new DesktopIpcError('PROJECT_UNAVAILABLE');
+            projects.set(projectId, project);
+            try {
+              refreshLegalReferences(projectId);
+            } catch (error) {
+              projects.delete(projectId);
+              throw error;
+            }
+            return { projectId, source: source.summary };
+          } catch {
+            throw new DesktopIpcError('PROJECT_UNAVAILABLE');
+          }
+        })();
+        openingProjects.set(projectId, opening);
+        try {
+          return await opening;
+        } finally {
+          openingProjects.delete(projectId);
+        }
+      },
+    },
+    deleteLocalLaw: {
+      authorize: () => true,
+      handle: ({ projectId }) =>
+        serializeLibraryMutation(async () => {
+          // Aguarda abertura iniciada antes da exclusão; depois revoga todos os IDs da revisão.
+          await openingProjects.get(projectId)?.catch(() => undefined);
+          await editorialStore.delete(projectId);
+          revokedProjects.add(projectId);
+          for (const job of jobs.values()) if (job.projectId === projectId) job.cancelled = true;
+          projects.delete(projectId);
+          for (const [id, source] of sources)
+            if (source.projectId === projectId) sources.delete(id);
+          for (const [id, destination] of destinations)
+            if (destination.projectId === projectId) destinations.delete(id);
+          for (const [id, destination] of batchDestinations)
+            if (destination.projectIds.includes(projectId)) batchDestinations.delete(id);
+          cursors.clear();
+          referencePreviewCache.clear();
+          refreshLegalReferences();
+          return { projectId, deleted: true as const };
+        }),
+    },
+    getProjectAst: (projectId) => {
+      const ast = projects.get(projectId)?.ast;
+      return ast === undefined ? null : structuredClone(ast);
+    },
+    getPublicationSnapshot: async (projectId) => {
+      const project = projects.get(projectId);
+      if (!projectCanExport(project) || project?.ast === undefined)
+        throw new Error('INVALID_APPROVED_REVISION');
+      const ast = structuredClone(project.ast);
+      const revisionHash = calculateRevisionHash(ast, sha256);
+      const sourceRoot = await realpath(join(storageRoot, 'sources'));
+      const snapshots = await Promise.all(
+        project.source.artifacts.map(async (artifact) => {
+          const resolved = await realpath(artifact.snapshotPath);
+          if (!resolved.startsWith(`${sourceRoot}/`)) throw new Error('UNSAFE_SOURCE_SNAPSHOT');
+          const file = await open(
+            artifact.snapshotPath,
+            fileConstants.O_RDONLY | fileConstants.O_NOFOLLOW,
+          );
+          try {
+            const info = await file.stat();
+            if (!info.isFile() || info.size > MAX_SOURCE_BYTES)
+              throw new Error('INVALID_SOURCE_SNAPSHOT');
+            const bytes = await file.readFile();
+            if (sha256(bytes) !== artifact.sourceArtifactSha256)
+              throw new Error('SOURCE_SNAPSHOT_HASH_MISMATCH');
+            return {
+              sourceType: artifact.snapshotPath.endsWith('.html')
+                ? ('planalto_html' as const)
+                : ('markdown' as const),
+              sourceRole: artifact.sourceRole,
+              sourceVariant: artifact.sourceVariant,
+              sourceUrl: artifact.finalUrl,
+              finalUrl: artifact.finalUrl,
+              sourceArtifactSha256: artifact.sourceArtifactSha256,
+              capturedAt: info.mtime.toISOString(),
+              bytes,
+            };
+          } finally {
+            await file.close();
+          }
+        }),
+      );
+      if (
+        projects.get(projectId) !== project ||
+        !projectCanExport(project) ||
+        calculateRevisionHash(project.ast, sha256) !== revisionHash
+      )
+        throw new Error('PUBLICATION_REVISION_CONFLICT');
+      return { ast, revisionHash, snapshots };
     },
     selectLocal: {
       authorize: () => getMainWindow() !== null,
@@ -2111,6 +2588,15 @@ export const createLocalProjectService = ({
         );
         const mediaType = extension === '.html' ? 'text/html' : 'text/markdown';
         try {
+          await assertUniqueLaw(
+            metadataFor(
+              decodeText(bytes),
+              basename(resolved),
+              mediaType,
+              now().toISOString().slice(0, 10),
+            ),
+            sha256(bytes),
+          );
           const artifact = await persistArtifact(sourceId, bytes, extension as '.html' | '.md', {
             sourceArtifactId: sourceId,
             finalUrl: `https://local.lex-editor.invalid/snapshot/${encodeURIComponent(basename(resolved))}`,
@@ -2185,21 +2671,25 @@ export const createLocalProjectService = ({
           }
           const fetched =
             activeConfiguration === null
-              ? networkPorts === undefined
-                ? await fetchPlanaltoSourceSet(url)
-                : await fetchPlanaltoSourceSet(url, networkPorts)
-              : networkPorts === undefined
-                ? await fetchConfiguredPlanaltoSourceSet(
-                    activeConfiguration.providerRevision,
-                    activeConfiguration.bindingRevision,
-                  )
-                : await fetchConfiguredPlanaltoSourceSet(
-                    activeConfiguration.providerRevision,
-                    activeConfiguration.bindingRevision,
-                    networkPorts,
-                  );
+              ? await fetchPlanaltoSourceSet(url, networkPorts)
+              : await fetchConfiguredPlanaltoSourceSet(
+                  activeConfiguration.providerRevision,
+                  activeConfiguration.bindingRevision,
+                  networkPorts,
+                  url,
+                );
           const primaryFetched = fetched.find(({ sourceRole }) => sourceRole === 'primary_current');
           if (primaryFetched === undefined) throw new PlanaltoNetworkError('NETWORK_FAILED');
+          await assertUniqueLaw(
+            metadataFor(
+              decodificarHtmlPlanalto(primaryFetched.bytes),
+              basename(new URL(primaryFetched.finalUrl).pathname),
+              'text/html',
+              now().toISOString().slice(0, 10),
+              primaryFetched.finalUrl,
+            ),
+            sha256(primaryFetched.bytes),
+          );
           const artifacts = await Promise.all(
             fetched.map((item) =>
               persistArtifact(sourceId, item.bytes, '.html', {
@@ -2277,6 +2767,9 @@ export const createLocalProjectService = ({
       handle: ({ sourceId }) => {
         const source = sources.get(sourceId);
         if (source === undefined) throw new Error('Source is not authorized.');
+        if (projects.get(source.projectId)?.ast !== undefined)
+          throw new DesktopIpcError('LAW_ALREADY_EXISTS');
+        if (projects.has(source.projectId)) throw new DesktopIpcError('CONFLICT');
         const job: JobRecord = {
           jobId: randomUUID(),
           projectId: source.projectId,
@@ -2628,6 +3121,7 @@ export const createLocalProjectService = ({
           filters: [{ name: 'Markdown', extensions: ['md'] }],
         });
         if (selected.canceled || selected.filePath === undefined) return null;
+        if (projects.get(projectId) !== project) throw new DesktopIpcError('NOT_ALLOWED');
         const destinationId = randomUUID();
         const path = selected.filePath.toLocaleLowerCase('en-US').endsWith('.md')
           ? selected.filePath
@@ -2676,6 +3170,7 @@ export const createLocalProjectService = ({
           await file.sync();
           await file.close();
           file = undefined;
+          if (projects.get(projectId) !== project) throw new DesktopIpcError('NOT_ALLOWED');
           await rename(tempPath, destination.path);
         } catch (error) {
           await file?.close().catch(() => undefined);
@@ -2835,6 +3330,12 @@ export const createLocalProjectService = ({
             const stageDirectory = join(lawsRoot, `.${identity.directoryName}.${randomUUID()}.tmp`);
             try {
               await mkdir(stageDirectory, { mode: 0o700 });
+              const revisionHash = calculateRevisionHash(project.ast, sha256);
+              const report =
+                project.journal === undefined
+                  ? null
+                  : generateLocalChangeReport(project.journal, project.ast, revisionHash, sha256);
+              const reportBytes = report === null ? null : Buffer.from(report, 'utf8');
               const markdownBytes = Buffer.from(project.markdown, 'utf8');
               const updateMarkdown = generateUpdateMarkdown([
                 {
@@ -2853,6 +3354,9 @@ export const createLocalProjectService = ({
               const files = [
                 { path: join(stageDirectory, markdownFileName), bytes: markdownBytes },
                 { path: join(stageDirectory, 'UPDATE.md'), bytes: updateBytes },
+                ...(reportBytes === null
+                  ? []
+                  : [{ path: join(stageDirectory, 'ALTERACOES.md'), bytes: reportBytes }]),
               ];
               await Promise.all(
                 files.map(async ({ path, bytes }) => {
@@ -2865,7 +3369,22 @@ export const createLocalProjectService = ({
                   }
                 }),
               );
-              await rename(stageDirectory, targetDirectory);
+              await serializeLibraryMutation(async () => {
+                if (
+                  projects.get(identity.projectId) !== project ||
+                  project.ast === undefined ||
+                  !projectCanExport(project) ||
+                  calculateRevisionHash(project.ast, sha256) !== revisionHash
+                )
+                  throw new DesktopIpcError('CONFLICT');
+                if (
+                  (await realpath(destination.rootPath)) !== rootReal ||
+                  (await lstat(lawsRoot)).isSymbolicLink() ||
+                  (await realpath(lawsRoot)) !== lawsRoot
+                )
+                  throw new Error('UNSAFE_EXPORT_ROOT');
+                await rename(stageDirectory, targetDirectory);
+              });
               return {
                 projectId: identity.projectId,
                 revisionHash: calculateRevisionHash(project.ast, sha256),
@@ -2875,6 +3394,12 @@ export const createLocalProjectService = ({
                 directoryName: identity.directoryName,
                 markdownFileName,
                 updateFileName: 'UPDATE.md',
+                ...(reportBytes === null
+                  ? {}
+                  : {
+                      changeReportFileName: 'ALTERACOES.md' as const,
+                      changeReportSha256: sha256(reportBytes),
+                    }),
                 markdownSha256: sha256(markdownBytes),
                 updateSha256: sha256(updateBytes),
               };
@@ -2980,4 +3505,5 @@ export const createLocalProjectService = ({
       },
     },
   };
+  return service;
 };

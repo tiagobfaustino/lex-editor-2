@@ -1,11 +1,20 @@
+import { z } from 'zod';
+
+import {
+  legislativeCandidateArtifactSchema,
+  type LegislativeCandidateArtifact,
+} from './candidate-artifacts.js';
+
 import {
   legislativeUpdateErrorSchema,
   legislativeUpdateProposalSchema,
   legislativeUpdateRecordSchema,
   updateUuidSchema,
   type LegislativeUpdateError,
+  type ClaimedLegislativeUpdateReprocess,
   type LegislativeUpdateProposal,
   type LegislativeUpdateQueue,
+  type LegislativeUpdateReprocessOutcome,
   type LegislativeUpdateRecord,
   type ProposalUpsertResult,
   type UpdateIdGenerator,
@@ -17,13 +26,39 @@ const immutableRecord = (value: unknown): LegislativeUpdateRecord =>
   Object.freeze(legislativeUpdateRecordSchema.parse(value));
 
 export class InMemoryLegislativeUpdateQueue implements LegislativeUpdateQueue {
+  readonly #candidateArtifacts = new Map<string, LegislativeCandidateArtifact>();
   readonly #records = new Map<string, LegislativeUpdateRecord>();
   readonly #idGenerator: UpdateIdGenerator;
   readonly #now: () => Date;
+  readonly #reprocessRequests = new Map<
+    string,
+    { updateId: string; claimed: boolean; completed: boolean }
+  >();
+  readonly #currentReprocessRequest = new Map<string, string>();
 
   constructor(idGenerator: UpdateIdGenerator, now: () => Date = () => new Date()) {
     this.#idGenerator = idGenerator;
     this.#now = now;
+  }
+
+  saveCandidateArtifact(rawArtifact: LegislativeCandidateArtifact): Promise<void> {
+    const artifact = legislativeCandidateArtifactSchema.parse(rawArtifact);
+    const previous = this.#candidateArtifacts.get(artifact.candidateArtifactId);
+    if (previous !== undefined && JSON.stringify(previous) !== JSON.stringify(artifact))
+      throw new Error('UPDATE_CANDIDATE_ARTIFACT_CONFLICT');
+    this.#candidateArtifacts.set(artifact.candidateArtifactId, artifact);
+    return Promise.resolve();
+  }
+
+  getCandidate(updateId: string): Promise<LegislativeCandidateArtifact | null> {
+    const record = this.#records.get(updateUuidSchema.parse(updateId));
+    const artifact =
+      record?.candidateArtifactId === null || record?.candidateArtifactId === undefined
+        ? undefined
+        : this.#candidateArtifacts.get(record.candidateArtifactId);
+    return Promise.resolve(
+      artifact === undefined ? null : legislativeCandidateArtifactSchema.parse(artifact),
+    );
   }
 
   upsertProposal(rawProposal: LegislativeUpdateProposal): Promise<ProposalUpsertResult> {
@@ -38,7 +73,12 @@ export class InMemoryLegislativeUpdateQueue implements LegislativeUpdateQueue {
         lastDetectedAt: proposal.detectedAt,
       });
       this.#records.set(refreshed.id, refreshed);
-      return Promise.resolve({ record: refreshed, created: false, supersededUpdateIds: [] });
+      return Promise.resolve({
+        record: refreshed,
+        updateId: refreshed.id,
+        created: false,
+        supersededUpdateIds: [],
+      });
     }
 
     const id = updateUuidSchema.parse(this.#idGenerator());
@@ -78,10 +118,15 @@ export class InMemoryLegislativeUpdateQueue implements LegislativeUpdateQueue {
       reprocessRequestedAt: null,
     });
     this.#records.set(id, record);
-    return Promise.resolve({ record, created: true, supersededUpdateIds: superseded.sort() });
+    return Promise.resolve({
+      record,
+      updateId: record.id,
+      created: true,
+      supersededUpdateIds: superseded.sort(),
+    });
   }
 
-  recordError(rawError: LegislativeUpdateError): Promise<LegislativeUpdateRecord> {
+  recordError(rawError: LegislativeUpdateError): Promise<Readonly<{ updateId: string }>> {
     const error = legislativeUpdateErrorSchema.parse(rawError);
     const duplicate = [...this.#records.values()].find(
       (record) => record.detectionKey === error.failureKey,
@@ -97,7 +142,7 @@ export class InMemoryLegislativeUpdateQueue implements LegislativeUpdateQueue {
         reprocessRequestedAt: null,
       });
       this.#records.set(refreshed.id, refreshed);
-      return Promise.resolve(refreshed);
+      return Promise.resolve(Object.freeze({ updateId: refreshed.id }));
     }
 
     const id = updateUuidSchema.parse(this.#idGenerator());
@@ -131,7 +176,7 @@ export class InMemoryLegislativeUpdateQueue implements LegislativeUpdateQueue {
       reprocessRequestedAt: null,
     });
     this.#records.set(id, record);
-    return Promise.resolve(record);
+    return Promise.resolve(Object.freeze({ updateId: record.id }));
   }
 
   findById(updateId: string): Promise<LegislativeUpdateRecord | null> {
@@ -176,20 +221,81 @@ export class InMemoryLegislativeUpdateQueue implements LegislativeUpdateQueue {
     return Promise.resolve(rejected);
   }
 
-  requestReprocess(updateId: string): Promise<LegislativeUpdateRecord> {
+  requestReprocess(updateId: string, requestId?: string): Promise<LegislativeUpdateRecord> {
     const id = updateUuidSchema.parse(updateId);
     const current = this.#records.get(id);
     if (current === undefined) throw new Error('UPDATE_NOT_FOUND');
-    if (!['error', 'rejected'].includes(current.updateReviewStatus)) {
-      throw new Error('UPDATE_CANNOT_REPROCESS');
+    const activeId = this.#currentReprocessRequest.get(id);
+    const active = activeId === undefined ? undefined : this.#reprocessRequests.get(activeId);
+    const requestedId = updateUuidSchema.parse(
+      requestId ?? (active?.completed === false ? activeId : crypto.randomUUID()),
+    );
+    const existing = this.#reprocessRequests.get(requestedId);
+    if (existing !== undefined) {
+      if (existing.updateId !== id) throw new Error('UPDATE_REPROCESS_REQUEST_CONFLICT');
+      return Promise.resolve(current);
     }
+    if (!['error', 'rejected'].includes(current.updateReviewStatus))
+      throw new Error('UPDATE_CANNOT_REPROCESS');
+    if (active?.completed === false) throw new Error('UPDATE_REPROCESS_IN_PROGRESS');
     const requested = immutableRecord({
       ...current,
       retryCount: current.retryCount + 1,
       reprocessRequestedAt: this.#now().toISOString(),
     });
     this.#records.set(id, requested);
+    this.#currentReprocessRequest.set(id, requestedId);
+    this.#reprocessRequests.set(requestedId, { updateId: id, claimed: false, completed: false });
     return Promise.resolve(requested);
+  }
+
+  claimReprocessRequests(limit: number): Promise<readonly ClaimedLegislativeUpdateReprocess[]> {
+    const parsedLimit = z.int().min(1).max(100).parse(limit);
+    const claimed: ClaimedLegislativeUpdateReprocess[] = [];
+    for (const record of this.#records.values()) {
+      const requestId = this.#currentReprocessRequest.get(record.id);
+      const request = requestId === undefined ? undefined : this.#reprocessRequests.get(requestId);
+      if (
+        claimed.length >= parsedLimit ||
+        requestId === undefined ||
+        request === undefined ||
+        request.claimed ||
+        request.completed
+      )
+        continue;
+      request.claimed = true;
+      this.#records.set(record.id, immutableRecord({ ...record, reprocessRequestedAt: null }));
+      claimed.push(Object.freeze({ updateId: record.id, lawId: record.lawId, requestId }));
+    }
+    return Promise.resolve(claimed);
+  }
+
+  completeReprocess(
+    updateId: string,
+    requestId: string,
+    outcome: LegislativeUpdateReprocessOutcome,
+    detailCode: string | null,
+  ): Promise<boolean> {
+    const id = updateUuidSchema.parse(updateId);
+    const parsedRequestId = updateUuidSchema.parse(requestId);
+    z.enum(['completed', 'failed']).parse(outcome);
+    z.string()
+      .regex(/^[A-Z][A-Z0-9_]{2,79}$/u)
+      .nullable()
+      .parse(detailCode);
+    const request = this.#reprocessRequests.get(parsedRequestId);
+    if (
+      this.#currentReprocessRequest.get(id) !== parsedRequestId ||
+      request?.updateId !== id ||
+      !request.claimed ||
+      request.completed
+    )
+      return Promise.resolve(false);
+    request.completed = true;
+    const record = this.#records.get(id);
+    if (record !== undefined)
+      this.#records.set(id, immutableRecord({ ...record, reprocessRequestedAt: null }));
+    return Promise.resolve(true);
   }
 
   #requiredPending(updateId: string): LegislativeUpdateRecord {

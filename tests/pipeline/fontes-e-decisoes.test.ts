@@ -72,6 +72,31 @@ describe('mesclagem de fontes compilada e anotada (ADR-009)', () => {
     expect(resultado.problemas.map((p) => p.codigo)).toContain('conflito_de_fontes');
   });
 
+  it('disponibiliza conflito para revisão explícita sem substituir texto ou agregar histórico conflitante', () => {
+    const arvore = auxiliar();
+    (arvore.children[0] as unknown as Record<string, unknown>)['caput'] = 'Texto conflitante.';
+    const resultado = mesclarFontes(parsedMinima, [arvore], { permitirConflitosParaRevisao: true });
+    expect(resultado.ok).toBe(true);
+    if (!resultado.ok) return;
+    const artigo = resultado.valor.children[0] as unknown as Record<string, unknown>;
+    expect(artigo['caput']).toBe(
+      (parsedMinima.children[0] as unknown as Record<string, unknown>)['caput'],
+    );
+    expect(artigo['redacoesAnteriores']).toBeUndefined();
+    expect(artigo['parseEvidence']).toMatchObject({
+      confidence: 'low',
+      requiresHumanReview: true,
+    });
+    expect((artigo['parseEvidence'] as { reasons: string[] }).reasons).toContain(
+      'source_text_conflict',
+    );
+    expect((artigo['parseEvidence'] as { editorialNote: string }).editorialNote).toContain(
+      'Texto conflitante.',
+    );
+    expect(identificar(resultado.valor, 'lt').ok).toBe(false);
+    expect(parsedMinima.children[0]?.parseEvidence.requiresHumanReview).toBe(false);
+  });
+
   it('mantém a primária e ignora somente o caminho de conflito já revisado', () => {
     const arvore = auxiliar();
     (arvore.children[0] as unknown as Record<string, unknown>)['caput'] = 'Texto conflitante.';
@@ -87,6 +112,48 @@ describe('mesclagem de fontes compilada e anotada (ADR-009)', () => {
     expect(
       (resultado.valor.children[0] as unknown as Record<string, unknown>)['supportingSourceRefs'],
     ).toBeUndefined();
+  });
+
+  it('não sobrescreve divisões com o mesmo número ao indexar o conjunto', () => {
+    const parse = (reference: typeof origemMinima) =>
+      analisar({
+        conteudo: 'TÍTULO I Geral\nArt. 1. Primeiro.\nTÍTULO I Especial\nArt. 2. Segundo.',
+        referenciaBase: reference,
+        hashDaLinha: sha256,
+        metadados: METADADOS,
+      });
+    const primary = parse(origemMinima);
+    const auxiliary = parse(origemHistorica);
+    if (!primary.ok || !auxiliary.ok) throw new Error('Fixture inválida');
+    const merged = mesclarFontes(primary.valor, [auxiliary.valor]);
+    expect(merged.ok).toBe(true);
+    if (!merged.ok) return;
+    expect(merged.valor.children).toHaveLength(2);
+    for (const division of merged.valor.children)
+      expect(division.supportingSourceRefs?.[0]?.sourceRole).toBe('historical_auxiliary');
+  });
+
+  it('mantém associação ambígua bloqueada, ou exige revisão de cada candidata no desktop', () => {
+    const parse = (conteudo: string, reference: typeof origemMinima) =>
+      analisar({ conteudo, referenciaBase: reference, hashDaLinha: sha256, metadados: METADADOS });
+    const primary = parse(
+      'TÍTULO I Geral\nArt. 1. Primeiro.\nTÍTULO I Especial\nArt. 2. Segundo.',
+      origemMinima,
+    );
+    const auxiliary = parse(
+      'TÍTULO I Outra denominação\nTÍTULO II Distinta\nArt. 3. Terceiro.',
+      origemHistorica,
+    );
+    if (!primary.ok || !auxiliary.ok) throw new Error('Fixture inválida');
+    expect(mesclarFontes(primary.valor, [auxiliary.valor]).ok).toBe(false);
+    const merged = mesclarFontes(primary.valor, [auxiliary.valor], {
+      permitirConflitosParaRevisao: true,
+    });
+    expect(merged.ok).toBe(true);
+    if (!merged.ok) return;
+    for (const division of merged.valor.children)
+      expect(division.parseEvidence.requiresHumanReview).toBe(true);
+    expect(identificar(merged.valor, 'lt').ok).toBe(false);
   });
 
   it('aceita a fonte anotada como primária quando não há compilada', () => {

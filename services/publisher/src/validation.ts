@@ -73,6 +73,18 @@ export interface PublicationBaseline {
 export interface PublicationBaselineRepository {
   getByLawId(lawId: string, lawDirectoryName: string): Promise<PublicationBaseline>;
   versionBelongsToLaw(lawId: string, versionId: string): Promise<boolean>;
+  getHistoricalVersion?(
+    lawId: string,
+    versionId: string,
+    lawDirectoryName: string,
+  ): Promise<PublicationHistoricalVersion | null>;
+}
+
+export interface PublicationHistoricalVersion {
+  readonly lawId: string;
+  readonly versionId: string;
+  readonly ast: IdentifiedNormaAST;
+  readonly manifest: PublicationManifest;
 }
 
 export interface PublicationSyncPayload {
@@ -244,11 +256,30 @@ const buildRegistry = (baseline: PublicationBaseline, sigla: string): RegistroPu
     porPosicao: {},
     aliases: [...baseline.redirects],
   };
-  return baseline.ast === null ? base : registrarPublicacao(baseline.ast, sigla, base);
+  const registered = baseline.ast === null ? base : registrarPublicacao(baseline.ast, sigla, base);
+  return { ...registered, aliases: canonicalRedirects(registered.aliases) };
+};
+
+const canonicalRedirects = (redirects: readonly BlockIdDepreciado[]): BlockIdDepreciado[] =>
+  [
+    ...new Map(redirects.map((redirect) => [serializeCanonicalJson(redirect), redirect])).values(),
+  ].sort(
+    (left, right) => left.antigo.localeCompare(right.antigo) || left.novo.localeCompare(right.novo),
+  );
+
+const restoredContent = (ast: IdentifiedNormaAST): Record<string, unknown> => {
+  const content = { ...ast } as unknown as Record<string, unknown>;
+  delete content['versaoVinculex'];
+  delete content['publicationStatus'];
+  delete content['dataFormatacaoVinculex'];
+  delete content['dataVerificacaoIntegridade'];
+  delete content['idsDepreciados'];
+  return content;
 };
 
 const buildSyncPayload = (options: {
   manifest: PublicationManifest;
+  baseline: PublicationBaseline;
   candidateSha: string;
   manifestDigest: string;
   ast: IdentifiedNormaAST;
@@ -284,7 +315,8 @@ const buildSyncPayload = (options: {
       manifestDigest: options.manifestDigest,
       approvedBy: options.manifest.approvedBy.userId,
       expectedPublishedVersionId: options.manifest.expectedBase.publishedVersionId,
-      expectedGitBaseSha: options.manifest.expectedBase.gitCommitSha,
+      expectedGitBaseSha:
+        options.baseline.gitCommitSha ?? options.manifest.expectedBase.gitCommitSha,
     },
     projection: {
       lei: domainProjection.lei,
@@ -391,10 +423,7 @@ export const validatePublicationCandidate = async (options: {
     manifest.law.lawId,
     manifest.law.directoryName,
   );
-  if (
-    baseline.publishedVersionId !== manifest.expectedBase.publishedVersionId ||
-    (baseline.gitCommitSha !== null && baseline.gitCommitSha !== manifest.expectedBase.gitCommitSha)
-  ) {
+  if (baseline.publishedVersionId !== manifest.expectedBase.publishedVersionId) {
     throw new PublisherValidationError(
       'sequence_conflict',
       'A versão pública mudou depois da aprovação.',
@@ -417,16 +446,22 @@ export const validatePublicationCandidate = async (options: {
     targetPublicationNumber: manifest.target.publicationNumber,
     impact: manifest.target.impact,
   });
+  const restored =
+    manifest.target.restoredVersionId === null
+      ? null
+      : await options.baselines.getHistoricalVersion?.(
+          manifest.law.lawId,
+          manifest.target.restoredVersionId,
+          manifest.law.directoryName,
+        );
   if (
     manifest.target.restoredVersionId !== null &&
-    !(await options.baselines.versionBelongsToLaw(
-      manifest.law.lawId,
-      manifest.target.restoredVersionId,
-    ))
+    (restored?.lawId !== manifest.law.lawId ||
+      restored.versionId !== manifest.target.restoredVersionId)
   ) {
     throw new PublisherValidationError(
       'sequence_conflict',
-      'A versão restaurada não pertence à lei publicada.',
+      'A versão restaurada não tem evidência histórica autoritativa para esta lei.',
     );
   }
 
@@ -517,6 +552,21 @@ export const validatePublicationCandidate = async (options: {
     );
   }
   assertSourceSet(ast, manifest);
+  if (
+    restored != null &&
+    (!sameJson(restoredContent(ast), restoredContent(restored.ast)) ||
+      !sameJson(manifest.sourceSnapshots, restored.manifest.sourceSnapshots) ||
+      manifest.changelog.restoredVersion !== restored.manifest.target.version ||
+      !sameJson(
+        canonicalRedirects(ast.idsDepreciados ?? []),
+        canonicalRedirects([...(restored.ast.idsDepreciados ?? []), ...baseline.redirects]),
+      ))
+  ) {
+    throw new PublisherValidationError(
+      'legal_validation_failed',
+      'O rollback não restaura exatamente o conteúdo, IDs e fontes da versão histórica.',
+    );
+  }
   const formatted = formatar(ast);
   if (!formatted.ok || formatted.valor !== decodeUtf8(markdownBytes, 'Markdown')) {
     throw new PublisherValidationError(
@@ -525,9 +575,33 @@ export const validatePublicationCandidate = async (options: {
     );
   }
 
-  const registry = baseline.ast === null ? REGISTRO_VAZIO : buildRegistry(baseline, ast.sigla);
+  const registry =
+    restored == null
+      ? baseline.ast === null
+        ? REGISTRO_VAZIO
+        : buildRegistry(baseline, ast.sigla)
+      : {
+          ...registrarPublicacao(restored.ast, ast.sigla, {
+            namespace: baseline.historicalBlockIds,
+            porPosicao: {},
+            aliases: [],
+          }),
+          aliases: canonicalRedirects([
+            ...(restored.ast.idsDepreciados ?? []),
+            ...baseline.redirects,
+          ]),
+        };
   const reconciled = reconciliar(ast, registry, ast.sigla);
-  if (!reconciled.ok || !sameJson(reconciled.valor.arvore, ast)) {
+  if (
+    !reconciled.ok ||
+    !sameJson(
+      {
+        ...reconciled.valor.arvore,
+        idsDepreciados: canonicalRedirects(reconciled.valor.arvore.idsDepreciados ?? []),
+      },
+      { ...ast, idsDepreciados: canonicalRedirects(ast.idsDepreciados ?? []) },
+    )
+  ) {
     throw new PublisherValidationError(
       'legal_validation_failed',
       'Os Block IDs não preservam o namespace publicado.',
@@ -562,6 +636,7 @@ export const validatePublicationCandidate = async (options: {
     canonicalAlreadyPromoted: canonicalSha === request.candidateSha,
     payload: buildSyncPayload({
       manifest,
+      baseline,
       candidateSha: request.candidateSha,
       manifestDigest,
       ast,

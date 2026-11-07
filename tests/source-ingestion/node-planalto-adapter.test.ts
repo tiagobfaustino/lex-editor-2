@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { LawSourceBindingRevision, ProviderRevision } from '@lex-editor/source-ingestion';
 import {
   createNodeSourceDryRunRunner,
+  fetchConfiguredPlanaltoSourceSet,
   ingestConfiguredPlanaltoSourceSet,
   type PlanaltoNetworkPorts,
   type TransportRequest,
@@ -72,7 +73,84 @@ const fixturePorts = async (): Promise<PlanaltoNetworkPorts> => {
   };
 };
 
+describe('seleção primária da importação manual configurada', () => {
+  it('seleciona a URL anotada sem alterar os papéis do catálogo para coletas automáticas', async () => {
+    const ports = await fixturePorts();
+    const selectedUrl = binding.artifacts[1]?.sourceUrl;
+    if (selectedUrl === undefined) throw new Error('Fixture inválida');
+    const imported = await fetchConfiguredPlanaltoSourceSet(provider, binding, ports, selectedUrl);
+    expect(imported.map(({ sourceRole, sourceVariant }) => [sourceRole, sourceVariant])).toEqual([
+      ['primary_current', 'annotated'],
+      ['cross_check', 'compiled'],
+    ]);
+    expect(imported[0]?.requestedUrl).toBe(selectedUrl);
+    const automatic = await fetchConfiguredPlanaltoSourceSet(provider, binding, ports);
+    expect(automatic.map(({ sourceRole }) => sourceRole)).toEqual([
+      'primary_current',
+      'historical_auxiliary',
+    ]);
+    expect(binding.artifacts[0]?.sourceRole).toBe('primary_current');
+    expect(binding.artifacts[1]?.sourceRole).toBe('historical_auxiliary');
+  });
+
+  it('recusa URL fora do conjunto configurado antes de DNS e transporte', async () => {
+    const ports = await fixturePorts();
+    await expect(
+      fetchConfiguredPlanaltoSourceSet(
+        provider,
+        binding,
+        ports,
+        'https://www.planalto.gov.br/ccivil_03/leis/outra.htm',
+      ),
+    ).rejects.toMatchObject({ code: 'NETWORK_NOT_ALLOWED' });
+    expect(ports.resolveHost).not.toHaveBeenCalled();
+    expect(ports.request).not.toHaveBeenCalled();
+  });
+});
+
 describe('adaptador Node compartilhado do Planalto', () => {
+  it('recupera dispositivos após fechamentos externos no conjunto real do Código Penal', async () => {
+    const compiled = await readFile('fixtures/legal/cp/import/compiled.html');
+    const annotated = await readFile('fixtures/legal/cp/import/annotated.html');
+    const cpBinding: LawSourceBindingRevision = {
+      ...binding,
+      artifacts: binding.artifacts.map((artifact) => ({
+        ...artifact,
+        sourceUrl:
+          'https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848' +
+          (artifact.sourceVariant === 'compiled' ? 'compilado' : '') +
+          '.htm',
+      })),
+    };
+    const result = await ingestConfiguredPlanaltoSourceSet(provider, cpBinding, {
+      resolveHost: () => Promise.resolve([{ address: '8.8.8.8', family: 4 }]),
+      request: ({ url }) =>
+        Promise.resolve({
+          statusCode: 200,
+          headers: { 'content-type': 'text/html; charset=windows-1252' },
+          body: url.pathname.includes('compilado') ? compiled : annotated,
+        }),
+    });
+
+    const primary = result.artifacts.find(
+      ({ fetched }) => fetched.sourceRole === 'primary_current',
+    );
+    const history = result.artifacts.find(
+      ({ fetched }) => fetched.sourceRole === 'historical_auxiliary',
+    );
+    expect(
+      primary?.extractedContent.includes(
+        'Art. 1º - Não há crime sem lei anterior que o defina. Não há pena sem prévia cominação legal.',
+      ),
+    ).toBe(true);
+    expect(primary?.extractedContent.includes('Art. 361')).toBe(true);
+    expect(history?.extractedContent.includes('~~Art. 1° Não há crime sem lei anterior')).toBe(
+      true,
+    );
+    expect(history?.extractedContent.includes('Art. 361')).toBe(true);
+    expect(history?.snapshot.conteudo.includes('</html>')).toBe(true);
+  }, 15_000);
+
   it.each([
     {
       law: 'Lei nº 9.099/1995',

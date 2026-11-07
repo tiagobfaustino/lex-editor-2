@@ -15,10 +15,17 @@
   "ano": 2003,
   "ramo": "penal",
   "fonte": "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826compilado.htm",
-  "fontesSecundarias": ["https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826.htm"],
+  "fontesSecundarias": [
+    "https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826.htm"
+  ],
   "dataPublicacao": "2003-12-22",
   "dataAtualizacaoLegal": "2026-08-11",
-  "tags": ["armas", "penal", "fixture", "projeções"],
+  "tags": [
+    "armas",
+    "penal",
+    "fixture",
+    "projeções"
+  ],
   "mergeDecisions": "decisoes-mesclagem.json",
   "sources": [
     {
@@ -37,7 +44,7 @@
       "sourceRole": "historical_auxiliary",
       "sourceVariant": "annotated",
       "snapshotSha256": "d7381d1b3c376b0f7b94cb15c323137771e2f592af5675156482876bd2baaa67",
-      "entradaSha256": "8fb91ca4cd3fd0bb9ac5403a3217d2a0cc62d5f44fd0be9907028b5938eb900f"
+      "entradaSha256": "45b56d3e5dbc4d8d8d76250aa0e3874fc69d26fdbf56efc83d938ca76d5496a6"
     }
   ]
 }

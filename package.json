@@ -17,6 +17,7 @@
     "dev": "electron-vite dev",
     "build:app": "electron-vite build",
     "build:publisher-edge": "node scripts/build-publisher-edge.mjs",
+    "build:update-reprocess-edge": "node scripts/build-update-reprocess-edge.mjs",
     "build:workspaces": "npm run build --workspaces --if-present",
     "postinstall": "install-electron",
     "preview": "electron-vite preview",
@@ -45,7 +46,8 @@
     "test:e2e": "npm run build:workspaces && npm run build:app && playwright test",
     "test:e2e:only": "playwright test",
     "build": "npm run build:workspaces && npm run build:app && electron-builder --config electron-builder.yml",
-    "build:unpacked": "npm run build:workspaces && npm run build:app && electron-builder --config electron-builder.yml --dir"
+    "build:unpacked": "npm run build:workspaces && npm run build:app && electron-builder --config electron-builder.yml --dir",
+    "build:desktop-gateway": "node scripts/build-desktop-gateway.mjs"
   },
   "devDependencies": {
     "@electron/asar": "3.4.1",

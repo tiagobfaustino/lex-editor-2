@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { LegislativeCandidateArtifact } from './candidate-artifacts.js';
+
 import {
   legislativeStructuralDiffSchema,
   sourceArtifactHashSchema,
@@ -110,13 +112,45 @@ export type LegislativeUpdateError = z.infer<typeof legislativeUpdateErrorSchema
 
 export type ProposalUpsertResult = Readonly<{
   record: LegislativeUpdateRecord;
+  updateId: string;
   created: boolean;
   supersededUpdateIds: readonly string[];
 }>;
 
-export interface LegislativeUpdateQueue {
-  upsertProposal(proposal: LegislativeUpdateProposal): Promise<ProposalUpsertResult>;
-  recordError(error: LegislativeUpdateError): Promise<LegislativeUpdateRecord>;
+export type WorkerProposalUpsertResult = Readonly<{
+  updateId: string;
+  created: boolean;
+  supersededUpdateIds: readonly string[];
+}>;
+
+export type WorkerErrorRecord = Readonly<{ updateId: string }>;
+
+export type ClaimedLegislativeUpdateReprocess = Readonly<{
+  requestId: string;
+  updateId: string;
+  lawId: string;
+}>;
+
+export type LegislativeUpdateReprocessOutcome = 'completed' | 'failed';
+
+/**
+ * Porta concedida à workload de atualização. Ela deliberadamente não inclui
+ * decisões editoriais ou publicação.
+ */
+export interface LegislativeUpdateWorkerQueue {
+  saveCandidateArtifact(artifact: LegislativeCandidateArtifact): Promise<void>;
+  upsertProposal(proposal: LegislativeUpdateProposal): Promise<WorkerProposalUpsertResult>;
+  recordError(error: LegislativeUpdateError): Promise<WorkerErrorRecord>;
+  claimReprocessRequests(limit: number): Promise<readonly ClaimedLegislativeUpdateReprocess[]>;
+  completeReprocess(
+    updateId: string,
+    requestId: string,
+    outcome: LegislativeUpdateReprocessOutcome,
+    detailCode: string | null,
+  ): Promise<boolean>;
+}
+
+export interface LegislativeUpdateQueue extends LegislativeUpdateWorkerQueue {
   findById(updateId: string): Promise<LegislativeUpdateRecord | null>;
   list(): Promise<readonly LegislativeUpdateRecord[]>;
   approve(
@@ -125,7 +159,7 @@ export interface LegislativeUpdateQueue {
     publicationId: string,
   ): Promise<LegislativeUpdateRecord>;
   reject(updateId: string, actorUserId: string, reason: string): Promise<LegislativeUpdateRecord>;
-  requestReprocess(updateId: string): Promise<LegislativeUpdateRecord>;
+  requestReprocess(updateId: string, requestId?: string): Promise<LegislativeUpdateRecord>;
 }
 
 export type UpdateIdGenerator = () => string;

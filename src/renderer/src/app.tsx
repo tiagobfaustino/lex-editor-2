@@ -22,12 +22,14 @@ import type {
   UpdateMetadataCommand,
   UpdateMetadataResult,
 } from '../../shared/ipc/metadata.js';
+import { LibraryPanel } from './features/library/library-panel.js';
 import { MetadataPanel } from './features/metadata/metadata-panel.js';
 import { PublicationPanel } from './features/publication/publication-panel.js';
 import { LegalReferenceText } from './features/preview/legal-reference-link.js';
 import { SourcesPanel } from './features/sources/sources-panel.js';
 import { UpdatesPanel } from './features/updates/updates-panel.js';
 import { AuditPanel } from './features/audit/audit-panel.js';
+import { SessionPanel } from './features/session/session-panel.js';
 
 type DesktopIntegrationState =
   | Readonly<{ kind: 'loading' }>
@@ -60,6 +62,8 @@ const BATCH_EXPORT_FAILURE_LABELS: Readonly<Record<BatchExportFailureCode, strin
 );
 
 const navigationItems = [
+  { label: 'Sessão individual', detail: 'Acesso editorial', href: '#sessao' },
+  { label: 'Minhas leis', detail: 'Importações salvas', href: '#minhas-leis' },
   { label: 'Importação', detail: 'Nova fonte', href: '#importacao' },
   { label: 'Preview e edição', detail: 'Revisão jurídica', href: '#preview' },
   { label: 'Metadados', detail: 'Frontmatter validado', href: '#metadados' },
@@ -77,15 +81,27 @@ const navigationItems = [
   { label: 'Logs e diagnóstico', detail: 'Auditoria operacional', href: '#auditoria' },
 ] as const;
 
-const Navigation = ({ hasDocument }: { hasDocument: boolean }): React.JSX.Element => (
+const Navigation = ({
+  hasDocument,
+  activeTab,
+  onNavigate,
+}: {
+  hasDocument: boolean;
+  activeTab: 'editor' | 'library';
+  onNavigate: (href: string) => void;
+}): React.JSX.Element => (
   <nav className="primary-navigation" aria-label="Navegação principal">
     <p className="navigation-label">Espaço de trabalho</p>
     <ul className="navigation-list">
       {navigationItems.map((item, index) => (
         <li key={item.label}>
           <a
-            className={`navigation-item${index === (hasDocument ? 1 : 0) ? ' is-current' : ''}`}
+            className={`navigation-item${(activeTab === 'library' ? item.href === '#minhas-leis' : item.href === (hasDocument ? '#preview' : '#importacao')) ? ' is-current' : ''}`}
             href={item.href}
+            onClick={(event) => {
+              event.preventDefault();
+              onNavigate(item.href);
+            }}
           >
             <span className="navigation-index" aria-hidden="true">
               {String(index + 1).padStart(2, '0')}
@@ -562,8 +578,17 @@ const EditorialCorrectionForm = ({
       </div>
       <p className="confidence-reasons">
         Motivos:{' '}
-        {target.confidenceReasons.map((reasonCode) => reasonCode.replaceAll('_', ' ')).join(', ')}
+        {target.confidenceReasons
+          .map((reasonCode) =>
+            reasonCode === 'source_text_conflict'
+              ? 'divergência entre fontes oficiais'
+              : reasonCode.replaceAll('_', ' '),
+          )
+          .join(', ')}
       </p>
+      {target.editorialNote !== undefined && (
+        <p className="confidence-reasons">{target.editorialNote}</p>
+      )}
       <label htmlFor={`editorial-text-${target.previewNodeId}`}>Interpretação textual atual</label>
       <textarea
         id={`editorial-text-${target.previewNodeId}`}
@@ -778,6 +803,7 @@ export const App = (): React.JSX.Element => {
   const [desktopIntegration, setDesktopIntegration] = useState<DesktopIntegrationState>(() =>
     window.lexDesktop ? { kind: 'loading' } : { kind: 'unavailable' },
   );
+  const [activeTab, setActiveTab] = useState<'editor' | 'library'>('editor');
   const [source, setSource] = useState<SourceSummaryDto | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProgressDto | null>(null);
@@ -801,12 +827,13 @@ export const App = (): React.JSX.Element => {
 
   useEffect(() => {
     const elementId = pendingReferenceFocus.current;
-    if (elementId === null) return;
+    if (elementId === null || activeTab !== 'editor') return;
     const element = globalThis.document.getElementById(elementId);
     if (element === null) return;
     element.focus();
+    if (elementId === 'preview-title') element.scrollIntoView({ block: 'start' });
     pendingReferenceFocus.current = null;
-  }, [document, pages]);
+  }, [document, pages, activeTab]);
 
   const prepareImportAttempt = useCallback(() => {
     setError(null);
@@ -914,6 +941,28 @@ export const App = (): React.JSX.Element => {
     }
     return true;
   }, []);
+
+  const openSavedLaw = useCallback(
+    async (projectId: string): Promise<string | null> => {
+      const api = window.lexDesktop;
+      if (api === undefined) return 'A integração desktop está indisponível.';
+      const result = await api.library.open({ projectId });
+      if (!result.ok) return result.error.message;
+      if (!(await loadProject(projectId)))
+        return 'Não foi possível carregar o preview da importação.';
+      setSource(result.value.source);
+      setProgress(null);
+      setJobId(null);
+      setError(null);
+      setExportMessage(null);
+      setBatchExportReport(null);
+      setReferenceHistory([]);
+      pendingReferenceFocus.current = 'preview-title';
+      setActiveTab('editor');
+      return null;
+    },
+    [loadProject],
+  );
 
   useEffect(() => {
     let current = true;
@@ -1314,7 +1363,18 @@ export const App = (): React.JSX.Element => {
             <span>Vinculex</span>
           </div>
         </div>
-        <Navigation hasDocument={document !== null} />
+        <Navigation
+          hasDocument={document !== null}
+          activeTab={activeTab}
+          onNavigate={(href) => {
+            setActiveTab(href === '#minhas-leis' ? 'library' : 'editor');
+            requestAnimationFrame(() =>
+              globalThis.document
+                .querySelector(href)
+                ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+            );
+          }}
+        />
         <div className="sidebar-footer">
           <span
             className={`integration-dot${desktopIntegration.kind === 'unavailable' ? ' is-unavailable' : ''}`}
@@ -1338,57 +1398,147 @@ export const App = (): React.JSX.Element => {
           </div>
         </header>
         <main className="workspace" id="conteudo-principal">
-          <ImportPanel
-            source={source}
-            progress={progress}
-            error={error}
-            onSelect={() => void selectLocal()}
-            onImportUrl={(url) => void importFromUrl(url)}
-            onCancel={cancel}
-          />
-          <PreviewPanel
-            document={document}
-            pages={pages}
-            selectedId={selectedId}
-            exportMessage={exportMessage}
-            batchExportReport={batchExportReport}
-            canExport={editorial?.canExport === true}
-            projectionBusy={projectionBusy}
-            batchProjectCount={batchProjects.length}
-            canReturnToReference={referenceHistory.length > 0}
-            onToggle={toggleNode}
-            onLoadMore={(parent, cursor) => void loadPage(parent, cursor)}
-            onProjectionChange={(profile) => void changeProjection(profile)}
-            onExport={() => void exportMarkdown()}
-            onExportBatch={() => void exportBatch()}
-            onNavigateReference={(referenceId, originPreviewNodeId, originElementId) =>
-              void navigateLegalReference(referenceId, originPreviewNodeId, originElementId)
-            }
-            onReturnToReference={() => void returnToLegalReference()}
-          />
-          <MetadataPanel state={metadata} onSave={saveMetadata} onReload={reloadMetadata} />
-          <PublicationPanel
-            key={document?.projectId ?? 'no-project'}
-            projectId={document?.projectId ?? null}
-            lawTitle={document?.title ?? null}
-            sigla={document?.sigla ?? null}
-            deviceCount={document?.totalPreviewNodes ?? 0}
-            canPublish={editorial?.canExport === true}
-          />
-          <UpdatesPanel />
-          <SourcesPanel />
-          <AuditPanel currentProjectId={document?.projectId ?? null} />
-          <ValidationPanel
-            diagnostics={diagnostics}
-            editorial={editorial}
-            saveState={editorialSaveState}
-            onSelect={(diagnostic) => void selectDiagnostic(diagnostic)}
-            onValidate={validateEditorial}
-            onApprove={approveEditorial}
-            onConfirmWarning={confirmEditorialWarning}
-            onCorrect={correctEditorialText}
-            onConfirmInterpretation={confirmEditorialInterpretation}
-          />
+          <div
+            className="workspace-tabs"
+            role="tablist"
+            aria-label="Abas do espaço de trabalho"
+            onKeyDown={(event) => {
+              if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+              event.preventDefault();
+              const next =
+                event.key === 'Home'
+                  ? 'editor'
+                  : event.key === 'End'
+                    ? 'library'
+                    : activeTab === 'editor'
+                      ? 'library'
+                      : 'editor';
+              setActiveTab(next);
+              globalThis.document.getElementById(`${next}-tab`)?.focus();
+            }}
+          >
+            <button
+              id="editor-tab"
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'editor'}
+              aria-controls="editor-panel"
+              tabIndex={activeTab === 'editor' ? 0 : -1}
+              onClick={() => {
+                setActiveTab('editor');
+              }}
+            >
+              Edição
+            </button>
+            <button
+              id="library-tab"
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'library'}
+              aria-controls="library-panel"
+              tabIndex={activeTab === 'library' ? 0 : -1}
+              onClick={() => {
+                setActiveTab('library');
+              }}
+            >
+              Minhas leis
+            </button>
+          </div>
+          <div
+            id="library-panel"
+            role="tabpanel"
+            aria-labelledby="library-tab"
+            hidden={activeTab !== 'library'}
+            className="workspace-library"
+          >
+            <LibraryPanel
+              active={activeTab === 'library'}
+              revisionHash={document?.revisionHash ?? null}
+              onOpen={openSavedLaw}
+              onDeleted={(projectId) => {
+                setBatchProjects((current) =>
+                  current.filter((project) => project.projectId !== projectId),
+                );
+                setReferenceHistory([]);
+                if (document?.projectId !== projectId) return;
+                hasValidDocument.current = false;
+                pendingReferenceFocus.current = null;
+                setDocument(null);
+                setSource(null);
+                setJobId(null);
+                setProgress(null);
+                setPages(new Map());
+                setDiagnostics([]);
+                setEditorial(null);
+                setMetadata(null);
+                setSelectedId(null);
+                setError(null);
+                setExportMessage(null);
+                setBatchExportReport(null);
+                setEditorialSaveState('idle');
+              }}
+            />
+          </div>
+          <div
+            id="editor-panel"
+            role="tabpanel"
+            aria-labelledby="editor-tab"
+            hidden={activeTab !== 'editor'}
+            className="workspace-editor"
+          >
+            <SessionPanel />
+            <ImportPanel
+              source={source}
+              progress={progress}
+              error={error}
+              onSelect={() => void selectLocal()}
+              onImportUrl={(url) => void importFromUrl(url)}
+              onCancel={cancel}
+            />
+            <PreviewPanel
+              document={document}
+              pages={pages}
+              selectedId={selectedId}
+              exportMessage={exportMessage}
+              batchExportReport={batchExportReport}
+              canExport={editorial?.canExport === true}
+              projectionBusy={projectionBusy}
+              batchProjectCount={batchProjects.length}
+              canReturnToReference={referenceHistory.length > 0}
+              onToggle={toggleNode}
+              onLoadMore={(parent, cursor) => void loadPage(parent, cursor)}
+              onProjectionChange={(profile) => void changeProjection(profile)}
+              onExport={() => void exportMarkdown()}
+              onExportBatch={() => void exportBatch()}
+              onNavigateReference={(referenceId, originPreviewNodeId, originElementId) =>
+                void navigateLegalReference(referenceId, originPreviewNodeId, originElementId)
+              }
+              onReturnToReference={() => void returnToLegalReference()}
+            />
+            <MetadataPanel state={metadata} onSave={saveMetadata} onReload={reloadMetadata} />
+            <PublicationPanel
+              key={document?.projectId ?? 'no-project'}
+              projectId={document?.projectId ?? null}
+              lawTitle={document?.title ?? null}
+              sigla={document?.sigla ?? null}
+              deviceCount={document?.totalPreviewNodes ?? 0}
+              canPublish={editorial?.canExport === true}
+            />
+            <UpdatesPanel />
+            <SourcesPanel />
+            <AuditPanel currentProjectId={document?.projectId ?? null} />
+            <ValidationPanel
+              diagnostics={diagnostics}
+              editorial={editorial}
+              saveState={editorialSaveState}
+              onSelect={(diagnostic) => void selectDiagnostic(diagnostic)}
+              onValidate={validateEditorial}
+              onApprove={approveEditorial}
+              onConfirmWarning={confirmEditorialWarning}
+              onCorrect={correctEditorialText}
+              onConfirmInterpretation={confirmEditorialInterpretation}
+            />
+          </div>
         </main>
       </div>
     </div>

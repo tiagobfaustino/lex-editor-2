@@ -116,12 +116,13 @@ const changedAst = (text: string): IdentifiedNormaAST => {
 const collector = (
   ast: IdentifiedNormaAST,
   raw = '<html>fonte alterada</html>',
+  candidateArtifactId = ARTIFACT_ID,
 ): LegislativeSourceCollector => ({
   collect: vi.fn(() =>
     Promise.resolve({
       snapshots: [snapshot(raw)],
       candidateAst: ast,
-      candidateArtifactId: ARTIFACT_ID,
+      candidateArtifactId,
     }),
   ),
 });
@@ -162,13 +163,27 @@ describe('worker de atualização legislativa', () => {
     const first = await firstWorker.run(job());
     const duplicate = await firstWorker.run(job());
     expect(first.kind).toBe('proposal_created');
+    if (first.kind !== 'proposal_created') throw new Error('Proposta não criada.');
+    expect(await queue.getCandidate(first.updateId)).toMatchObject({
+      candidateArtifactId: ARTIFACT_ID,
+      ast: {
+        children: [
+          { caput: 'Primeira redação candidata.', blockId: identifiedMinima.children[0]?.blockId },
+        ],
+      },
+      snapshots: [{ conteudo: '<html>fonte alterada</html>' }],
+    });
     expect(duplicate.kind).toBe('proposal_reused');
     expect(
       (await queue.list()).find((item) => item.updateReviewStatus === 'pending')?.detectionCount,
     ).toBe(2);
 
     const secondWorker = createLegislativeUpdateWorker({
-      collector: collector(changedAst('Segunda redação candidata.')),
+      collector: collector(
+        changedAst('Segunda redação candidata.'),
+        undefined,
+        '10000000-0000-4000-8000-000000000015',
+      ),
       queue,
       sha256,
       now: () => new Date('2026-08-12T15:00:00.000Z'),
@@ -183,6 +198,24 @@ describe('worker de atualização legislativa', () => {
       'pending',
       'superseded',
     ]);
+  });
+
+  it('não cria uma pendência quando a persistência da candidata falha', async () => {
+    const queue = Object.assign(new InMemoryLegislativeUpdateQueue(ids(), () => NOW), {
+      saveCandidateArtifact: () => Promise.reject(new Error('UPDATE_CANDIDATE_PERSISTENCE_FAILED')),
+    });
+    const worker = createLegislativeUpdateWorker({
+      collector: collector(changedAst('Redação candidata persistida.')),
+      queue,
+      sha256,
+      now: () => NOW,
+      random: () => 0.5,
+    });
+    expect(await worker.run(job())).toMatchObject({
+      kind: 'error',
+      errorCode: 'UPDATE_CANDIDATE_PERSISTENCE_FAILED',
+    });
+    expect((await queue.list()).map((record) => record.updateReviewStatus)).toEqual(['error']);
   });
 
   it('registra erro idempotente, aplica backoff e suspende fonte degradada', async () => {

@@ -182,6 +182,43 @@ describe('aliases (T004-05)', () => {
     expect(verificarAliases([{ antigo: 'a', novo: 'a' }]).map((p) => p.codigo)).toContain('ciclo');
   });
 
+  it('reconciliar novamente não reemite um redirect já publicado', () => {
+    const candidata = arvoreDe('Art. 1. Posição antiga.\nArt. 2. Posição nova.');
+    const antigo = candidata.children[0];
+    if (antigo?.tipo !== 'artigo') throw new Error('Fixture sem artigo.');
+    antigo.deviceStatus = 'renumbered';
+    antigo.renumeradoPara = 'ldem-art-2';
+    const primeira = reconciliar(candidata, REGISTRO_VAZIO, 'ldem');
+    if (!primeira.ok) throw new Error('Reconciliação inicial falhou.');
+    const registro = registrarPublicacao(primeira.valor.arvore, 'ldem');
+    const segunda = reconciliar(primeira.valor.arvore, registro, 'ldem');
+    expect(segunda.ok).toBe(true);
+    if (!segunda.ok) throw new Error('Reconciliação repetida falhou.');
+    expect(segunda.valor.aliasesNovos).toEqual([]);
+    expect(segunda.valor.arvore).toEqual(primeira.valor.arvore);
+    expect(reconciliar(segunda.valor.arvore, registro, 'ldem')).toEqual(segunda);
+  });
+
+  it('renumeração continua bloqueando destino divergente de um redirect publicado', () => {
+    const candidata = arvoreDe(
+      'Art. 1. Posição antiga.\nArt. 2. Posição nova.\nArt. 3. Outra posição.',
+    );
+    const antigo = candidata.children[0];
+    if (antigo?.tipo !== 'artigo') throw new Error('Fixture sem artigo.');
+    antigo.deviceStatus = 'renumbered';
+    antigo.renumeradoPara = 'ldem-art-3';
+    const registro = {
+      ...registrarPublicacao(candidata, 'ldem'),
+      aliases: [{ antigo: 'ldem-art-1', novo: 'ldem-art-2' }],
+    };
+    const resultado = reconciliar(candidata, registro, 'ldem');
+    expect(resultado.ok).toBe(false);
+    if (!resultado.ok)
+      expect(resultado.problemas.map((problema) => problema.codigo)).toContain(
+        'block_id_duplicado',
+      );
+  });
+
   it('recusa reapontar um alias existente', () => {
     // Alias é permanente: mudar o destino quebra o mesmo link que ele existia
     // para preservar.

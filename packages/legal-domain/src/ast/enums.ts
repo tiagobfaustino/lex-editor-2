@@ -72,6 +72,7 @@ export const parseConfidenceReasonSchema = z.enum([
   'ambiguous_designator',
   'irregular_table',
   'source_markup_lost',
+  'source_text_conflict',
   'editorial_override',
 ]);
 

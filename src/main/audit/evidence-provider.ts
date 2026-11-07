@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
-import { readdir, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { constants as fileConstants } from 'node:fs';
+import { lstat, open, readdir, realpath } from 'node:fs/promises';
+import { join, relative, sep } from 'node:path';
 
 import type { OperationalAuditDetail } from '@lex-editor/operational-audit';
 
@@ -26,6 +27,11 @@ const sha256 = (bytes: Buffer): string => createHash('sha256').update(bytes).dig
 
 const splitLines = (text: string): readonly string[] => text.split(/\r\n|\r|\n/u);
 
+const isInside = (parent: string, child: string): boolean => {
+  const path = relative(parent, child);
+  return path !== '' && path !== '..' && !path.startsWith(`..${sep}`) && !path.startsWith(sep);
+};
+
 export const createEvidenceProvider = (
   journal: LocalAuditJournalStore,
   storageRoot: string,
@@ -48,13 +54,33 @@ export const createEvidenceProvider = (
     const sourcesRoot = join(storageRoot, 'sources');
     let matchPath: string | null = null;
     try {
-      const sourceDirectories = await readdir(sourcesRoot);
+      const sourcesRootInfo = await lstat(sourcesRoot);
+      if (!sourcesRootInfo.isDirectory() || sourcesRootInfo.isSymbolicLink()) return { ok: false };
+      const sourcesRootReal = await realpath(sourcesRoot);
+      const sourceDirectories = await readdir(sourcesRoot, { withFileTypes: true });
       for (const sourceDirectory of sourceDirectories) {
-        const directory = join(sourcesRoot, sourceDirectory);
-        const files = await readdir(directory).catch(() => []);
-        const match = files.find((file) => file.includes(`-${sourceArtifactSha256}`));
+        if (!sourceDirectory.isDirectory() || sourceDirectory.isSymbolicLink()) continue;
+        const directory = join(sourcesRootReal, sourceDirectory.name);
+        const directoryReal = await realpath(directory).catch(() => null);
+        if (directoryReal === null || !isInside(sourcesRootReal, directoryReal)) continue;
+        const files = await readdir(directoryReal, { withFileTypes: true }).catch(() => []);
+        const match = files.find(
+          (file) =>
+            file.isFile() &&
+            !file.isSymbolicLink() &&
+            file.name.includes(`-${sourceArtifactSha256}`),
+        );
         if (match !== undefined) {
-          matchPath = join(directory, match);
+          const candidate = join(directoryReal, match.name);
+          const candidateInfo = await lstat(candidate).catch(() => null);
+          if (candidateInfo === null || !candidateInfo.isFile() || candidateInfo.isSymbolicLink()) {
+            continue;
+          }
+          const candidateReal = await realpath(candidate).catch(() => null);
+          if (candidateReal === null || !isInside(directoryReal, candidateReal)) continue;
+          const info = await lstat(candidateReal).catch(() => null);
+          if (info === null || !info.isFile() || info.isSymbolicLink()) continue;
+          matchPath = candidateReal;
           break;
         }
       }
@@ -64,7 +90,14 @@ export const createEvidenceProvider = (
     if (matchPath === null) return { ok: false };
     let bytes: Buffer;
     try {
-      bytes = await readFile(matchPath);
+      const handle = await open(matchPath, fileConstants.O_RDONLY | fileConstants.O_NOFOLLOW);
+      try {
+        const info = await handle.stat();
+        if (!info.isFile()) return { ok: false };
+        bytes = await handle.readFile();
+      } finally {
+        await handle.close();
+      }
     } catch {
       return { ok: false };
     }

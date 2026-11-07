@@ -90,6 +90,15 @@ export const editorialOperationSchema = z.discriminatedUnion('kind', [
   setLawMetadataOperationSchema,
   confirmParseInterpretationOperationSchema,
   confirmWarningOperationSchema,
+  z.strictObject({
+    kind: z.literal('apply_source_update'),
+    checkId: z.uuid(),
+    sourceBase: identifiedNormaAstSchema,
+    incoming: identifiedNormaAstSchema,
+    checkedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u),
+    overwriteConflicts: z.boolean(),
+    reason: reasonSchema,
+  }),
 ]);
 
 export const editorialCommandSchema = z.strictObject({

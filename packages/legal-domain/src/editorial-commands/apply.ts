@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { prepareLocalSourceUpdate } from './source-update.js';
 
 import { identificar } from '../block-id/index.js';
 import type { IdentifiedNormaAST, ParsedNormaAST } from '../ast/nodes.js';
@@ -338,7 +339,7 @@ const applyNonStructuralOperation = (
   const root = ast as unknown as NodeRecord;
   const operation = command.operation;
   if (operation.kind === 'confirm_warning') return ast;
-  if (operation.kind === 'set_law_metadata')
+  if (operation.kind === 'set_law_metadata' || operation.kind === 'apply_source_update')
     return failure('invalid_command', 'Operação inválida.');
   const location = oneLocation(root, operation.targetNodeId);
   if (isFailure(location)) return location;
@@ -416,6 +417,39 @@ export const applyEditorialCommand = (
       options,
       currentRevisionHash,
     );
+  }
+  if (parsedCommand.data.operation.kind === 'apply_source_update') {
+    const operation = parsedCommand.data.operation;
+    try {
+      const update = prepareLocalSourceUpdate(
+        parsedAst.data,
+        operation.sourceBase,
+        operation.incoming,
+        operation.checkedOn,
+        sha256,
+      );
+      if (
+        !update.hasChanges ||
+        (update.conflictingBlockIds.length > 0 && !operation.overwriteConflicts)
+      )
+        return failure(
+          'invariant_violation',
+          'A proposta não possui alterações ou exige confirmação de conflito local.',
+        );
+      return {
+        ok: true,
+        ast: update.ast,
+        revisionHash: calculateRevisionHash(update.ast, sha256),
+        structuralChange: true,
+        newAliases: [],
+        missingPublishedBlockIds: update.diff.missingPublished.map((side) => side.blockId),
+      };
+    } catch {
+      return failure(
+        'invariant_violation',
+        'A atualização da fonte não preserva os contratos jurídicos.',
+      );
+    }
   }
   const copy = clone(parsedAst.data);
   const operation = parsedCommand.data.operation;

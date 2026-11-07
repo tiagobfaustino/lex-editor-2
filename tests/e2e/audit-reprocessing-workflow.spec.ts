@@ -1,3 +1,4 @@
+import { build } from 'esbuild';
 import { _electron as electron, expect, test } from '@playwright/test';
 import type { ElectronApplication, Page } from '@playwright/test';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -57,11 +58,23 @@ test.beforeAll(async () => {
     readFile(fixture('lindb', 'esperado.md')).then((bytes) => writeFile(lindbSourcePath, bytes)),
   ]);
 
+  const harnessPath = join(appDirectory, 'output/playwright/audit-source-catalog-harness.mjs');
+  await build({
+    entryPoints: [join(appDirectory, 'tests/e2e/support/source-catalog-harness.ts')],
+    outfile: harnessPath,
+    bundle: true,
+    format: 'esm',
+    platform: 'node',
+    target: 'node22',
+    packages: 'external',
+  });
   app = await electron.launch({
     args: [appDirectory],
     env: {
       ...inheritedEnvironment(),
       XDG_CONFIG_HOME: join(temporaryRoot, 'config'),
+      LEX_EDITOR_E2E_SOURCE_CATALOG: '1',
+      LEX_EDITOR_E2E_SOURCE_CATALOG_MODULE: harnessPath,
     },
   });
   mainWindow = await app.firstWindow();

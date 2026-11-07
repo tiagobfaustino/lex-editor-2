@@ -239,7 +239,9 @@ begin
       when 'rejected' then 'Atualização legislativa rejeitada.'
       when 'error_recorded' then 'Falha de atualização legislativa registrada.'
       when 'reprocess_requested' then 'Reprocessamento legislativo solicitado.'
-      else 'Reprocessamento legislativo assumido.'
+      when 'reprocess_claimed' then 'Reprocessamento legislativo assumido.'
+      when 'reprocess_completed' then 'Reprocessamento legislativo concluído.'
+      else 'Reprocessamento legislativo falhou.'
     end,
     case when event.event_type in ('approved', 'rejected')
       then 'editor_juridico' else 'update_worker' end,
@@ -320,7 +322,9 @@ begin
       when 'rejected' then 'Atualização legislativa rejeitada.'
       when 'error_recorded' then 'Falha de atualização legislativa registrada.'
       when 'reprocess_requested' then 'Reprocessamento legislativo solicitado.'
-      else 'Reprocessamento legislativo assumido.'
+      when 'reprocess_claimed' then 'Reprocessamento legislativo assumido.'
+      when 'reprocess_completed' then 'Reprocessamento legislativo concluído.'
+      else 'Reprocessamento legislativo falhou.'
     end,
     case when event.event_type in ('approved', 'rejected')
       then 'editor_juridico' else 'update_worker' end,

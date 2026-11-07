@@ -44,9 +44,10 @@ interface Regra {
 const ORDINAL = '[º°o]?';
 
 const semTitulo = (numero: string, texto: string): Omit<Reconhecimento, 'tipo'> =>
-  texto.trim().length > 0
+  texto.replace(/\((?:Inclu|Reda[çc]|Renumerad|Revogad)[^)]*\)/giu, '').replace(/[.\s]/gu, '')
+    .length > 0
     ? { numero, texto: texto.trim() }
-    : { numero, texto: '', tituloPendente: true };
+    : { numero, texto: texto.trim(), tituloPendente: true };
 
 /**
  * As divisões aparecem de duas formas no texto oficial: `CAPÍTULO I` sozinho,
@@ -55,7 +56,10 @@ const semTitulo = (numero: string, texto: string): Omit<Reconhecimento, 'tipo'> 
  */
 const regraDeDivisao = (tipo: TipoDivisao, rotulo: string): Regra => ({
   tipo,
-  padrao: new RegExp(`^${rotulo}\\s+([IVXLCDM]+|\\d+)\\s*(?:[-–—.]\\s*)?(.*)$`, 'iu'),
+  padrao: new RegExp(
+    `^${rotulo}\\s+([IVXLCDM]+(?:-[A-Z](?=[.\\s]|$))?|\\d+)\\s*(?:[-–—.]\\s*)?(.*)$`,
+    'iu',
+  ),
   extrair: (m) => semTitulo(m[1] ?? '', m[2] ?? ''),
 });
 
@@ -109,7 +113,7 @@ export const REGRAS: readonly Regra[] = [
     // (BLOCK_ID_SPEC §2.3.6), não um subdispositivo.
     tipo: 'artigo',
     padrao: new RegExp(
-      `^Art\\.?\\s*(\\d+)\\s*${ORDINAL}\\s*(?:-\\s*([A-Za-z]+(?:-[A-Za-z]+)*))?\\s*[.\\-–—\\u0096]?\\s*(.*)$`,
+      `^Art\\.?\\s*(\\d+)\\s*${ORDINAL}\\s*(?:-([A-Z]+(?:-[A-Z]+)*)(?=[.\\s]|$))?\\s*[.\\-–—\\u0096]?\\s*(.*)$`,
       'u',
     ),
     extrair: (m) => ({
@@ -133,7 +137,7 @@ export const REGRAS: readonly Regra[] = [
   {
     tipo: 'paragrafo',
     padrao: new RegExp(
-      `^§\\s*(\\d+)\\s*${ORDINAL}\\s*(?:-\\s*([A-Za-z]+))?\\s*[.\\-–—]?\\s*(.*)$`,
+      `^§\\s*(\\d+)\\s*${ORDINAL}\\s*(?:-([A-Z]+)(?=[º°.\\s]|$))?${ORDINAL}\\s*[.\\-–—]?\\s*(.*)$`,
       'u',
     ),
     extrair: (m) => ({
@@ -172,8 +176,11 @@ export const REGRAS: readonly Regra[] = [
 ];
 
 export const reconhecer = (linha: string): Reconhecimento | undefined => {
+  // O extrator representa o riscado por ~~. Ele continua sendo fronteira
+  // entre dispositivos, mesmo quando a redação é histórica.
+  const texto = linha.replace(/^~~|~~$/gu, '').trim();
   for (const regra of REGRAS) {
-    const casamento = regra.padrao.exec(linha);
+    const casamento = regra.padrao.exec(texto);
 
     if (casamento !== null) {
       return { tipo: regra.tipo, ...regra.extrair(casamento) };

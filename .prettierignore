@@ -23,5 +23,6 @@ release/
 artifacts/
 coverage/
 supabase/functions/publisher/generated/
+supabase/functions/update-reprocess/generated/
 package-lock.json
 skills-lock.json

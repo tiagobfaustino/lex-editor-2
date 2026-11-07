@@ -194,7 +194,9 @@ const requestWithNode = ({
       headers: {
         Accept: 'text/html, application/xhtml+xml;q=0.9',
         'Accept-Encoding': 'identity',
-        'User-Agent': 'LexEditor/0.1',
+        // O WAF do Planalto reseta a conexão quando o User-Agent não traz o
+        // token `Mozilla/5.0`; o produto segue identificado após `compatible;`.
+        'User-Agent': 'Mozilla/5.0 (compatible; LexEditor/0.1)',
       },
       agent: false,
       family: selected.family,
@@ -354,6 +356,35 @@ const optionalSourceIsAbsent = (error: unknown): boolean =>
   error.code === 'NETWORK_HTTP' &&
   (error.httpStatus === 404 || error.httpStatus === 410);
 
+const selectImportPrimary = (
+  artifacts: readonly FetchedPlanaltoArtifact[],
+  requestedUrl: string,
+): readonly FetchedPlanaltoArtifact[] => {
+  const selectedUrl = validateUrl(new URL(requestedUrl)).href;
+  const selected = artifacts.filter(
+    (artifact) => validateUrl(new URL(artifact.requestedUrl)).href === selectedUrl,
+  );
+  if (selected.length !== 1) throw new PlanaltoNetworkError('NETWORK_NOT_ALLOWED');
+  const primary = selected[0];
+  return artifacts
+    .map((artifact): FetchedPlanaltoArtifact => ({
+      ...artifact,
+      sourceRole:
+        artifact === primary
+          ? 'primary_current'
+          : artifact.sourceRole === 'primary_current'
+            ? artifact.sourceVariant === 'annotated'
+              ? 'historical_auxiliary'
+              : 'cross_check'
+            : artifact.sourceRole,
+    }))
+    .sort(
+      (left, right) =>
+        Number(right.sourceRole === 'primary_current') -
+        Number(left.sourceRole === 'primary_current'),
+    );
+};
+
 export const fetchPlanaltoSourceSet = async (
   rawUrl: string,
   ports: PlanaltoNetworkPorts = defaultPorts,
@@ -373,39 +404,43 @@ export const fetchPlanaltoSourceSet = async (
     }
   }
 
-  if (firstCompiled || second === undefined) {
-    return [
-      {
-        ...first,
-        sourceRole: 'primary_current',
-        sourceVariant: firstCompiled ? 'compiled' : 'annotated',
-      },
-      ...(second === undefined
-        ? []
-        : [
-            {
-              ...second,
-              sourceRole: 'historical_auxiliary' as const,
-              sourceVariant: 'annotated' as const,
-            },
-          ]),
-    ];
-  }
-
+  const secondCompiled = second !== undefined && isCompiledUrl(new URL(second.finalUrl));
   return [
-    { ...second, sourceRole: 'primary_current', sourceVariant: 'compiled' },
-    { ...first, sourceRole: 'historical_auxiliary', sourceVariant: 'annotated' },
+    {
+      ...first,
+      sourceRole: 'primary_current',
+      sourceVariant: firstCompiled ? 'compiled' : 'annotated',
+    },
+    ...(second === undefined
+      ? []
+      : [
+          {
+            ...second,
+            sourceRole: secondCompiled
+              ? ('cross_check' as const)
+              : ('historical_auxiliary' as const),
+            sourceVariant: secondCompiled ? ('compiled' as const) : ('annotated' as const),
+          },
+        ]),
   ];
 };
 
-/** Coleta exatamente o conjunto versionado no catálogo, sem descobrir URLs extras. */
+/** Coleta o conjunto do catálogo; somente importação manual pode selecionar outra primária nele. */
 export const fetchConfiguredPlanaltoSourceSet = async (
   provider: ProviderRevision,
   binding: LawSourceBindingRevision,
   ports: PlanaltoNetworkPorts = defaultPorts,
+  importUrl?: string,
 ): Promise<readonly FetchedPlanaltoArtifact[]> => {
   installedSourceAdapterRegistry.validateBindingRevision(provider, binding);
-  return Promise.all(
+  if (importUrl !== undefined) {
+    const selectedUrl = validateUrl(new URL(importUrl)).href;
+    const matches = binding.artifacts.filter(
+      (artifact) => validateUrl(new URL(artifact.sourceUrl)).href === selectedUrl,
+    );
+    if (matches.length !== 1) throw new PlanaltoNetworkError('NETWORK_NOT_ALLOWED');
+  }
+  const artifacts = await Promise.all(
     [...binding.artifacts]
       .sort((left, right) => left.order - right.order)
       .map(async (artifact) => ({
@@ -414,4 +449,5 @@ export const fetchConfiguredPlanaltoSourceSet = async (
         sourceVariant: artifact.sourceVariant,
       })),
   );
+  return importUrl === undefined ? artifacts : selectImportPrimary(artifacts, importUrl);
 };

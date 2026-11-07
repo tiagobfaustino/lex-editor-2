@@ -103,6 +103,8 @@ export const AUDIT_EVENT_CODES = [
   'legislative_update_error_recorded',
   'legislative_update_reprocess_requested',
   'legislative_update_reprocess_claimed',
+  'legislative_update_reprocess_completed',
+  'legislative_update_reprocess_failed',
   'source_catalog_provider_revision_created',
   'source_catalog_binding_revision_created',
   'source_catalog_test_recorded',

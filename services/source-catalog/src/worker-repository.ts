@@ -15,9 +15,22 @@ export interface SourceCatalogWorkerRepository {
   completeCheck(completion: SourceCheckCompletion): Promise<SourceCheckCompletionResult>;
 }
 
+/**
+ * Worker-only bridge used to retry an existing legislative update.  It returns
+ * a captured configuration, rather than creating a source-check job, so the
+ * retry cannot impersonate a catalog administrator or alter catalog health.
+ */
+export interface LegislativeUpdateReprocessJobRepository {
+  materializeLegislativeUpdateReprocessJob(input: {
+    requestId: string;
+    updateId: string;
+    lawId: string;
+  }): Promise<CapturedSourceCheckJob>;
+}
+
 export const createSourceCatalogWorkerRepository = (
   sql: SourceCatalogSqlClient,
-): SourceCatalogWorkerRepository => ({
+): SourceCatalogWorkerRepository & LegislativeUpdateReprocessJobRepository => ({
   async claimDueChecks(claimedAt, limit) {
     const parsedClaimedAt = z.iso.datetime({ offset: true }).parse(claimedAt);
     const parsedLimit = z.int().min(1).max(100).parse(limit);
@@ -40,5 +53,21 @@ export const createSourceCatalogWorkerRepository = (
       throw new Error('A conclusão da verificação de fonte falhou.');
     }
     return sourceCheckCompletionResultSchema.parse(rows[0]['value']);
+  },
+  async materializeLegislativeUpdateReprocessJob(input) {
+    const rows = await sql.query<Record<string, unknown>>(
+      `select private.materialize_legislative_update_reprocess_job(
+         $1::uuid, $2::uuid, $3::uuid
+       ) as value`,
+      [
+        z.uuid().parse(input.updateId),
+        z.uuid().parse(input.lawId),
+        z.uuid().parse(input.requestId),
+      ],
+    );
+    if (rows.length !== 1 || rows[0]?.['value'] === undefined) {
+      throw new Error('A materialização do reprocessamento legislativo falhou.');
+    }
+    return capturedSourceCheckJobSchema.parse(rows[0]['value']);
   },
 });

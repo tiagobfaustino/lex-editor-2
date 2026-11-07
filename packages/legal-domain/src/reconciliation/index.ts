@@ -232,7 +232,12 @@ export const reconciliar = (
     const destino = candidato.no['renumeradoPara'];
     const atual = idFinalPorNo.get(candidato.no);
 
-    if (typeof destino === 'string' && atual !== undefined && destino !== atual) {
+    if (
+      typeof destino === 'string' &&
+      atual !== undefined &&
+      destino !== atual &&
+      !registro.aliases.some((alias) => alias.antigo === atual && alias.novo === destino)
+    ) {
       aliasesNovos.push({ antigo: atual, novo: destino });
     }
   }

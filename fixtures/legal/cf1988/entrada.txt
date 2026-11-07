@@ -805,7 +805,9 @@ III - mediante procedimento de avaliação periódica de desempenho, na forma de
 § 2º Invalidada por sentença judicial a demissão do servidor estável, será ele reintegrado, e o eventual ocupante da vaga, se estável, reconduzido ao cargo de origem, sem direito a indenização, aproveitado em outro cargo ou posto em disponibilidade com remuneração proporcional ao tempo de serviço. (Redação dada pela Emenda Constitucional nº 19, de 1998)
 § 3º Extinto o cargo ou declarada a sua desnecessidade, o servidor estável ficará em disponibilidade, com remuneração proporcional ao tempo de serviço, até seu adequado aproveitamento em outro cargo. (Redação dada pela Emenda Constitucional nº 19, de 1998)
 § 4º Como condição para a aquisição da estabilidade, é obrigatória a avaliação especial de desempenho por comissão instituída para essa finalidade. (Incluído pela Emenda Constitucional nº 19, de 1998)
-Seção III DOS SERVIDORES PÚBLICOS MILITARES DOS MILITARES DOS ESTADOS, DO DISTRITO FEDERAL E DOS TERRITÓRIOS (Redação dada pela Emenda Constitucional nº 18, de 1998)
+Seção III
+~~DOS SERVIDORES PÚBLICOS MILITARES~~
+DOS MILITARES DOS ESTADOS, DO DISTRITO FEDERAL E DOS TERRITÓRIOS (Redação dada pela Emenda Constitucional nº 18, de 1998)
 ~~Art. 42. São servidores militares federais os integrantes das Forças Armadas e servidores militares dos Estados, Territórios e Distrito Federal os integrantes de suas polícias militares e de seus corpos de bombeiros militares.~~
 ~~§ 1º As patentes, com prerrogativas, direitos e deveres a elas inerentes, são asseguradas em plenitude aos oficiais da ativa, da reserva ou reformados das Forças Armadas, das polícias militares e dos corpos de bombeiros militares dos Estados, dos Territórios e do Distrito Federal, sendo-lhes privativos os títulos, postos e uniformes militares.~~
 ~~§ 2º As patentes dos oficiais das Forças Armadas são conferidas pelo Presidente da República, e as dos oficiais das polícias militares e corpos de bombeiros militares dos Estados, Territórios e Distrito Federal, pelos respectivos Governadores.~~
@@ -838,7 +840,7 @@ III - isenções, reduções ou diferimento temporário de tributos federais dev
 IV - prioridade para o aproveitamento econômico e social dos rios e das massas de água represadas ou represáveis nas regiões de baixa renda, sujeitas a secas periódicas.
 § 3º Nas áreas a que se refere o § 2º, IV, a União incentivará a recuperação de terras áridas e cooperará com os pequenos e médios proprietários rurais para o estabelecimento, em suas glebas, de fontes de água e de pequena irrigação.
 § 4º Sempre que possível, a concessão dos incentivos regionais a que se refere o § 2º, III, considerará critérios de sustentabilidade ambiental e redução das emissões de carbono. (Incluído pela Emenda Constitucional nº 132, de 2023)
-TÍTULO IV Da Organização dos Poderes
+~~TÍTULO IV Da Organização dos Poderes~~
 TÍTULO IV DA ORGANIZAÇÃO DOS PODERES (Redação dada pela Emenda Constitucional nº 80, de 2014)
 CAPÍTULO I DO PODER LEGISLATIVO
 Seção I DO CONGRESSO NACIONAL
@@ -1820,7 +1822,9 @@ II exercer funções executivas do Conselho, de inspeção e correição geral; 
 III requisitar e designar membros do Ministério Público, delegando-lhes atribuições, e requisitar servidores de órgãos do Ministério Público. (Incluído pela Emenda Constitucional nº 45, de 2004)
 § 4º O Presidente do Conselho Federal da Ordem dos Advogados do Brasil oficiará junto ao Conselho. (Incluído pela Emenda Constitucional nº 45, de 2004)
 § 5º Leis da União e dos Estados criarão ouvidorias do Ministério Público, competentes para receber reclamações e denúncias de qualquer interessado contra membros ou órgãos do Ministério Público, inclusive contra seus serviços auxiliares, representando diretamente ao Conselho Nacional do Ministério Público. (Incluído pela Emenda Constitucional nº 45, de 2004)
-Seção II DA ADVOCACIA-GERAL DA UNIÃO DA ADVOCACIA PÚBLICA (Redação dada pela Emenda Constitucional nº 19, de 1998)
+Seção II
+~~DA ADVOCACIA-GERAL DA UNIÃO~~
+DA ADVOCACIA PÚBLICA (Redação dada pela Emenda Constitucional nº 19, de 1998)
 Art. 131. A Advocacia-Geral da União é a instituição que, diretamente ou através de órgão vinculado, representa a União, judicial e extrajudicialmente, cabendo-lhe, nos termos da lei complementar que dispuser sobre sua organização e funcionamento, as atividades de consultoria e assessoramento jurídico do Poder Executivo.
 § 1º - A Advocacia-Geral da União tem por chefe o Advogado-Geral da União, de livre nomeação pelo Presidente da República dentre cidadãos maiores de trinta e cinco anos, de notável saber jurídico e reputação ilibada.
 § 2º - O ingresso nas classes iniciais das carreiras da instituição de que trata este artigo far-se-á mediante concurso público de provas e títulos.
@@ -1828,7 +1832,7 @@ Art. 131. A Advocacia-Geral da União é a instituição que, diretamente ou atr
 ~~Art. 132. Os Procuradores dos Estados e do Distrito Federal exercerão a representação judicial e a consultoria jurídica das respectivas unidades federadas, organizados em carreira na qual o ingresso dependerá de concurso público de provas e títulos, observado o disposto no art. 135.~~
 Art. 132. Os Procuradores dos Estados e do Distrito Federal, organizados em carreira, na qual o ingresso dependerá de concurso público de provas e títulos, com a participação da Ordem dos Advogados do Brasil em todas as suas fases, exercerão a representação judicial e a consultoria jurídica das respectivas unidades federadas. (Redação dada pela Emenda Constitucional nº 19, de 1998)
 Parágrafo único. Aos procuradores referidos neste artigo é assegurada estabilidade após três anos de efetivo exercício, mediante avaliação de desempenho perante os órgãos próprios, após relatório circunstanciado das corregedorias. (Incluído pela Emenda Constitucional nº 19, de 1998)
-Seção III DA ADVOCACIA E DA DEFENSORIA PÚBLICA
+~~Seção III DA ADVOCACIA E DA DEFENSORIA PÚBLICA~~
 Seção III Da Advocacia (Redação dada pela Emenda Constitucional nº 80, de 2014)
 Art. 133. O advogado é indispensável à administração da justiça, sendo inviolável por seus atos e manifestações no exercício da profissão, nos limites da lei.
 Seção IV Da Defensoria Pública (Redação dada pela Emenda Constitucional nº 80, de 2014)

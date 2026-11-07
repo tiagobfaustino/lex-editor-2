@@ -1,5 +1,17 @@
+import {
+  LIBRARY_CHECK_SOURCE_CHANNEL,
+  LIBRARY_APPLY_SOURCE_UPDATE_CHANNEL,
+  LIBRARY_DELETE_CHANNEL,
+  LIBRARY_LIST_CHANNEL,
+  LIBRARY_OPEN_CHANNEL,
+} from '../../src/shared/ipc/library.js';
 import type { BrowserWindow, IpcMainInvokeEvent, WebContents, WebFrameMain } from 'electron';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  SESSION_GET_STATE_CHANNEL,
+  SESSION_SIGN_IN_CHANNEL,
+  SESSION_SIGN_OUT_CHANNEL,
+} from '../../src/shared/ipc/session.js';
 
 const electronMocks = vi.hoisted(() => ({
   getVersion: vi.fn(() => '0.1.0'),
@@ -20,6 +32,7 @@ vi.mock('electron', () => ({
 import {
   registerIpcHandlers,
   type DesktopImportIpcCapabilities,
+  type DesktopLibraryIpcCapabilities,
   type DesktopSourceCatalogIpcCapabilities,
   type DesktopUpdateIpcCapabilities,
 } from '../../src/main/ipc/register.js';
@@ -541,6 +554,7 @@ const setup = (
   importCapabilities = capabilities(),
   updateIpcCapabilities?: DesktopUpdateIpcCapabilities,
   sourceIpcCapabilities?: DesktopSourceCatalogIpcCapabilities,
+  libraryCapabilities?: DesktopLibraryIpcCapabilities,
 ) => {
   const rendererLocation = resolveRendererLocation({
     productionUrl: 'file:///app/out/renderer/index.html',
@@ -563,6 +577,7 @@ const setup = (
     rendererLocation,
     getMainWindow: () => mainWindow,
     importCapabilities,
+    ...(libraryCapabilities === undefined ? {} : { libraryCapabilities }),
     ...(updateIpcCapabilities === undefined ? {} : { updateCapabilities: updateIpcCapabilities }),
     ...(sourceIpcCapabilities === undefined
       ? {}
@@ -583,10 +598,136 @@ describe('registerIpcHandlers', () => {
     vi.clearAllMocks();
   });
 
+  it('valida biblioteca, nega remetente/payload extra e não entrega caminhos', async () => {
+    const library: DesktopLibraryIpcCapabilities = {
+      checkLocalSource: {
+        authorize: () => true,
+        handle: vi.fn(({ projectId }: { projectId: string }) => ({
+          projectId,
+          checkId: PROJECT_ID,
+          expectedRevisionHash: 'a'.repeat(64),
+          checkedAt: '2026-10-08T20:00:00Z',
+          sourceUrl: 'https://www.planalto.gov.br/ccivil_03/leis/l1234.htm',
+          hasChanges: false,
+          canApply: false,
+          conflictingBlockIds: [],
+          missingBlockIds: [],
+          entries: [],
+        })),
+      },
+      applyLocalSourceUpdate: { authorize: () => false, handle: vi.fn() },
+      deleteLocalLaw: {
+        authorize: () => true,
+        handle: vi.fn(({ projectId }: { projectId: string }) => ({
+          projectId,
+          deleted: true as const,
+        })),
+      },
+      listLocalLaws: {
+        authorize: () => true,
+        handle: vi.fn(() => ({ items: [], totalItems: 0, nextOffset: null })),
+      },
+      openLocalLaw: {
+        authorize: () => true,
+        handle: vi.fn(({ projectId }: { projectId: string }) => ({ projectId, source })),
+      },
+    };
+    const { event, frame, handlers } = setup(capabilities(), undefined, undefined, library);
+    const check = handlers.get(LIBRARY_CHECK_SOURCE_CHANNEL);
+    const applySource = handlers.get(LIBRARY_APPLY_SOURCE_UPDATE_CHANNEL);
+    await expect(check?.(event, { projectId: PROJECT_ID })).resolves.toMatchObject({
+      ok: true,
+      value: { hasChanges: false },
+    });
+    await expect(
+      check?.(event, { projectId: PROJECT_ID, url: 'http://127.0.0.1' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+    const sourceCommand = {
+      projectId: PROJECT_ID,
+      checkId: PROJECT_ID,
+      expectedRevisionHash: 'a'.repeat(64),
+      acknowledged: true,
+      overwriteConflicts: false,
+      reason: 'Conferência',
+    };
+    await expect(
+      applySource?.(event, { ...sourceCommand, acknowledged: false }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+    await expect(applySource?.(event, { ...sourceCommand, incoming: {} })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_INPUT' },
+    });
+    await expect(applySource?.(event, sourceCommand)).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'NOT_ALLOWED' },
+    });
+    const list = handlers.get(LIBRARY_LIST_CHANNEL);
+    const open = handlers.get(LIBRARY_OPEN_CHANNEL);
+    const remove = handlers.get(LIBRARY_DELETE_CHANNEL);
+    await expect(remove?.(event, { projectId: PROJECT_ID })).resolves.toMatchObject({
+      ok: true,
+      value: { projectId: PROJECT_ID, deleted: true },
+    });
+    await expect(
+      remove?.(event, { projectId: PROJECT_ID, path: '/private/file' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+    await expect(remove?.(event, { projectId: '../outside' })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_INPUT' },
+    });
+    await expect(list?.(event, { query: '', offset: 0, limit: 25 })).resolves.toMatchObject({
+      ok: true,
+      value: { items: [] },
+    });
+    await expect(open?.(event, { projectId: PROJECT_ID })).resolves.toMatchObject({
+      ok: true,
+      value: { projectId: PROJECT_ID },
+    });
+    await expect(
+      open?.(event, { projectId: PROJECT_ID, path: '/private/file' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
+    await expect(list?.(event, { query: '', offset: 0, limit: 26 })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_INPUT' },
+    });
+    await expect(open?.(event, { projectId: '../outside' })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_INPUT' },
+    });
+    Object.defineProperty(frame, 'url', {
+      value: 'https://untrusted.example/',
+      configurable: true,
+    });
+    await expect(open?.(event, { projectId: PROJECT_ID })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'NOT_ALLOWED' },
+    });
+    await expect(remove?.(event, { projectId: PROJECT_ID })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'NOT_ALLOWED' },
+    });
+    await expect(check?.(event, { projectId: PROJECT_ID })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'NOT_ALLOWED' },
+    });
+    expect(library.checkLocalSource.handle).toHaveBeenCalledTimes(1);
+    expect(library.applyLocalSourceUpdate.handle).not.toHaveBeenCalled();
+    expect(library.deleteLocalLaw.handle).toHaveBeenCalledTimes(1);
+    expect(library.openLocalLaw.handle).toHaveBeenCalledTimes(1);
+  });
+
   it('registra, executa e remove somente capacidades nomeadas', async () => {
     const sourceCapabilities = sourceCatalogCapabilities();
     const { dispose, event, handlers } = setup(capabilities(), undefined, sourceCapabilities);
     const expectedChannels = [
+      SESSION_GET_STATE_CHANNEL,
+      SESSION_SIGN_IN_CHANNEL,
+      SESSION_SIGN_OUT_CHANNEL,
+      LIBRARY_DELETE_CHANNEL,
+      LIBRARY_CHECK_SOURCE_CHANNEL,
+      LIBRARY_APPLY_SOURCE_UPDATE_CHANNEL,
+      LIBRARY_LIST_CHANNEL,
+      LIBRARY_OPEN_CHANNEL,
       APP_GET_VERSION_CHANNEL,
       SOURCE_SELECT_LOCAL_CHANNEL,
       SOURCE_IMPORT_URL_CHANNEL,
@@ -644,6 +785,17 @@ describe('registerIpcHandlers', () => {
     ];
 
     expect([...handlers.keys()]).toEqual(expectedChannels);
+    await expect(handlers.get(SESSION_GET_STATE_CHANNEL)?.(event, {})).resolves.toEqual({
+      ok: true,
+      value: { sessionState: 'not_configured', userId: null, role: null },
+    });
+    await expect(
+      handlers.get(SESSION_SIGN_IN_CHANNEL)?.(event, {
+        email: 'editor@example.com',
+        password: 'secret',
+        role: 'administrador_tecnico',
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
     await expect(
       handlers.get(APP_GET_VERSION_CHANNEL)?.(event, APP_GET_VERSION_INPUT),
     ).resolves.toEqual({ ok: true, value: { version: '0.1.0' } });
@@ -1045,6 +1197,33 @@ describe('registerIpcHandlers', () => {
       error: {
         code: 'NETWORK_TIMEOUT',
         message: 'Não foi possível acessar a fonte: tempo esgotado.',
+        retryable: true,
+      },
+    });
+  });
+
+  it('expõe falha de conexão redigida e recuperável, sem cair no erro genérico', async () => {
+    const defaults = capabilities();
+    const importCapabilities: DesktopImportIpcCapabilities = {
+      ...defaults,
+      importFromUrl: {
+        ...defaults.importFromUrl,
+        handle: vi.fn(() => {
+          throw new PlanaltoNetworkError('NETWORK_FAILED');
+        }),
+      },
+    };
+    const { event, handlers } = setup(importCapabilities);
+
+    await expect(
+      handlers.get(SOURCE_IMPORT_URL_CHANNEL)?.(event, {
+        url: 'https://www.planalto.gov.br/lei.htm',
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: 'NETWORK_FAILED',
+        message: 'Não foi possível conectar à fonte oficial. Verifique a rede e tente novamente.',
         retryable: true,
       },
     });

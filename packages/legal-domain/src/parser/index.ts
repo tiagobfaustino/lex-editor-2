@@ -67,6 +67,7 @@ interface NoEmConstrucao {
   evidencia: ParseEvidence;
   readonly estado: ReturnType<typeof interpretarNota>;
   readonly redacoesAnteriores: RedacaoAnteriorBruta[];
+  linhasDeSuporte?: number[];
 }
 
 const EVIDENCIA_EXATA: ParseEvidence = {
@@ -172,6 +173,16 @@ const materializar = (
     ordem: indice,
     sourceRef,
     parseEvidence: no.evidencia,
+    ...(no.linhasDeSuporte === undefined
+      ? {}
+      : {
+          supportingSourceRefs: no.linhasDeSuporte.map((linha) => ({
+            ...entrada.referenciaBase,
+            rawStartLine: linha + 1,
+            rawEndLine: linha + 1,
+            fragmentSha256: entrada.hashDaLinha(linhas[linha] ?? ''),
+          })),
+        }),
     children: no.filhos.map((filho, i) => materializar(filho, i, entrada, linhas)),
   };
 
@@ -468,7 +479,37 @@ export const analisar = (entrada: EntradaDoParser): ResultadoValidacao<ParsedNor
       return;
     }
 
-    abertos[profundidade]?.filhos.push(no);
+    const irmaos = abertos[profundidade]?.filhos;
+    const anterior = irmaos?.at(-1);
+    // Algumas fontes mantêm o marcador de veto sem riscado antes de uma
+    // redação da mesma posição (CP, art. 141, § 2º). Preserva ambos como uma
+    // candidata revisável, sem afirmar automaticamente que o veto foi superado.
+    // Veto com conteúdo/filhos ou outras duplicidades continuam separados e
+    // sujeitos à rejeição normal de Block IDs duplicados.
+    if (
+      anterior !== undefined &&
+      abertos.at(-1) === anterior &&
+      anterior.tipo === no.tipo &&
+      anterior.numero === no.numero &&
+      anterior.estado.deviceStatus === 'vetoed' &&
+      /^\(VETADO\)\.?$/iu.test(anterior.texto) &&
+      anterior.filhos.length === 0 &&
+      ['active', 'included', 'amended'].includes(no.estado.deviceStatus)
+    ) {
+      no.redacoesAnteriores.unshift(...anterior.redacoesAnteriores, {
+        texto: (linhas[anterior.linha] ?? '').trim(),
+      });
+      no.linhasDeSuporte = [anterior.linha];
+      no.evidencia = {
+        confidence: 'low',
+        reasons: ['exact_legal_designator', 'ambiguous_designator'],
+        requiresHumanReview: true,
+        editorialNote:
+          'A fonte repete a posição com um marcador de veto e uma redação posterior. O marcador foi preservado no histórico como interpretação candidata. Confira as duas linhas no snapshot e confirme o estado antes de aprovar.',
+      };
+      irmaos?.pop();
+    }
+    irmaos?.push(no);
     abertos = [...abertos.slice(0, profundidade + 1), no];
   });
 

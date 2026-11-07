@@ -224,6 +224,11 @@ export const BatchExportItemResultDtoSchema = z.discriminatedUnion('batchExportS
       .max(100)
       .regex(/^[a-z0-9-]+\.md$/u),
     updateFileName: z.literal('UPDATE.md'),
+    changeReportFileName: z.literal('ALTERACOES.md').optional(),
+    changeReportSha256: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/u)
+      .optional(),
     markdownSha256: Sha256Schema,
     updateSha256: Sha256Schema,
   }),

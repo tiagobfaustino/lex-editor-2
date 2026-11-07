@@ -35,7 +35,7 @@ export interface GitCommandResult {
 
 export type GitCommandRunner = (
   args: readonly string[],
-  options: Readonly<{ cwd: string }>,
+  options: Readonly<{ cwd: string; maxOutputBytes?: number }>,
 ) => Promise<GitCommandResult>;
 
 const gitEnvironment = (): NodeJS.ProcessEnv => {
@@ -62,7 +62,7 @@ export const runGitCommand: GitCommandRunner = async (args, options) => {
       cwd: options.cwd,
       encoding: 'utf8',
       env: gitEnvironment(),
-      maxBuffer: 2 * 1024 * 1024,
+      maxBuffer: options.maxOutputBytes ?? 2 * 1024 * 1024,
       shell: false,
       windowsHide: true,
     });
@@ -74,6 +74,19 @@ export const runGitCommand: GitCommandRunner = async (args, options) => {
     }
     throw error;
   }
+};
+
+/** Preserve source snapshot bytes, including non-UTF8 source encodings. */
+export const readGitBlob = async (cwd: string, commit: string, path: string): Promise<Buffer> => {
+  const result = await execFileAsync('git', ['show', `${commit}:${path}`], {
+    cwd,
+    env: gitEnvironment(),
+    maxBuffer: 40 * 1024 * 1024,
+    shell: false,
+    windowsHide: true,
+    encoding: 'buffer',
+  });
+  return result.stdout;
 };
 
 export class PublicationCandidateError extends Error {

@@ -7,7 +7,7 @@ import {
   type ResultadoValidacao,
   sucesso,
 } from '../ast/errors.js';
-import type { ParsedNormaAST, SourceReference } from '../ast/nodes.js';
+import type { ParsedNormaAST, SourceReference, ParseEvidence } from '../ast/nodes.js';
 import { validarParsedNormaAst } from '../ast/validate.js';
 
 type No = Record<string, unknown>;
@@ -52,10 +52,10 @@ const segmento = (no: No, indice: number): string => {
   return `${tipo}:@${String(indice)}`;
 };
 
-const indexar = (raiz: No): Map<string, No> => {
-  const mapa = new Map<string, No>();
+const indexar = (raiz: No): Map<string, No[]> => {
+  const mapa = new Map<string, No[]>();
   const visitar = (no: No, caminho: string): void => {
-    mapa.set(caminho, no);
+    mapa.set(caminho, [...(mapa.get(caminho) ?? []), no]);
     filhos(no).forEach((filho, indice) => {
       visitar(filho, `${caminho}/${segmento(filho, indice)}`);
     });
@@ -63,6 +63,9 @@ const indexar = (raiz: No): Map<string, No> => {
   visitar(raiz, 'lei');
   return mapa;
 };
+
+const numerosDeArtigos = (no: No): readonly string[] =>
+  no['tipo'] === 'artigo' ? [String(no['numero'])] : filhos(no).flatMap(numerosDeArtigos);
 
 const redacoesUnicas = (valores: readonly unknown[]): unknown[] => {
   const vistas = new Set<string>();
@@ -74,7 +77,34 @@ const redacoesUnicas = (valores: readonly unknown[]): unknown[] => {
   });
 };
 
+const sinalizarConflito = (
+  alvo: No,
+  origem: No,
+  caminho: string,
+  fonte: string,
+  ambiguo = false,
+): void => {
+  const evidence = alvo['parseEvidence'] as ParseEvidence;
+  alvo['parseEvidence'] = {
+    confidence: 'low',
+    reasons: [...new Set([...evidence.reasons, 'source_text_conflict' as const])],
+    requiresHumanReview: true,
+    editorialNote: [
+      evidence.editorialNote,
+      `${ambiguo ? 'Correspondência ambígua entre divisões' : 'Conflito de fontes'} em ${caminho}. Texto da fonte primária: ${textoVigente(alvo) ?? '(sem texto)'} Texto da auxiliar (${fonte}): ${textoVigente(origem) ?? '(sem texto)'}. Confira os snapshots antes de confirmar a primária; o histórico deste trecho auxiliar não foi mesclado.`,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  } satisfies ParseEvidence;
+  alvo['supportingSourceRefs'] = referenciasUnicas([
+    ...((alvo['supportingSourceRefs'] as SourceReference[] | undefined) ?? []),
+    origem['sourceRef'] as SourceReference,
+  ]);
+};
+
 export interface OpcoesDeMesclagem {
+  /** Produz candidata revisável; conflitos bloqueiam aprovação pela evidência de baixa confiança. */
+  readonly permitirConflitosParaRevisao?: boolean;
   /**
    * Caminhos cuja divergência foi revisada fora do parser. A fonte primária é
    * mantida e o nó auxiliar conflitante não contribui histórico nem estado.
@@ -105,53 +135,85 @@ export const mesclarFontes = (
       return;
     }
 
-    for (const [caminho, origem] of indexar(auxiliar as unknown as No)) {
-      const alvo = destino.get(caminho);
-      if (alvo === undefined) continue;
+    for (const [caminho, origens] of indexar(auxiliar as unknown as No)) {
+      for (const origem of origens) {
+        const candidatos = destino.get(caminho) ?? [];
+        if (candidatos.length === 0) continue;
+        const porTexto = candidatos.filter((no) => textoVigente(no) === textoVigente(origem));
+        const artigosOrigem = new Set(numerosDeArtigos(origem));
+        const correspondentes =
+          candidatos.length === 1
+            ? candidatos
+            : porTexto.length === 1
+              ? porTexto
+              : candidatos.filter((no) =>
+                  numerosDeArtigos(no).some((numero) => artigosOrigem.has(numero)),
+                );
+        const alvo = correspondentes.length === 1 ? correspondentes[0] : undefined;
+        if (alvo === undefined) {
+          if (opcoes.permitirConflitosParaRevisao === true) {
+            for (const candidato of candidatos)
+              sinalizarConflito(candidato, origem, caminho, auxiliar.fonte, true);
+            continue;
+          }
+          problemas.push(
+            criarProblema(
+              'conflito_de_fontes',
+              ['auxiliares', indiceAuxiliar, caminho],
+              `O caminho ${caminho} identifica mais de uma divisão e não permite correspondência única entre fontes.`,
+            ),
+          );
+          continue;
+        }
 
-      const atual = textoVigente(alvo);
-      const complementar = textoVigente(origem);
-      if (atual !== undefined && complementar !== undefined && atual !== complementar) {
-        if (opcoes.conflitosRevisados?.includes(caminho) === true) continue;
-        problemas.push(
-          criarProblema(
-            'conflito_de_fontes',
-            ['auxiliares', indiceAuxiliar, caminho],
-            `A fonte auxiliar diverge do texto vigente da fonte primary_current em ${caminho}.`,
-            typeof alvo['id'] === 'string' ? alvo['id'] : undefined,
-          ),
-        );
-        continue;
-      }
+        const atual = textoVigente(alvo);
+        const complementar = textoVigente(origem);
+        if (atual !== undefined && complementar !== undefined && atual !== complementar) {
+          if (opcoes.conflitosRevisados?.includes(caminho) === true) continue;
+          if (opcoes.permitirConflitosParaRevisao === true) {
+            sinalizarConflito(alvo, origem, caminho, auxiliar.fonte);
+            continue;
+          }
+          problemas.push(
+            criarProblema(
+              'conflito_de_fontes',
+              ['auxiliares', indiceAuxiliar, caminho],
+              `A fonte auxiliar diverge do texto vigente da fonte primary_current em ${caminho}.`,
+              typeof alvo['id'] === 'string' ? alvo['id'] : undefined,
+            ),
+          );
+          continue;
+        }
 
-      const refOrigem = origem['sourceRef'] as SourceReference;
-      const suporteOrigem = Array.isArray(origem['supportingSourceRefs'])
-        ? (origem['supportingSourceRefs'] as SourceReference[])
-        : [];
-      const suporteAlvo = Array.isArray(alvo['supportingSourceRefs'])
-        ? (alvo['supportingSourceRefs'] as SourceReference[])
-        : [];
-      alvo['supportingSourceRefs'] = referenciasUnicas([
-        ...suporteAlvo,
-        refOrigem,
-        ...suporteOrigem,
-      ]);
+        const refOrigem = origem['sourceRef'] as SourceReference;
+        const suporteOrigem = Array.isArray(origem['supportingSourceRefs'])
+          ? (origem['supportingSourceRefs'] as SourceReference[])
+          : [];
+        const suporteAlvo = Array.isArray(alvo['supportingSourceRefs'])
+          ? (alvo['supportingSourceRefs'] as SourceReference[])
+          : [];
+        alvo['supportingSourceRefs'] = referenciasUnicas([
+          ...suporteAlvo,
+          refOrigem,
+          ...suporteOrigem,
+        ]);
 
-      const anterioresAlvo: unknown[] = Array.isArray(alvo['redacoesAnteriores'])
-        ? (alvo['redacoesAnteriores'] as unknown[])
-        : [];
-      const anterioresOrigem: unknown[] = Array.isArray(origem['redacoesAnteriores'])
-        ? (origem['redacoesAnteriores'] as unknown[])
-        : [];
-      const anteriores = [...anterioresAlvo, ...anterioresOrigem];
-      if (anteriores.length > 0) alvo['redacoesAnteriores'] = redacoesUnicas(anteriores);
+        const anterioresAlvo: unknown[] = Array.isArray(alvo['redacoesAnteriores'])
+          ? (alvo['redacoesAnteriores'] as unknown[])
+          : [];
+        const anterioresOrigem: unknown[] = Array.isArray(origem['redacoesAnteriores'])
+          ? (origem['redacoesAnteriores'] as unknown[])
+          : [];
+        const anteriores = [...anterioresAlvo, ...anterioresOrigem];
+        if (anteriores.length > 0) alvo['redacoesAnteriores'] = redacoesUnicas(anteriores);
 
-      for (const campo of [
-        'notaStatus',
-        'preservarTextoRevogado',
-        'redacaoAtualDadaPor',
-      ] as const) {
-        if (alvo[campo] === undefined && origem[campo] !== undefined) alvo[campo] = origem[campo];
+        for (const campo of [
+          'notaStatus',
+          'preservarTextoRevogado',
+          'redacaoAtualDadaPor',
+        ] as const) {
+          if (alvo[campo] === undefined && origem[campo] !== undefined) alvo[campo] = origem[campo];
+        }
       }
     }
   });

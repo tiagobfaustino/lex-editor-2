@@ -58,6 +58,106 @@ const psqlArguments = (user = 'postgres') => [
   'lex_test',
 ];
 
+const verifyReprocessBoundary = async () => {
+  const reprocessDenied = [
+    {
+      user: 'update_unauthorized_test',
+      command: 'select private.claim_legislative_update_reprocess_requests(20)',
+    },
+    {
+      user: 'update_editor_test',
+      command:
+        "select private.complete_legislative_update_reprocess('dddddddd-1111-4111-8111-111111111111', 'dddddddd-1111-4111-8111-111111111111', 'completed', null)",
+    },
+    {
+      user: 'update_worker_test',
+      command:
+        "select private.complete_legislative_update_reprocess('dddddddd-1111-4111-8111-111111111111', 'completed', null)",
+    },
+    {
+      user: 'update_worker_test',
+      command:
+        "select private.materialize_legislative_update_reprocess_job('dddddddd-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333333')",
+    },
+    {
+      user: 'update_worker_test',
+      command: 'update private.legislative_update_reprocess_requests set outcome = null',
+    },
+    { user: 'update_worker_test', command: 'delete from private.legislative_update_events' },
+    {
+      user: 'update_worker_test',
+      command:
+        "select private.request_legislative_update_reprocess('dddddddd-1111-4111-8111-111111111111', '44444444-4444-4444-8444-444444444444', 'dddddddd-3333-4333-8333-333333333333')",
+    },
+  ];
+  for (const probe of reprocessDenied) {
+    const result = await execute('docker', [
+      ...psqlArguments(probe.user),
+      '--command',
+      probe.command,
+    ]);
+    if (result.code === 0 || !/permission denied/u.test(result.stderr)) {
+      throw new Error(`Reprocess authority was not denied for ${probe.user}: ${probe.command}`);
+    }
+  }
+
+  // Racing retries of one request produce one request event and one claim.
+  const requestCommand = `select private.request_legislative_update_reprocess(
+    (value ->> 'updateId')::uuid, '44444444-4444-4444-8444-444444444444',
+    'dddddddd-3333-4333-8333-333333333333')
+    from public.test_reprocess_state where name = 'ids'`;
+  const requestRace = await Promise.all(
+    [0, 1].map(() =>
+      requireSuccess('docker', [
+        ...psqlArguments('update_editor_test'),
+        '--tuples-only',
+        '--no-align',
+        '--command',
+        requestCommand,
+      ]),
+    ),
+  );
+  if (requestRace[0].stdout.trim() !== requestRace[1].stdout.trim()) {
+    throw new Error('Concurrent retries did not share the same request decision.');
+  }
+  const claimRace = await Promise.all(
+    [0, 1].map(() =>
+      requireSuccess('docker', [
+        ...psqlArguments('update_worker_test'),
+        '--tuples-only',
+        '--no-align',
+        '--command',
+        'select private.claim_legislative_update_reprocess_requests(20)',
+      ]),
+    ),
+  );
+  const claimed = claimRace.flatMap((result) => JSON.parse(result.stdout.trim()));
+  if (claimed.length !== 1 || claimed[0].requestId !== 'dddddddd-3333-4333-8333-333333333333') {
+    throw new Error('Concurrent workers did not produce exactly one request claim.');
+  }
+  await requireSuccess('docker', [
+    ...psqlArguments('update_worker_test'),
+    '--command',
+    `
+    select private.complete_legislative_update_reprocess(
+      (value ->> 'updateId')::uuid, 'dddddddd-3333-4333-8333-333333333333', 'completed', null)
+      from public.test_reprocess_state where name = 'ids'
+  `,
+  ]);
+  const reprocessRaceState = await requireSuccess('docker', [
+    ...psqlArguments(),
+    '--tuples-only',
+    '--no-align',
+    '--command',
+    `select count(*)
+      from private.legislative_update_events
+      where reprocess_request_id = 'dddddddd-3333-4333-8333-333333333333'`,
+  ]);
+  if (reprocessRaceState.stdout.trim() !== '3') {
+    throw new Error('Concurrent reprocess duplicated its requested/claimed/terminal events.');
+  }
+};
+
 try {
   await requireSuccess('docker', [
     'run',
@@ -91,8 +191,59 @@ try {
     'tests/database/source-catalog.test.sql',
     'supabase/migrations/20260815120000_operational_audit_projection.sql',
     'tests/database/operational-audit.test.sql',
+    'supabase/migrations/20260820170000_legislative_update_reprocess_terminal.sql',
+    'supabase/migrations/20260820180000_materialize_legislative_update_reprocess_job.sql',
+    'supabase/migrations/20260820190000_reprocess_audit_projection.sql',
+    'tests/database/fixtures/reprocess-upgrade.sql',
+    'supabase/migrations/20261008120000_legislative_update_reprocess_requests.sql',
+    'tests/database/legislative-update-reprocess.test.sql',
+    'supabase/migrations/20261008130000_desktop_gateway_reads.sql',
+    'tests/database/desktop-gateway.test.sql',
+    'supabase/migrations/20261008140000_legislative_candidate_artifacts.sql',
+    'tests/database/fixtures/legislative-candidate.sql',
+    'tests/database/legislative-candidate-artifacts.test.sql',
+    'supabase/migrations/20261008150000_closed_publisher_reads.sql',
+    'tests/database/closed-publisher-reads.test.sql',
   ]) {
     await requireSuccess('docker', psqlArguments(), { input: await readFile(path) });
+    if (path === 'tests/database/legislative-update-reprocess.test.sql')
+      await verifyReprocessBoundary();
+    if (path === 'tests/database/legislative-candidate-artifacts.test.sql') {
+      const probes = [
+        {
+          user: 'update_worker_test',
+          command:
+            "select private.get_legislative_update_candidate('eeeeeeee-1111-4111-8111-111111111111', '44444444-4444-4444-8444-444444444444')",
+        },
+        {
+          user: 'update_worker_test',
+          command:
+            "select private.approve_legislative_update_candidate('eeeeeeee-1111-4111-8111-111111111111', '44444444-4444-4444-8444-444444444444', 'eeeeeeee-3333-4333-8333-333333333333', 'eeeeeeee-1111-4111-8111-111111111111', '{}')",
+        },
+        {
+          user: 'update_editor_test',
+          command: "select private.append_legislative_candidate_artifact('{}'::jsonb)",
+        },
+        {
+          user: 'update_editor_test',
+          command: 'select * from private.legislative_candidate_artifacts',
+        },
+        {
+          user: 'update_editor_test',
+          command:
+            "select private.decide_legislative_update_internal('eeeeeeee-1111-4111-8111-111111111111', '44444444-4444-4444-8444-444444444444', 'approved', null, 'eeeeeeee-3333-4333-8333-333333333333')",
+        },
+      ];
+      for (const probe of probes) {
+        const result = await execute('docker', [
+          ...psqlArguments(probe.user),
+          '--command',
+          probe.command,
+        ]);
+        if (result.code === 0 || !/permission denied/u.test(result.stderr))
+          throw new Error(`Candidate authority was not denied for ${probe.user}.`);
+      }
+    }
   }
 
   const workerDirectWrite = await execute('docker', [

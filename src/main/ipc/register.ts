@@ -1,5 +1,43 @@
+import {
+  LIBRARY_CHECK_SOURCE_CHANNEL,
+  LIBRARY_APPLY_SOURCE_UPDATE_CHANNEL,
+  CheckLocalSourceCommandSchema,
+  ApplyLocalSourceUpdateCommandSchema,
+  LocalSourceCheckDtoSchema,
+  type CheckLocalSourceCommand,
+  type ApplyLocalSourceUpdateCommand,
+  type LocalSourceCheckDto,
+  DESKTOP_LIBRARY_LIMITS,
+  LIBRARY_DELETE_CHANNEL,
+  DeleteLocalLawCommandSchema,
+  DeleteLocalLawDtoSchema,
+  type DeleteLocalLawCommand,
+  type DeleteLocalLawDto,
+  LIBRARY_LIST_CHANNEL,
+  LIBRARY_OPEN_CHANNEL,
+  ListLocalLawsCommandSchema,
+  OpenLocalLawCommandSchema,
+  LocalLawPageDtoSchema,
+  OpenLocalLawDtoSchema,
+  type ListLocalLawsCommand,
+  type OpenLocalLawCommand,
+  type LocalLawPageDto,
+  type OpenLocalLawDto,
+} from '../../shared/ipc/library.js';
 import { app, ipcMain } from 'electron';
 import type { BrowserWindow } from 'electron';
+import {
+  SESSION_GET_STATE_CHANNEL,
+  SESSION_SIGN_IN_CHANNEL,
+  SESSION_SIGN_OUT_CHANNEL,
+  DESKTOP_SESSION_LIMITS,
+  SessionEmptyCommandSchema,
+  SessionSignInCommandSchema,
+  SessionStateDtoSchema,
+  type SessionEmptyCommand,
+  type SessionSignInCommand,
+  type SessionStateDto,
+} from '../../shared/ipc/session.js';
 
 import {
   APP_GET_VERSION_CHANNEL,
@@ -273,6 +311,20 @@ type NamedCapability<Input, Output> = Readonly<{
   handle(input: Input): MaybePromise<Output>;
 }>;
 
+export type DesktopLibraryIpcCapabilities = Readonly<{
+  checkLocalSource: NamedCapability<CheckLocalSourceCommand, LocalSourceCheckDto>;
+  applyLocalSourceUpdate: NamedCapability<ApplyLocalSourceUpdateCommand, EditorialStateDto>;
+  listLocalLaws: NamedCapability<ListLocalLawsCommand, LocalLawPageDto>;
+  openLocalLaw: NamedCapability<OpenLocalLawCommand, OpenLocalLawDto>;
+  deleteLocalLaw: NamedCapability<DeleteLocalLawCommand, DeleteLocalLawDto>;
+}>;
+
+export type DesktopSessionIpcCapabilities = Readonly<{
+  getState: NamedCapability<SessionEmptyCommand, SessionStateDto>;
+  signIn: NamedCapability<SessionSignInCommand, SessionStateDto>;
+  signOut: NamedCapability<SessionEmptyCommand, SessionStateDto>;
+}>;
+
 export type DesktopImportIpcCapabilities = Readonly<{
   selectLocal: NamedCapability<SelectLocalSourceCommand, SourceSummaryDto | null>;
   importFromUrl: NamedCapability<ImportFromUrlCommand, SourceSummaryDto>;
@@ -369,10 +421,12 @@ type RegisterIpcHandlersOptions = Readonly<{
   rendererLocation: RendererLocation;
   getMainWindow(): BrowserWindow | null;
   importCapabilities?: DesktopImportIpcCapabilities;
+  libraryCapabilities?: DesktopLibraryIpcCapabilities;
   publicationCapabilities?: DesktopPublicationIpcCapabilities;
   updateCapabilities?: DesktopUpdateIpcCapabilities;
   sourceCatalogCapabilities?: DesktopSourceCatalogIpcCapabilities;
   auditCapabilities?: DesktopAuditIpcCapabilities;
+  sessionCapabilities?: DesktopSessionIpcCapabilities;
 }>;
 
 const unavailable = (): never => {
@@ -447,16 +501,126 @@ const unavailableAuditCapabilities: DesktopAuditIpcCapabilities = {
   openEvidence: { authorize: () => false, handle: unavailable },
 };
 
+const unavailableSessionCapabilities: DesktopSessionIpcCapabilities = {
+  getState: {
+    authorize: () => true,
+    handle: () => ({ sessionState: 'not_configured', userId: null, role: null }),
+  },
+  signIn: { authorize: () => false, handle: unavailable },
+  signOut: {
+    authorize: () => true,
+    handle: () => ({ sessionState: 'not_configured', userId: null, role: null }),
+  },
+};
+
 export const registerIpcHandlers = ({
   rendererLocation,
   getMainWindow,
   importCapabilities = unavailableImportCapabilities,
+  libraryCapabilities = {
+    checkLocalSource: { authorize: () => false, handle: unavailable },
+    applyLocalSourceUpdate: { authorize: () => false, handle: unavailable },
+    listLocalLaws: { authorize: () => false, handle: unavailable },
+    openLocalLaw: { authorize: () => false, handle: unavailable },
+    deleteLocalLaw: { authorize: () => false, handle: unavailable },
+  },
   publicationCapabilities = unavailablePublicationCapabilities,
   updateCapabilities = unavailableUpdateCapabilities,
   sourceCatalogCapabilities = unavailableSourceCatalogCapabilities,
   auditCapabilities = unavailableAuditCapabilities,
+  sessionCapabilities = unavailableSessionCapabilities,
 }: RegisterIpcHandlersOptions): (() => void) => {
   const getTrustedWebContents = () => getMainWindow()?.webContents ?? null;
+
+  ipcMain.handle(SESSION_GET_STATE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: SessionEmptyCommandSchema,
+      outputSchema: SessionStateDtoSchema,
+      maxInputBytes: DESKTOP_SESSION_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SESSION_LIMITS.stateBytes,
+      ...sessionCapabilities.getState,
+    }),
+  );
+  ipcMain.handle(SESSION_SIGN_IN_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: SessionSignInCommandSchema,
+      outputSchema: SessionStateDtoSchema,
+      maxInputBytes: DESKTOP_SESSION_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SESSION_LIMITS.stateBytes,
+      ...sessionCapabilities.signIn,
+    }),
+  );
+  ipcMain.handle(SESSION_SIGN_OUT_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: SessionEmptyCommandSchema,
+      outputSchema: SessionStateDtoSchema,
+      maxInputBytes: DESKTOP_SESSION_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_SESSION_LIMITS.stateBytes,
+      ...sessionCapabilities.signOut,
+    }),
+  );
+
+  ipcMain.handle(LIBRARY_DELETE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: DeleteLocalLawCommandSchema,
+      outputSchema: DeleteLocalLawDtoSchema,
+      maxInputBytes: DESKTOP_LIBRARY_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_LIBRARY_LIMITS.commandBytes,
+      ...libraryCapabilities.deleteLocalLaw,
+    }),
+  );
+  ipcMain.handle(LIBRARY_CHECK_SOURCE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: CheckLocalSourceCommandSchema,
+      outputSchema: LocalSourceCheckDtoSchema,
+      maxInputBytes: DESKTOP_LIBRARY_LIMITS.commandBytes,
+      maxOutputBytes: 2 * 1024 * 1024,
+      ...libraryCapabilities.checkLocalSource,
+    }),
+  );
+  ipcMain.handle(LIBRARY_APPLY_SOURCE_UPDATE_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: ApplyLocalSourceUpdateCommandSchema,
+      outputSchema: EditorialStateDtoSchema,
+      maxInputBytes: DESKTOP_LIBRARY_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_EDITORIAL_LIMITS.stateBytes,
+      ...libraryCapabilities.applyLocalSourceUpdate,
+    }),
+  );
+  ipcMain.handle(LIBRARY_LIST_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: ListLocalLawsCommandSchema,
+      outputSchema: LocalLawPageDtoSchema,
+      maxInputBytes: DESKTOP_LIBRARY_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_LIBRARY_LIMITS.pageBytes,
+      ...libraryCapabilities.listLocalLaws,
+    }),
+  );
+  ipcMain.handle(LIBRARY_OPEN_CHANNEL, (event, payload: unknown) =>
+    executeValidatedIpcHandler(event, payload, {
+      rendererLocation,
+      getTrustedWebContents,
+      inputSchema: OpenLocalLawCommandSchema,
+      outputSchema: OpenLocalLawDtoSchema,
+      maxInputBytes: DESKTOP_LIBRARY_LIMITS.commandBytes,
+      maxOutputBytes: DESKTOP_LIBRARY_LIMITS.commandBytes,
+      ...libraryCapabilities.openLocalLaw,
+    }),
+  );
 
   ipcMain.handle(APP_GET_VERSION_CHANNEL, (event, payload: unknown) =>
     executeValidatedIpcHandler(event, payload, {
@@ -1108,6 +1272,14 @@ export const registerIpcHandlers = ({
   );
 
   return () => {
+    ipcMain.removeHandler(SESSION_GET_STATE_CHANNEL);
+    ipcMain.removeHandler(SESSION_SIGN_IN_CHANNEL);
+    ipcMain.removeHandler(SESSION_SIGN_OUT_CHANNEL);
+    ipcMain.removeHandler(LIBRARY_DELETE_CHANNEL);
+    ipcMain.removeHandler(LIBRARY_CHECK_SOURCE_CHANNEL);
+    ipcMain.removeHandler(LIBRARY_APPLY_SOURCE_UPDATE_CHANNEL);
+    ipcMain.removeHandler(LIBRARY_LIST_CHANNEL);
+    ipcMain.removeHandler(LIBRARY_OPEN_CHANNEL);
     ipcMain.removeHandler(APP_GET_VERSION_CHANNEL);
     ipcMain.removeHandler(SOURCE_SELECT_LOCAL_CHANNEL);
     ipcMain.removeHandler(SOURCE_IMPORT_URL_CHANNEL);

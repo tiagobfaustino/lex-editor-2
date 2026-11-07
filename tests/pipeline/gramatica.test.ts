@@ -16,6 +16,7 @@ import {
   type MetadadosDaNorma,
   origemMinima,
   processar,
+  reconhecer,
 } from '@lex-editor/legal-domain';
 
 const sha256 = (valor: string): string => createHash('sha256').update(valor, 'utf8').digest('hex');
@@ -59,6 +60,22 @@ const markdownDe = (conteudo: string, sigla = 'ldem'): string => {
 
 const idsDe = (markdown: string): string[] =>
   [...markdown.matchAll(/\^([a-z0-9-]+)$/gmu)].map((m) => m[1] ?? '');
+
+describe('separador textual e sufixo alfabético', () => {
+  it.each([
+    ['Art. 1º - Não há crime sem lei anterior.', '1', 'Não há crime sem lei anterior.'],
+    ['Art. 47 - As penas são as seguintes:', '47', 'As penas são as seguintes:'],
+    ['§ 1º - Para os efeitos penais.', '1', 'Para os efeitos penais.'],
+    ['Art. 121-A. Conduta.', '121-A', 'Conduta.'],
+    ['Art. 359-M-A. Conduta.', '359-M-A', 'Conduta.'],
+    ['§ 2º-A Conduta.', '2-A', 'Conduta.'],
+    ['§ 2-Aº Conduta.', '2-A', 'Conduta.'],
+    ['CAPÍTULO I-A DA MATÉRIA', 'I-A', 'DA MATÉRIA'],
+    ['~~Art. 1° Texto histórico.~~', '1', 'Texto histórico.'],
+  ])('preserva número e texto de %s', (line, numero, texto) => {
+    expect(reconhecer(line)).toMatchObject({ numero, texto });
+  });
+});
 
 describe('divisões estruturais', () => {
   const comTodasAsDivisoes = [
@@ -350,5 +367,54 @@ describe('baixa confiança não avança para identificada', () => {
 
     expect(identificada.ok).toBe(true);
     expect(identificada.ok ? formatar(identificada.valor).ok : false).toBe(true);
+  });
+});
+
+describe('posição vetada seguida de redação na mesma fonte', () => {
+  const parse = (conteudo: string) =>
+    analisar({
+      conteudo,
+      referenciaBase: origemMinima,
+      hashDaLinha: sha256,
+      metadados: METADADOS,
+    });
+
+  it('preserva o veto como histórico revisável e mantém um único ID posicional', () => {
+    const veto = '§ 2º - (VETADO).';
+    const atual = '§ 2º Texto posterior. (Incluído pela Lei nº 2, de 2020)';
+    const resultado = parse(['Art. 141. Caput.', veto, atual].join('\n'));
+    expect(resultado.ok).toBe(true);
+    if (!resultado.ok) return;
+    const artigo = resultado.valor.children[0];
+    expect(artigo?.children).toHaveLength(1);
+    expect(artigo?.children[0]).toMatchObject({
+      tipo: 'paragrafo',
+      numero: '2',
+      texto: 'Texto posterior.',
+      redacoesAnteriores: [{ texto: veto }],
+      sourceRef: { rawStartLine: 3, fragmentSha256: sha256(atual) },
+      supportingSourceRefs: [{ rawStartLine: 2, fragmentSha256: sha256(veto) }],
+      parseEvidence: { confidence: 'low', requiresHumanReview: true },
+    });
+    expect(identificar(resultado.valor, 'ldem').ok).toBe(false);
+    const revisavel = identificar(resultado.valor, 'ldem', { permitirBaixaConfianca: true });
+    expect(revisavel.ok).toBe(true);
+    if (!revisavel.ok) return;
+    const md = formatar(revisavel.valor);
+    expect(md.ok).toBe(true);
+    if (!md.ok) return;
+    expect(idsDe(md.valor)).toEqual(['ldem-art-141', 'ldem-art-141-par-2']);
+    expect(md.valor).toContain(veto);
+  });
+
+  it.each([
+    ['§ 2º Texto primeiro.', '§ 2º Texto segundo.'],
+    ['§ 2º Texto primeiro.', '§ 2º (VETADO).'],
+    ['§ 2º (VETADO).', '§ 3º Texto posterior.'],
+    ['§ 2º (VETADO).', 'I - Conteúdo subordinado.', '§ 2º Texto posterior.'],
+  ])('não reclassifica outras repetições ou veto com filhos (%s)', (...linhas) => {
+    const resultado = parse(['Art. 1. Caput.', ...linhas].join('\n'));
+    expect(resultado.ok).toBe(true);
+    if (resultado.ok) expect(resultado.valor.children[0]?.children).toHaveLength(2);
   });
 });

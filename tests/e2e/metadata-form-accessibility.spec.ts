@@ -87,6 +87,14 @@ test('edita, corrige, cancela, salva e recupera conflito somente por teclado', a
   });
 
   const panel = mainWindow.locator('#metadados');
+  const firstProjectId = await panel.getAttribute('data-project-id');
+  await mainWindow.getByRole('button', { name: 'Selecionar arquivo local' }).click();
+  await expect(panel).toHaveAttribute('data-project-id', /[0-9a-f-]{36}/u);
+  await expect(mainWindow.locator('.import-panel').getByRole('alert')).toContainText(
+    'Esta lei já existe na base de dados',
+  );
+  await expect(panel).toHaveAttribute('data-project-id', firstProjectId ?? '');
+  await expect(mainWindow.locator('.document-state')).toContainText('lindb · 30 artigos');
   const editButton = panel.getByRole('button', { name: 'Editar metadados' });
   await editButton.focus();
   await mainWindow.keyboard.press('Enter');

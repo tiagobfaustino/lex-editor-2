@@ -1,11 +1,16 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { constants as fileConstants } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
-import { lstat, mkdir, open, realpath, rename, unlink } from 'node:fs/promises';
+import { lstat, mkdir, open, readdir, realpath, rename, unlink } from 'node:fs/promises';
 import { z } from 'zod';
+import type { LocalLawSummaryDto } from '../../shared/ipc/library.js';
+import { SourceSummaryDtoSchema, type SourceSummaryDto } from '../../shared/ipc/import.js';
 
 import {
+  identifiedNormaAstSchema,
   calculateRevisionHash,
+  legalNormIdentityKey,
+  type MetadadosDaNorma,
   editorialCheckpointSchema,
   parseEditorialJournal,
   replayEditorialJournal,
@@ -78,7 +83,22 @@ export type EditorialProjectRecoveryResult =
       }>;
     }>;
 
+export const LocalSourceProposalSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  checkId: z.uuid(),
+  projectId: z.uuid(),
+  expectedRevisionHash: revisionHashSchema,
+  checkedAt: z.iso.datetime({ offset: true }),
+  source: SourceSummaryDtoSchema,
+  sourceBase: identifiedNormaAstSchema,
+  incoming: identifiedNormaAstSchema,
+  incomingRevisionHash: revisionHashSchema,
+});
+export type LocalSourceProposal = z.infer<typeof LocalSourceProposalSchema>;
+
 export type EditorialProjectStore = Readonly<{
+  saveLocalSourceProposal(raw: unknown): Promise<LocalSourceProposal>;
+  loadLocalSourceProposal(projectId: string, checkId: string): Promise<LocalSourceProposal>;
   saveJournal(rawJournal: unknown): Promise<EditorialJournal>;
   saveCheckpoint(projectId: string, rawCheckpoint: unknown): Promise<EditorialCheckpoint>;
   saveRevision(
@@ -90,6 +110,14 @@ export type EditorialProjectStore = Readonly<{
     projectionProfile: ContentProjectionProfileDto,
   ): Promise<ContentProjectionProfileDto>;
   loadProjectionPreference(projectId: string): Promise<ContentProjectionProfileDto | null>;
+  list(): Promise<readonly LocalLawSummaryDto[]>;
+  findByIdentity(
+    identity: Pick<MetadadosDaNorma, 'tipoNorma' | 'numero' | 'ano'>,
+    sourceHash: string,
+  ): Promise<string | null>;
+  delete(projectId: string): Promise<void>;
+  saveSourceSummary(projectId: string, summary: SourceSummaryDto): Promise<void>;
+  loadSourceSummary(projectId: string): Promise<SourceSummaryDto | null>;
   recover(projectId: string): Promise<EditorialProjectRecoveryResult>;
   saveReprocessingState(rawState: unknown): Promise<ReprocessingState>;
   loadReprocessingState(projectId: string): Promise<ReprocessingState | null>;
@@ -153,6 +181,18 @@ const prepareProjectDirectory = async (
     }
     throw error;
   }
+  // O marcador é a autoridade durável: nenhuma escrita ou recovery pode ressuscitar a lei.
+  try {
+    await lstat(join(projectDirectory, 'deleted.json'));
+    throw new StoreError('project_not_found', 'Esta lei foi excluída da biblioteca.');
+  } catch (error) {
+    if (!(
+      error instanceof Error &&
+      'code' in error &&
+      (error as NodeJS.ErrnoException).code === 'ENOENT'
+    ))
+      throw error;
+  }
   const projectReal = await realpath(projectDirectory);
   if (!isInside(projectsRootReal, projectReal)) {
     throw new StoreError(
@@ -194,6 +234,9 @@ const syncDirectory = async (path: string): Promise<void> => {
 };
 
 const writeJsonAtomically = async (destination: string, value: unknown): Promise<void> => {
+  const bytes = `${JSON.stringify(value)}\n`;
+  if (Buffer.byteLength(bytes) > MAX_EDITORIAL_FILE_BYTES)
+    throw new StoreError('unsafe_storage', 'O artefato editorial excede o limite permitido.');
   const directory = dirname(destination);
   const temporary = join(directory, `.${randomUUID()}.tmp`);
   await assertReplaceableFile(destination);
@@ -206,7 +249,7 @@ const writeJsonAtomically = async (destination: string, value: unknown): Promise
     0o600,
   );
   try {
-    await handle.writeFile(`${JSON.stringify(value)}\n`, 'utf8');
+    await handle.writeFile(bytes, 'utf8');
     await handle.sync();
   } catch (error) {
     await handle.close();
@@ -274,6 +317,109 @@ export const createEditorialProjectStore = (storageRoot: string): EditorialProje
   const projectsRoot = join(storageRoot, 'editorial-projects');
 
   return {
+    async saveLocalSourceProposal(raw) {
+      const proposal = LocalSourceProposalSchema.parse(raw);
+      if (calculateRevisionHash(proposal.incoming, sha256) !== proposal.incomingRevisionHash)
+        throw new Error('INVALID_SOURCE_PROPOSAL');
+      const directory = await prepareProjectDirectory(projectsRoot, proposal.projectId, false);
+      const path = join(directory, `source-check-${proposal.checkId}.json`);
+      try {
+        await lstat(path);
+        throw new Error('SOURCE_CHECK_EXISTS');
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      }
+      await writeJsonAtomically(path, proposal);
+      return proposal;
+    },
+    async loadLocalSourceProposal(projectId, checkId) {
+      assertProjectId(checkId);
+      const directory = await prepareProjectDirectory(projectsRoot, projectId, false);
+      const proposal = LocalSourceProposalSchema.parse(
+        await readJsonFile(join(directory, `source-check-${checkId}.json`), false),
+      );
+      if (
+        proposal.projectId !== projectId ||
+        proposal.checkId !== checkId ||
+        calculateRevisionHash(proposal.incoming, sha256) !== proposal.incomingRevisionHash
+      )
+        throw new Error('INVALID_SOURCE_PROPOSAL');
+      return proposal;
+    },
+    async list() {
+      await mkdir(projectsRoot, { recursive: true, mode: 0o700 });
+      await assertDirectory(projectsRoot);
+      const rows: LocalLawSummaryDto[] = [];
+      for (const directory of await readdir(projectsRoot, { withFileTypes: true })) {
+        if (!PROJECT_ID_PATTERN.test(directory.name)) continue;
+        const recovered = await this.recover(directory.name);
+        if (!recovered.ok && recovered.error.code === 'project_not_found') continue;
+        if (!recovered.ok) {
+          rows.push({
+            recoveryState: 'unavailable',
+            projectId: directory.name,
+            title: 'Importação indisponível',
+          });
+          continue;
+        }
+        const { ast, journal, revisionHash } = recovered;
+        rows.push({
+          recoveryState: 'ready',
+          projectId: directory.name,
+          title: ast.titulo.slice(0, 500),
+          sigla: ast.sigla,
+          lawType: ast.tipoNorma,
+          number: ast.numero,
+          year: ast.ano,
+          totalArticles: ast.totalArtigos,
+          importedAt: journal.createdAt,
+          updatedAt: journal.entries.at(-1)?.command.occurredAt ?? journal.createdAt,
+          sourceUrl: ast.fonte.slice(0, 2048),
+          sourceVariant: ast.sourceRef.sourceVariant,
+          revisionHash,
+          journalSequence: journal.entries.length,
+        });
+      }
+      return rows.sort((left, right) => {
+        const a = left.recoveryState === 'ready' ? Date.parse(left.updatedAt) : 0;
+        const b = right.recoveryState === 'ready' ? Date.parse(right.updatedAt) : 0;
+        return b - a || left.projectId.localeCompare(right.projectId);
+      });
+    },
+    async findByIdentity(identity, sourceHash) {
+      const key = legalNormIdentityKey(identity);
+      for (const row of await this.list()) {
+        const recovered = await this.recover(row.projectId);
+        if (!recovered.ok)
+          throw new StoreError(
+            'journal_corrupt',
+            'A base local contém uma importação indisponível.',
+          );
+        const { ast, journal } = recovered;
+        if (identity.numero === 's-n') {
+          if (journal.base.ast.sourceRef.sourceArtifactSha256 === sourceHash) return row.projectId;
+        } else if ([ast, journal.base.ast].some((law) => legalNormIdentityKey(law) === key)) {
+          return row.projectId;
+        }
+      }
+      return null;
+    },
+    async delete(projectId) {
+      const directory = await prepareProjectDirectory(projectsRoot, projectId, false);
+      await writeJsonAtomically(join(directory, 'deleted.json'), { schemaVersion: 1, projectId });
+    },
+    async saveSourceSummary(projectId, summary) {
+      const directory = await prepareProjectDirectory(projectsRoot, projectId, true);
+      await writeJsonAtomically(
+        join(directory, 'source.json'),
+        SourceSummaryDtoSchema.parse(summary),
+      );
+    },
+    async loadSourceSummary(projectId) {
+      const directory = await prepareProjectDirectory(projectsRoot, projectId, false);
+      const raw = await readJsonFile(join(directory, 'source.json'), true);
+      return raw === undefined ? null : SourceSummaryDtoSchema.parse(raw);
+    },
     async saveJournal(rawJournal) {
       const journal = parseEditorialJournal(rawJournal, sha256);
       const directory = await prepareProjectDirectory(projectsRoot, journal.projectId, true);
@@ -312,6 +458,8 @@ export const createEditorialProjectStore = (storageRoot: string): EditorialProje
         );
       }
       const directory = await prepareProjectDirectory(projectsRoot, journal.projectId, true);
+      if (Buffer.byteLength(JSON.stringify(journal)) + 1 > MAX_EDITORIAL_FILE_BYTES)
+        throw new StoreError('unsafe_storage', 'O diário editorial excede o limite permitido.');
       // O checkpoint futuro é escrito primeiro. Se a segunda escrita falhar, o
       // diário anterior continua sendo a autoridade e o checkpoint é ignorado
       // com segurança na recuperação.

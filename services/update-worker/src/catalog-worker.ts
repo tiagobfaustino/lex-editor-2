@@ -6,8 +6,12 @@ import {
 import type { CapturedSourceCheckJob, SourceBindingHealth } from '@lex-editor/source-ingestion';
 import type { ExplicitRenumbering, IdentifiedNormaAST } from '@lex-editor/legal-domain';
 
-import type { SourceCatalogWorkerRepository } from '../../source-catalog/src/index.js';
-import type { LegislativeUpdateQueue } from './contracts.js';
+import type {
+  LegislativeUpdateReprocessJobRepository,
+  SourceCatalogWorkerRepository,
+} from '../../source-catalog/src/index.js';
+import type { LegislativeUpdateWorkerQueue } from './contracts.js';
+import { createLegislativeUpdateReprocessRunner } from './reprocess-runner.js';
 import { scheduleAfterFailure, type UpdateSchedule } from './scheduler.js';
 import {
   createLegislativeUpdateWorker,
@@ -130,7 +134,7 @@ export const createSourceCatalogLegislativeUpdateRunner = (options: {
   catalog: SourceCatalogWorkerRepository;
   baselines: PublishedLawBaselineRepository;
   parser: ConfiguredSourceSetParser;
-  queue: LegislativeUpdateQueue;
+  queue: LegislativeUpdateWorkerQueue;
   sha256(value: string): string;
   now(): Date;
   random(): number;
@@ -203,3 +207,65 @@ export const createSourceCatalogLegislativeUpdateRunner = (options: {
     return results;
   },
 });
+
+/**
+ * Executes claims already accepted by the legislative-update queue through the
+ * same collector and diff pipeline as scheduled checks.  This intentionally
+ * neither creates a source-check job nor completes catalog health: the
+ * terminal event belongs to the original legislative update correlation.
+ */
+export const createSourceCatalogLegislativeUpdateReprocessRunner = (options: {
+  catalog: LegislativeUpdateReprocessJobRepository;
+  baselines: PublishedLawBaselineRepository;
+  parser: ConfiguredSourceSetParser;
+  queue: LegislativeUpdateWorkerQueue;
+  sha256(value: string): string;
+  now(): Date;
+  random(): number;
+  networkPorts?: PlanaltoNetworkPorts;
+}) => {
+  const capturedByRequestId = new Map<string, CapturedSourceCheckJob>();
+  return createLegislativeUpdateReprocessRunner({
+    queue: options.queue,
+    async loadJob(claim) {
+      const capturedJob = await options.catalog.materializeLegislativeUpdateReprocessJob(claim);
+      const baseline = await options.baselines.load(capturedJob.lawId, capturedJob.baseVersionId);
+      if (baseline.lawId !== claim.lawId || baseline.baseVersionId !== capturedJob.baseVersionId) {
+        throw new Error('UPDATE_BASE_VERSION_MISMATCH');
+      }
+      capturedByRequestId.set(claim.requestId, capturedJob);
+      return {
+        lawId: baseline.lawId,
+        lawSigla: baseline.lawSigla,
+        lawTitle: baseline.lawTitle,
+        sourceConfiguration: {
+          providerRevision: capturedJob.providerRevision,
+          bindingRevision: capturedJob.bindingRevision,
+        },
+        baseVersionId: baseline.baseVersionId,
+        baseNormativeSha256: baseline.baseNormativeSha256,
+        publishedAst: baseline.publishedAst,
+        schedule: scheduleFrom(capturedJob),
+      };
+    },
+    async runJob(job, claim) {
+      const capturedJob = capturedByRequestId.get(claim.requestId);
+      if (capturedJob === undefined) throw new Error('UPDATE_REPROCESS_JOB_NOT_LOADED');
+      try {
+        return await createLegislativeUpdateWorker({
+          collector: createConfiguredLegislativeSourceCollector({
+            capturedJob,
+            parser: options.parser,
+            ...(options.networkPorts === undefined ? {} : { networkPorts: options.networkPorts }),
+          }),
+          queue: options.queue,
+          sha256: (value) => options.sha256(value),
+          now: () => options.now(),
+          random: () => options.random(),
+        }).run(job);
+      } finally {
+        capturedByRequestId.delete(claim.requestId);
+      }
+    },
+  });
+};

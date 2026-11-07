@@ -28,6 +28,8 @@ jobs:
         run: npm run test:unit
       - name: Contrato transacional de publicação
         run: npm run test:publication-db
+      - name: Builds do gateway e Edge Functions
+        run: npm run build:desktop-gateway && npm run build:publisher-edge && npm run build:update-reprocess-edge
       - name: Fronteiras de módulo
         run: npm run test:boundaries
 

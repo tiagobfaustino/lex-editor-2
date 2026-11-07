@@ -44,4 +44,7 @@ export type {
 export { createSourceCatalogService, SourceCatalogAuthenticationError } from './service.js';
 export type { SourceCatalogAuthenticator, SourceCatalogService } from './service.js';
 export { createSourceCatalogWorkerRepository } from './worker-repository.js';
-export type { SourceCatalogWorkerRepository } from './worker-repository.js';
+export type {
+  LegislativeUpdateReprocessJobRepository,
+  SourceCatalogWorkerRepository,
+} from './worker-repository.js';

@@ -204,8 +204,8 @@ tags: ["constitucional", "fixture"]
   - ~~a) cinco anos para o trabalhador urbano, até o limite de dois anos após a extinção do contrato;~~
   - ~~b) até dois anos após a extinção do contrato, para o trabalhador rural;~~
   - XXIX - ação, quanto aos créditos resultantes das relações de trabalho, com prazo prescricional de cinco anos para os trabalhadores urbanos e rurais, até o limite de dois anos após a extinção do contrato de trabalho; ^cf1988-art-7-inc-xxix
-    - a) (Revogada). ^cf1988-art-7-inc-xxix-ali-a
-    - b) (Revogada). ^cf1988-art-7-inc-xxix-ali-b
+    - a) (Revogada). (Redação dada pela Emenda Constitucional nº 28, de 2000) ^cf1988-art-7-inc-xxix-ali-a
+    - b) (Revogada). (Redação dada pela Emenda Constitucional nº 28, de 2000) ^cf1988-art-7-inc-xxix-ali-b
   - XXX - proibição de diferença de salários, de exercício de funções e de critério de admissão por motivo de sexo, idade, cor ou estado civil; ^cf1988-art-7-inc-xxx
   - XXXI - proibição de qualquer discriminação no tocante a salário e critérios de admissão do trabalhador portador de deficiência; ^cf1988-art-7-inc-xxxi
   - XXXII - proibição de distinção entre trabalho manual, técnico e intelectual ou entre os profissionais respectivos; ^cf1988-art-7-inc-xxxii
@@ -252,16 +252,16 @@ tags: ["constitucional", "fixture"]
     - V - da carreira diplomática; ^cf1988-art-12-par-3-inc-v
     - VI - de oficial das Forças Armadas. ^cf1988-art-12-par-3-inc-vi
     - VII - de Ministro de Estado da Defesa. ^cf1988-art-12-par-3-inc-vii
-  - § 4-Serº á declarada a perda da nacionalidade do brasileiro que: ^cf1988-art-12-par-4-ser
+  - § 4º Será declarada a perda da nacionalidade do brasileiro que: ^cf1988-art-12-par-4
     - ~~I - tiver cancelada sua naturalização, por sentença judicial, em virtude de atividade nociva ao interesse nacional;~~
-    - I - tiver cancelada sua naturalização, por sentença judicial, em virtude de fraude relacionada ao processo de naturalização ou de atentado contra a ordem constitucional e o Estado Democrático; ^cf1988-art-12-par-4-ser-inc-i
+    - I - tiver cancelada sua naturalização, por sentença judicial, em virtude de fraude relacionada ao processo de naturalização ou de atentado contra a ordem constitucional e o Estado Democrático; ^cf1988-art-12-par-4-inc-i
     - ~~II - adquirir outra nacionalidade por naturalização voluntária.~~
     - ~~II - adquirir outra nacionalidade, salvo nos casos: (Redação dada pela Emenda Constitucional de Revisão nº 3, de 1994)~~
     - ~~a) de reconhecimento de nacionalidade originária pela lei estrangeira; (Incluído pela Emenda Constitucional de Revisão nº 3, de 1994)~~
     - ~~b) de imposição de naturalização, pela norma estrangeira, ao brasileiro residente em estado estrangeiro, como condição para permanência em seu território ou para o exercício de direitos civis; (Incluído pela Emenda Constitucional de Revisão nº 3, de 1994)~~
-    - II - fizer pedido expresso de perda da nacionalidade brasileira perante autoridade brasileira competente, ressalvadas situações que acarretem apatridia. ^cf1988-art-12-par-4-ser-inc-ii
-      - a) revogada; ^cf1988-art-12-par-4-ser-inc-ii-ali-a
-      - b) revogada. ^cf1988-art-12-par-4-ser-inc-ii-ali-b
+    - II - fizer pedido expresso de perda da nacionalidade brasileira perante autoridade brasileira competente, ressalvadas situações que acarretem apatridia. ^cf1988-art-12-par-4-inc-ii
+      - a) revogada; ^cf1988-art-12-par-4-inc-ii-ali-a
+      - b) revogada. ^cf1988-art-12-par-4-inc-ii-ali-b
   - § 5º A renúncia da nacionalidade, nos termos do inciso II do § 4º deste artigo, não impede o interessado de readquirir sua nacionalidade brasileira originária, nos termos da lei. ^cf1988-art-12-par-5
 - Art. 13. A língua portuguesa é o idioma oficial da República Federativa do Brasil. ^cf1988-art-13
   - § 1º São símbolos da República Federativa do Brasil a bandeira, o hino, as armas e o selo nacionais. ^cf1988-art-13-par-1
@@ -300,8 +300,8 @@ tags: ["constitucional", "fixture"]
     - II - se contar mais de dez anos de serviço, será agregado pela autoridade superior e, se eleito, passará automaticamente, no ato da diplomação, para a inatividade. ^cf1988-art-14-par-8-inc-ii
   - ~~§ 9º Lei complementar estabelecerá outros casos de inelegibilidade e os prazos de sua cessação, a fim de proteger a normalidade e legitimidade das eleições contra a influência do poder econômico ou o abuso do exercício de função, cargo ou emprego na administração direta ou indireta .~~
   - § 9º Lei complementar estabelecerá outros casos de inelegibilidade e os prazos de sua cessação, a fim de proteger a probidade administrativa, a moralidade para exercício de mandato considerada vida pregressa do candidato, e a normalidade e legitimidade das eleições contra a influência do poder econômico ou o abuso do exercício de função, cargo ou emprego na administração direta ou indireta. ^cf1988-art-14-par-9
-  - § 10-Oº mandato eletivo poderá ser impugnado ante a Justiça Eleitoral no prazo de quinze dias contados da diplomação, instruída a ação com provas de abuso do poder econômico, corrupção ou fraude. ^cf1988-art-14-par-10
-  - § 11-Aº ação de impugnação de mandato tramitará em segredo de justiça, respondendo o autor, na forma da lei, se temerária ou de manifesta má-fé. ^cf1988-art-14-par-11-a
+  - § 10º O mandato eletivo poderá ser impugnado ante a Justiça Eleitoral no prazo de quinze dias contados da diplomação, instruída a ação com provas de abuso do poder econômico, corrupção ou fraude. ^cf1988-art-14-par-10
+  - § 11º A ação de impugnação de mandato tramitará em segredo de justiça, respondendo o autor, na forma da lei, se temerária ou de manifesta má-fé. ^cf1988-art-14-par-11
   - § 12º Serão realizadas concomitantemente às eleições municipais as consultas populares sobre questões locais aprovadas pelas Câmaras Municipais e encaminhadas à Justiça Eleitoral até 90 (noventa) dias antes da data das eleições, observados os limites operacionais relativos ao número de quesitos. ^cf1988-art-14-par-12
   - § 13º As manifestações favoráveis e contrárias às questões submetidas às consultas populares nos termos do § 12 ocorrerão durante as campanhas eleitorais, sem a utilização de propaganda gratuita no rádio e na televisão. ^cf1988-art-14-par-13
 - Art. 15. É vedada a cassação de direitos políticos, cuja perda ou suspensão só se dará nos casos de: ^cf1988-art-15
@@ -806,8 +806,8 @@ tags: ["constitucional", "fixture"]
   - § 8º É assegurado o reajustamento dos benefícios para preservar-lhes, em caráter permanente, o valor real, conforme critérios estabelecidos em lei. ^cf1988-art-40-par-8
   - ~~§ 9º O tempo de contribuição federal, estadual ou municipal será contado para efeito de aposentadoria e o tempo de serviço correspondente para efeito de disponibilidade. (Incluído pela Emenda Constitucional nº 20, de 15/12/98)~~
   - § 9º O tempo de contribuição federal, estadual, distrital ou municipal será contado para fins de aposentadoria, observado o disposto nos §§ 9º e 9º-A do art. 201, e o tempo de serviço correspondente será contado para fins de disponibilidade. ^cf1988-art-40-par-9
-  - § 10-Aº lei não poderá estabelecer qualquer forma de contagem de tempo de contribuição fictício. (Incluído pela Emenda Constitucional nº 20, de 15/12/98) (Vide Emenda Constitucional nº 20, de 1998) ^cf1988-art-40-par-10-a
-  - § 11-Aplicaº se o limite fixado no art. 37, XI, à soma total dos proventos de inatividade, inclusive quando decorrentes da acumulação de cargos ou empregos públicos, bem como de outras atividades sujeitas a contribuição para o regime geral de previdência social, e ao montante resultante da adição de proventos de inatividade com remuneração de cargo acumulável na forma desta Constituição, cargo em comissão declarado em lei de livre nomeação e exoneração, e de cargo eletivo. ^cf1988-art-40-par-11-aplica
+  - § 10º A lei não poderá estabelecer qualquer forma de contagem de tempo de contribuição fictício. (Incluído pela Emenda Constitucional nº 20, de 15/12/98) (Vide Emenda Constitucional nº 20, de 1998) ^cf1988-art-40-par-10
+  - § 11º Aplica-se o limite fixado no art. 37, XI, à soma total dos proventos de inatividade, inclusive quando decorrentes da acumulação de cargos ou empregos públicos, bem como de outras atividades sujeitas a contribuição para o regime geral de previdência social, e ao montante resultante da adição de proventos de inatividade com remuneração de cargo acumulável na forma desta Constituição, cargo em comissão declarado em lei de livre nomeação e exoneração, e de cargo eletivo. ^cf1988-art-40-par-11
   - ~~§ 12 - Além do disposto neste artigo, o regime de previdência dos servidores públicos titulares de cargo efetivo observará, no que couber, os requisitos e critérios fixados para o regime geral de previdência social. (Incluído pela Emenda Constitucional nº 20, de 15/12/98)~~
   - § 12º Além do disposto neste artigo, serão observados, em regime próprio de previdência social, no que couber, os requisitos e critérios fixados para o Regime Geral de Previdência Social. ^cf1988-art-40-par-12
   - ~~§ 13 - Ao servidor ocupante, exclusivamente, de cargo em comissão declarado em lei de livre nomeação e exoneração bem como de outro cargo temporário ou de emprego público, aplica-se o regime geral de previdência social. (Incluído pela Emenda Constitucional nº 20, de 15/12/98)~~
@@ -817,7 +817,7 @@ tags: ["constitucional", "fixture"]
   - ~~§ 15 - Observado o disposto no art. 202, lei complementar disporá sobre as normas gerais para a instituição de regime de previdência complementar pela União, Estados, Distrito Federal e Municípios, para atender aos seus respectivos servidores titulares de cargo efetivo. (Incluído pela Emenda Constitucional nº 20, de 15/12/98)~~
   - ~~§ 15. O regime de previdência complementar de que trata o § 14 será instituído por lei de iniciativa do respectivo Poder Executivo, observado o disposto no art. 202 e seus parágrafos, no que couber, por intermédio de entidades fechadas de previdência complementar, de natureza pública, que oferecerão aos respectivos participantes planos de benefícios somente na modalidade de contribuição definida. (Redação dada pela Emenda Constitucional nº 41, 19.12.2003)~~
   - § 15º O regime de previdência complementar de que trata o § 14 oferecerá plano de benefícios somente na modalidade contribuição definida, observará o disposto no art. 202 e será efetivado por intermédio de entidade fechada de previdência complementar ou de entidade aberta de previdência complementar. ^cf1988-art-40-par-15
-  - § 16-Somenteº mediante sua prévia e expressa opção, o disposto nos § § 14 e 15 poderá ser aplicado ao servidor que tiver ingressado no serviço público até a data da publicação do ato de instituição do correspondente regime de previdência complementar. ^cf1988-art-40-par-16-smente
+  - § 16º Somente mediante sua prévia e expressa opção, o disposto nos § § 14 e 15 poderá ser aplicado ao servidor que tiver ingressado no serviço público até a data da publicação do ato de instituição do correspondente regime de previdência complementar. ^cf1988-art-40-par-16
   - § 17º Todos os valores de remuneração considerados para o cálculo do benefício previsto no § 3° serão devidamente atualizados, na forma da lei. ^cf1988-art-40-par-17
   - § 18º Incidirá contribuição sobre os proventos de aposentadorias e pensões concedidas pelo regime de que trata este artigo que superem o limite máximo estabelecido para os benefícios do regime geral de previdência social de que trata o art. 201, com percentual igual ao estabelecido para os servidores titulares de cargos efetivos. (Incluído pela Emenda Constitucional nº 41, 19.12.2003) (Vide ADIN 3133) (Vide ADIN 3143) (Vide ADIN 3184) ^cf1988-art-40-par-18
   - ~~§ 19. O servidor de que trata este artigo que tenha completado as exigências para aposentadoria voluntária estabelecidas no § 1º, III, a, e que opte por permanecer em atividade fará jus a um abono de permanência equivalente ao valor da sua contribuição previdenciária até completar as exigências para aposentadoria compulsória contidas no § 1º, II. (Incluído pela Emenda Constitucional nº 41, 19.12.2003)~~
@@ -825,7 +825,7 @@ tags: ["constitucional", "fixture"]
   - ~~§ 20. Fica vedada a existência de mais de um regime próprio de previdência social para os servidores titulares de cargos efetivos, e de mais de uma unidade gestora do respectivo regime em cada ente estatal, ressalvado o disposto no art. 142, § 3º, X. (Incluído pela Emenda Constitucional nº 41, 19.12.2003)~~
   - § 20º É vedada a existência de mais de um regime próprio de previdência social e de mais de um órgão ou entidade gestora desse regime em cada ente federativo, abrangidos todos os poderes, órgãos e entidades autárquicas e fundacionais, que serão responsáveis pelo seu financiamento, observados os critérios, os parâmetros e a natureza jurídica definidos na lei complementar de que trata o § 22. ^cf1988-art-40-par-20
   - ~~§ 21. A contribuição prevista no § 18 deste artigo incidirá apenas sobre as parcelas de proventos de aposentadoria e de pensão que superem o dobro do limite máximo estabelecido para os benefícios do regime geral de previdência social de que trata o art. 201 desta Constituição, quando o beneficiário, na forma da lei, for portador de doença incapacitante. (Incluído pela Emenda Constitucional nº 47, de 2005)(Revogado pela Emenda Constitucional nº 103, de 2019) (Vigência) (Vide Emenda Constitucional nº 103, de 2019)~~
-  - § 21º (Revogado). ^cf1988-art-40-par-21
+  - § 21º (Revogado). (Redação dada pela Emenda Constitucional nº 103, de 2019) ^cf1988-art-40-par-21
   - § 22º Vedada a instituição de novos regimes próprios de previdência social, lei complementar federal estabelecerá, para os que já existam, normas gerais de organização, de funcionamento e de responsabilidade em sua gestão, dispondo, entre outros aspectos, sobre: ^cf1988-art-40-par-22
     - I - requisitos para sua extinção e consequente migração para o Regime Geral de Previdência Social; ^cf1988-art-40-par-22-inc-i
     - II - modelo de arrecadação, de aplicação e de utilização dos recursos; ^cf1988-art-40-par-22-inc-ii
@@ -849,7 +849,7 @@ tags: ["constitucional", "fixture"]
   - § 2º Invalidada por sentença judicial a demissão do servidor estável, será ele reintegrado, e o eventual ocupante da vaga, se estável, reconduzido ao cargo de origem, sem direito a indenização, aproveitado em outro cargo ou posto em disponibilidade com remuneração proporcional ao tempo de serviço. ^cf1988-art-41-par-2
   - § 3º Extinto o cargo ou declarada a sua desnecessidade, o servidor estável ficará em disponibilidade, com remuneração proporcional ao tempo de serviço, até seu adequado aproveitamento em outro cargo. ^cf1988-art-41-par-3
   - § 4º Como condição para a aquisição da estabilidade, é obrigatória a avaliação especial de desempenho por comissão instituída para essa finalidade. ^cf1988-art-41-par-4
-#### Seção III - DOS SERVIDORES PÚBLICOS MILITARES DOS MILITARES DOS ESTADOS, DO DISTRITO FEDERAL E DOS TERRITÓRIOS (Redação dada pela Emenda Constitucional nº 18, de 1998)
+#### Seção III - DOS MILITARES DOS ESTADOS, DO DISTRITO FEDERAL E DOS TERRITÓRIOS (Redação dada pela Emenda Constitucional nº 18, de 1998)
 
 - ~~Art. 42. São servidores militares federais os integrantes das Forças Armadas e servidores militares dos Estados, Territórios e Distrito Federal os integrantes de suas polícias militares e de seus corpos de bombeiros militares.~~
 - ~~§ 1º As patentes, com prerrogativas, direitos e deveres a elas inerentes, são asseguradas em plenitude aos oficiais da ativa, da reserva ou reformados das Forças Armadas, das polícias militares e dos corpos de bombeiros militares dos Estados, dos Territórios e do Distrito Federal, sendo-lhes privativos os títulos, postos e uniformes militares.~~
@@ -884,9 +884,6 @@ tags: ["constitucional", "fixture"]
     - IV - prioridade para o aproveitamento econômico e social dos rios e das massas de água represadas ou represáveis nas regiões de baixa renda, sujeitas a secas periódicas. ^cf1988-art-43-par-2-inc-iv
   - § 3º Nas áreas a que se refere o § 2º, IV, a União incentivará a recuperação de terras áridas e cooperará com os pequenos e médios proprietários rurais para o estabelecimento, em suas glebas, de fontes de água e de pequena irrigação. ^cf1988-art-43-par-3
   - § 4º Sempre que possível, a concessão dos incentivos regionais a que se refere o § 2º, III, considerará critérios de sustentabilidade ambiental e redução das emissões de carbono. ^cf1988-art-43-par-4
-
-## Título IV - Da Organização dos Poderes
-
 
 ## Título IV - DA ORGANIZAÇÃO DOS PODERES (Redação dada pela Emenda Constitucional nº 80, de 2014)
 
@@ -1143,7 +1140,7 @@ tags: ["constitucional", "fixture"]
   - I - nos projetos de iniciativa exclusiva do Presidente da República, ressalvado o disposto no art. 166, § 3º e § 4º; ^cf1988-art-63-inc-i
   - II - nos projetos sobre organização dos serviços administrativos da Câmara dos Deputados, do Senado Federal, dos Tribunais Federais e do Ministério Público. ^cf1988-art-63-inc-ii
 - Art. 64. A discussão e votação dos projetos de lei de iniciativa do Presidente da República, do Supremo Tribunal Federal e dos Tribunais Superiores terão início na Câmara dos Deputados. ^cf1988-art-64
-  - § 1-Oº Presidente da República poderá solicitar urgência para apreciação de projetos de sua iniciativa. ^cf1988-art-64-par-1
+  - § 1º O Presidente da República poderá solicitar urgência para apreciação de projetos de sua iniciativa. ^cf1988-art-64-par-1
   - ~~§ 2º Se, no caso do parágrafo anterior, a Câmara dos Deputados e o Senado Federal não se manifestarem, cada qual, sucessivamente, em até quarenta e cinco dias, sobre a proposição, será esta incluída na ordem do dia, sobrestando-se a deliberação quanto aos demais assuntos, para que se ultime a votação.~~
   - § 2º Se, no caso do § 1º, a Câmara dos Deputados e o Senado Federal não se manifestarem sobre a proposição, cada qual sucessivamente, em até quarenta e cinco dias, sobrestar-se-ão todas as demais deliberações legislativas da respectiva Casa, com exceção das que tenham prazo constitucional determinado, até que se ultime a votação. ^cf1988-art-64-par-2
   - § 3º A apreciação das emendas do Senado Federal pela Câmara dos Deputados far-se-á no prazo de dez dias, observado quanto ao mais o disposto no parágrafo anterior. ^cf1988-art-64-par-3
@@ -1774,23 +1771,23 @@ tags: ["constitucional", "fixture"]
   - II - por nomeação do Presidente da República, dois juízes dentre seis advogados de notável saber jurídico e idoneidade moral, indicados pelo Supremo Tribunal Federal. ^cf1988-art-119-inc-ii
   - Parágrafo único. O Tribunal Superior Eleitoral elegerá seu Presidente e o Vice-Presidente dentre os Ministros do Supremo Tribunal Federal, e o Corregedor Eleitoral dentre os Ministros do Superior Tribunal de Justiça. ^cf1988-art-119-par-unico
 - Art. 120. Haverá um Tribunal Regional Eleitoral na Capital de cada Estado e no Distrito Federal. ^cf1988-art-120
-  - § 1-Osº Tribunais Regionais Eleitorais compor-se-ão: ^cf1988-art-120-par-1-s
-    - I - mediante eleição, pelo voto secreto: ^cf1988-art-120-par-1-s-inc-i
-      - a) de dois juízes dentre os desembargadores do Tribunal de Justiça; ^cf1988-art-120-par-1-s-inc-i-ali-a
-      - b) de dois juízes, dentre juízes de direito, escolhidos pelo Tribunal de Justiça; ^cf1988-art-120-par-1-s-inc-i-ali-b
-    - II - de um juiz do Tribunal Regional Federal com sede na Capital do Estado ou no Distrito Federal, ou, não havendo, de juiz federal, escolhido, em qualquer caso, pelo Tribunal Regional Federal respectivo; ^cf1988-art-120-par-1-s-inc-ii
-    - III - por nomeação, pelo Presidente da República, de dois juízes dentre seis advogados de notável saber jurídico e idoneidade moral, indicados pelo Tribunal de Justiça. ^cf1988-art-120-par-1-s-inc-iii
-  - § 2-Oº Tribunal Regional Eleitoral elegerá seu Presidente e o Vice-Presidente- dentre os desembargadores. ^cf1988-art-120-par-2
+  - § 1º Os Tribunais Regionais Eleitorais compor-se-ão: ^cf1988-art-120-par-1
+    - I - mediante eleição, pelo voto secreto: ^cf1988-art-120-par-1-inc-i
+      - a) de dois juízes dentre os desembargadores do Tribunal de Justiça; ^cf1988-art-120-par-1-inc-i-ali-a
+      - b) de dois juízes, dentre juízes de direito, escolhidos pelo Tribunal de Justiça; ^cf1988-art-120-par-1-inc-i-ali-b
+    - II - de um juiz do Tribunal Regional Federal com sede na Capital do Estado ou no Distrito Federal, ou, não havendo, de juiz federal, escolhido, em qualquer caso, pelo Tribunal Regional Federal respectivo; ^cf1988-art-120-par-1-inc-ii
+    - III - por nomeação, pelo Presidente da República, de dois juízes dentre seis advogados de notável saber jurídico e idoneidade moral, indicados pelo Tribunal de Justiça. ^cf1988-art-120-par-1-inc-iii
+  - § 2º O Tribunal Regional Eleitoral elegerá seu Presidente e o Vice-Presidente- dentre os desembargadores. ^cf1988-art-120-par-2
 - Art. 121. Lei complementar disporá sobre a organização e competência dos tribunais, dos juízes de direito e das juntas eleitorais. ^cf1988-art-121
-  - § 1-Osº membros dos tribunais, os juízes de direito e os integrantes das juntas eleitorais, no exercício de suas funções, e no que lhes for aplicável, gozarão de plenas garantias e serão inamovíveis. ^cf1988-art-121-par-1-s
-  - § 2-Osº juízes dos tribunais eleitorais, salvo motivo justificado, servirão por dois anos, no mínimo, e nunca por mais de dois biênios consecutivos, sendo os substitutos escolhidos na mesma ocasião e pelo mesmo processo, em número igual para cada categoria. ^cf1988-art-121-par-2-s
-  - § 3-Sº ão irrecorríveis as decisões do Tribunal Superior Eleitoral, salvo as que contrariarem esta Constituição e as denegatórias de habeas corpus ou mandado de segurança. ^cf1988-art-121-par-3-s
-  - § 4-Dasº decisões dos Tribunais Regionais Eleitorais somente caberá recurso quando: ^cf1988-art-121-par-4-das
-    - I - forem proferidas contra disposição expressa desta Constituição ou de lei; ^cf1988-art-121-par-4-das-inc-i
-    - II - ocorrer divergência na interpretação de lei entre dois ou mais tribunais eleitorais; ^cf1988-art-121-par-4-das-inc-ii
-    - III - versarem sobre inelegibilidade ou expedição de diplomas nas eleições federais ou estaduais; ^cf1988-art-121-par-4-das-inc-iii
-    - IV - anularem diplomas ou decretarem a perda de mandatos eletivos federais ou estaduais; ^cf1988-art-121-par-4-das-inc-iv
-    - V - denegarem habeas corpus , mandado de segurança, habeas data ou mandado de injunção. ^cf1988-art-121-par-4-das-inc-v
+  - § 1º Os membros dos tribunais, os juízes de direito e os integrantes das juntas eleitorais, no exercício de suas funções, e no que lhes for aplicável, gozarão de plenas garantias e serão inamovíveis. ^cf1988-art-121-par-1
+  - § 2º Os juízes dos tribunais eleitorais, salvo motivo justificado, servirão por dois anos, no mínimo, e nunca por mais de dois biênios consecutivos, sendo os substitutos escolhidos na mesma ocasião e pelo mesmo processo, em número igual para cada categoria. ^cf1988-art-121-par-2
+  - § 3º São irrecorríveis as decisões do Tribunal Superior Eleitoral, salvo as que contrariarem esta Constituição e as denegatórias de habeas corpus ou mandado de segurança. ^cf1988-art-121-par-3
+  - § 4º Das decisões dos Tribunais Regionais Eleitorais somente caberá recurso quando: ^cf1988-art-121-par-4
+    - I - forem proferidas contra disposição expressa desta Constituição ou de lei; ^cf1988-art-121-par-4-inc-i
+    - II - ocorrer divergência na interpretação de lei entre dois ou mais tribunais eleitorais; ^cf1988-art-121-par-4-inc-ii
+    - III - versarem sobre inelegibilidade ou expedição de diplomas nas eleições federais ou estaduais; ^cf1988-art-121-par-4-inc-iii
+    - IV - anularem diplomas ou decretarem a perda de mandatos eletivos federais ou estaduais; ^cf1988-art-121-par-4-inc-iv
+    - V - denegarem habeas corpus , mandado de segurança, habeas data ou mandado de injunção. ^cf1988-art-121-par-4-inc-v
 #### Seção VII - DOS TRIBUNAIS E JUÍZES MILITARES
 
 - Art. 122. São órgãos da Justiça Militar: ^cf1988-art-122
@@ -1823,7 +1820,7 @@ tags: ["constitucional", "fixture"]
 #### Seção I - DO MINISTÉRIO PÚBLICO
 
 - Art. 127. O Ministério Público é instituição permanente, essencial à função jurisdicional do Estado, incumbindo-lhe a defesa da ordem jurídica, do regime democrático e dos interesses sociais e individuais indisponíveis. ^cf1988-art-127
-  - § 1-Sº ão princípios institucionais do Ministério Público a unidade, a indivisibilidade e a independência funcional. ^cf1988-art-127-par-1-s
+  - § 1º São princípios institucionais do Ministério Público a unidade, a indivisibilidade e a independência funcional. ^cf1988-art-127-par-1
   - ~~§ 2º - Ao Ministério Público é assegurada autonomia funcional e administrativa, podendo, observado o disposto no art. 169, propor ao Poder Legislativo a criação e extinção de seus cargos e serviços auxiliares, provendo-os por concurso público de provas e de provas e títulos; a lei disporá sobre sua organização e funcionamento.~~
   - § 2º Ao Ministério Público é assegurada autonomia funcional e administrativa, podendo, observado o disposto no art. 169, propor ao Poder Legislativo a criação e extinção de seus cargos e serviços auxiliares, provendo-os por concurso público de provas ou de provas e títulos, a política remuneratória e os planos de carreira; a lei disporá sobre sua organização e funcionamento. ^cf1988-art-127-par-2
   - § 3º O Ministério Público elaborará sua proposta orçamentária dentro dos limites estabelecidos na lei de diretrizes orçamentárias. ^cf1988-art-127-par-3
@@ -1867,7 +1864,7 @@ tags: ["constitucional", "fixture"]
   - VII - exercer o controle externo da atividade policial, na forma da lei complementar mencionada no artigo anterior; ^cf1988-art-129-inc-vii
   - VIII - requisitar diligências investigatórias e a instauração de inquérito policial, indicados os fundamentos jurídicos de suas manifestações processuais; ^cf1988-art-129-inc-viii
   - IX - exercer outras funções que lhe forem conferidas, desde que compatíveis com sua finalidade, sendo-lhe vedada a representação judicial e a consultoria jurídica de entidades públicas. ^cf1988-art-129-inc-ix
-  - § 1-Aº legitimação do Ministério Público para as ações civis previstas neste artigo não impede a de terceiros, nas mesmas hipóteses, segundo o disposto nesta Constituição e na lei. ^cf1988-art-129-par-1-a
+  - § 1º A legitimação do Ministério Público para as ações civis previstas neste artigo não impede a de terceiros, nas mesmas hipóteses, segundo o disposto nesta Constituição e na lei. ^cf1988-art-129-par-1
   - ~~§ 2º -As funções de Ministério Público só podem ser exercidas por integrantes da carreira, que deverão residir na comarca da respectiva lotação.~~
   - § 2º As funções do Ministério Público só podem ser exercidas por integrantes da carreira, que deverão residir na comarca da respectiva lotação, salvo autorização do chefe da instituição. ^cf1988-art-129-par-2
   - ~~§ 3º O ingresso na carreira far-se-á mediante concurso público de provas e títulos, assegurada participação da Ordem dos Advogados do Brasil em sua realização, e observada, nas nomeações, a ordem de classificação.~~
@@ -1897,17 +1894,15 @@ tags: ["constitucional", "fixture"]
     - III - requisitar e designar membros do Ministério Público, delegando-lhes atribuições, e requisitar servidores de órgãos do Ministério Público. ^cf1988-art-130-a-par-3-inc-iii
   - § 4º O Presidente do Conselho Federal da Ordem dos Advogados do Brasil oficiará junto ao Conselho. ^cf1988-art-130-a-par-4
   - § 5º Leis da União e dos Estados criarão ouvidorias do Ministério Público, competentes para receber reclamações e denúncias de qualquer interessado contra membros ou órgãos do Ministério Público, inclusive contra seus serviços auxiliares, representando diretamente ao Conselho Nacional do Ministério Público. ^cf1988-art-130-a-par-5
-#### Seção II - DA ADVOCACIA-GERAL DA UNIÃO DA ADVOCACIA PÚBLICA (Redação dada pela Emenda Constitucional nº 19, de 1998)
+#### Seção II - DA ADVOCACIA PÚBLICA (Redação dada pela Emenda Constitucional nº 19, de 1998)
 
 - Art. 131. A Advocacia-Geral da União é a instituição que, diretamente ou através de órgão vinculado, representa a União, judicial e extrajudicialmente, cabendo-lhe, nos termos da lei complementar que dispuser sobre sua organização e funcionamento, as atividades de consultoria e assessoramento jurídico do Poder Executivo. ^cf1988-art-131
-  - § 1-Aº Advocacia-Geral da União tem por chefe o Advogado-Geral da União, de livre nomeação pelo Presidente da República dentre cidadãos maiores de trinta e cinco anos, de notável saber jurídico e reputação ilibada. ^cf1988-art-131-par-1-a
-  - § 2-Oº ingresso nas classes iniciais das carreiras da instituição de que trata este artigo far-se-á mediante concurso público de provas e títulos. ^cf1988-art-131-par-2
-  - § 3-Naº execução da dívida ativa de natureza tributária, a representação da União cabe à Procuradoria-Geral da Fazenda Nacional, observado o disposto em lei. ^cf1988-art-131-par-3-na
+  - § 1º A Advocacia-Geral da União tem por chefe o Advogado-Geral da União, de livre nomeação pelo Presidente da República dentre cidadãos maiores de trinta e cinco anos, de notável saber jurídico e reputação ilibada. ^cf1988-art-131-par-1
+  - § 2º O ingresso nas classes iniciais das carreiras da instituição de que trata este artigo far-se-á mediante concurso público de provas e títulos. ^cf1988-art-131-par-2
+  - § 3º Na execução da dívida ativa de natureza tributária, a representação da União cabe à Procuradoria-Geral da Fazenda Nacional, observado o disposto em lei. ^cf1988-art-131-par-3
 - ~~Art. 132. Os Procuradores dos Estados e do Distrito Federal exercerão a representação judicial e a consultoria jurídica das respectivas unidades federadas, organizados em carreira na qual o ingresso dependerá de concurso público de provas e títulos, observado o disposto no art. 135.~~
 - Art. 132. Os Procuradores dos Estados e do Distrito Federal, organizados em carreira, na qual o ingresso dependerá de concurso público de provas e títulos, com a participação da Ordem dos Advogados do Brasil em todas as suas fases, exercerão a representação judicial e a consultoria jurídica das respectivas unidades federadas. ^cf1988-art-132
   - Parágrafo único. Aos procuradores referidos neste artigo é assegurada estabilidade após três anos de efetivo exercício, mediante avaliação de desempenho perante os órgãos próprios, após relatório circunstanciado das corregedorias. ^cf1988-art-132-par-unico
-#### Seção III - DA ADVOCACIA E DA DEFENSORIA PÚBLICA
-
 #### Seção III - Da Advocacia (Redação dada pela Emenda Constitucional nº 80, de 2014)
 
 - Art. 133. O advogado é indispensável à administração da justiça, sendo inviolável por seus atos e manifestações no exercício da profissão, nos limites da lei. ^cf1988-art-133
@@ -1992,7 +1987,7 @@ tags: ["constitucional", "fixture"]
     - X - a lei disporá sobre o ingresso nas Forças Armadas, os limites de idade, a estabilidade e outras condições de transferência do militar para a inatividade, os direitos, os deveres, a remuneração, as prerrogativas e outras situações especiais dos militares, consideradas as peculiaridades de suas atividades, inclusive aquelas cumpridas por força de compromissos internacionais e de guerra. ^cf1988-art-142-par-3-inc-x
 - Art. 143. O serviço militar é obrigatório nos termos da lei. ^cf1988-art-143
   - § 1º Às Forças Armadas compete, na forma da lei, atribuir serviço alternativo aos que, em tempo de paz, após alistados, alegarem imperativo de consciência, entendendo-se como tal o decorrente de crença religiosa e de convicção filosófica ou política, para se eximirem de atividades de caráter essencialmente militar. (Regulamento) ^cf1988-art-143-par-1
-  - § 2-Asº mulheres e os eclesiásticos ficam isentos do serviço militar obrigatório em tempo de paz, sujeitos, porém, a outros encargos que a lei lhes atribuir. (Regulamento) ^cf1988-art-143-par-2-as
+  - § 2º As mulheres e os eclesiásticos ficam isentos do serviço militar obrigatório em tempo de paz, sujeitos, porém, a outros encargos que a lei lhes atribuir. (Regulamento) ^cf1988-art-143-par-2
 ### Capítulo III - DA SEGURANÇA PÚBLICA
 
 - Art. 144. A segurança pública, dever do Estado, direito e responsabilidade de todos, é exercida para a preservação da ordem pública e da incolumidade das pessoas e do patrimônio, através dos seguintes órgãos: ^cf1988-art-144
@@ -2120,9 +2115,9 @@ tags: ["constitucional", "fixture"]
   - § 1º A vedação do inciso III, b, não se aplica aos tributos previstos nos arts. 148, I, 153, I, II, IV e V; e 154, II; e a vedação do inciso III, c, não se aplica aos tributos previstos nos arts. 148, I, 153, I, II, III e V; e 154, II, nem à fixação da base de cálculo dos impostos previstos nos arts. 155, III, e 156, I. ^cf1988-art-150-par-1
   - ~~§ 2º - A vedação do inciso VI, "a", é extensiva às autarquias e às fundações instituídas e mantidas pelo Poder Público, no que se refere ao patrimônio, à renda e aos serviços, vinculados a suas finalidades essenciais ou às delas decorrentes.~~
   - § 2º A vedação do inciso VI, "a", é extensiva às autarquias e às fundações instituídas e mantidas pelo poder público e à empresa pública prestadora de serviço postal, no que se refere ao patrimônio, à renda e aos serviços vinculados a suas finalidades essenciais ou às delas decorrentes. ^cf1988-art-150-par-2
-  - § 3-Asº vedações do inciso VI, "a", e do parágrafo anterior não se aplicam ao patrimônio, à renda e aos serviços, relacionados com exploração de atividades econômicas regidas pelas normas aplicáveis a empreendimentos privados, ou em que haja contraprestação ou pagamento de preços ou tarifas pelo usuário, nem exonera o promitente comprador da obrigação de pagar imposto relativamente ao bem imóvel. ^cf1988-art-150-par-3-as
-  - § 4-Asº vedações expressas no inciso VI, alíneas "b" e "c", compreendem somente o patrimônio, a renda e os serviços, relacionados com as finalidades essenciais das entidades nelas mencionadas. ^cf1988-art-150-par-4-as
-  - § 5-Aº lei determinará medidas para que os consumidores sejam esclarecidos acerca dos impostos que incidam sobre mercadorias e serviços. ^cf1988-art-150-par-5-a
+  - § 3º As vedações do inciso VI, "a", e do parágrafo anterior não se aplicam ao patrimônio, à renda e aos serviços, relacionados com exploração de atividades econômicas regidas pelas normas aplicáveis a empreendimentos privados, ou em que haja contraprestação ou pagamento de preços ou tarifas pelo usuário, nem exonera o promitente comprador da obrigação de pagar imposto relativamente ao bem imóvel. ^cf1988-art-150-par-3
+  - § 4º As vedações expressas no inciso VI, alíneas "b" e "c", compreendem somente o patrimônio, a renda e os serviços, relacionados com as finalidades essenciais das entidades nelas mencionadas. ^cf1988-art-150-par-4
+  - § 5º A lei determinará medidas para que os consumidores sejam esclarecidos acerca dos impostos que incidam sobre mercadorias e serviços. ^cf1988-art-150-par-5
   - ~~§ 6º - Qualquer anistia ou remissão, que envolva matéria tributária ou previdenciária, só poderá ser concedida através de lei específica, federal, estadual ou municipal.~~
   - § 6º Qualquer subsídio ou isenção, redução de base de cálculo, concessão de crédito presumido, anistia ou remissão, relativos a impostos, taxas ou contribuições, só poderá ser concedido mediante lei específica, federal, estadual ou municipal, que regule exclusivamente as matérias acima enumeradas ou o correspondente tributo ou contribuição, sem prejuízo do disposto no art. 155, § 2.º, XII, g. ^cf1988-art-150-par-6
   - § 7º A lei poderá atribuir a sujeito passivo de obrigação tributária a condição de responsável pelo pagamento de imposto ou contribuição, cujo fato gerador deva ocorrer posteriormente, assegurada a imediata e preferencial restituição da quantia paga, caso não se realize o fato gerador presumido. ^cf1988-art-150-par-7
@@ -2210,8 +2205,8 @@ tags: ["constitucional", "fixture"]
     - ~~a) a alíquota interestadual, quando o destinatário for contribuinte do imposto;~~
     - ~~b) a alíquota interna, quando o destinatário não for contribuinte dele;~~
     - VII - nas operações e prestações que destinem bens e serviços a consumidor final, contribuinte ou não do imposto, localizado em outro Estado, adotar-se-á a alíquota interestadual e caberá ao Estado de localização do destinatário o imposto correspondente à diferença entre a alíquota interna do Estado destinatário e a alíquota interestadual; (Redação dada pela Emenda Constitucional nº 87, de 2015) (Produção de efeito) ^cf1988-art-155-par-2-inc-vii
-      - a) (revogada); ^cf1988-art-155-par-2-inc-vii-ali-a
-      - b) (revogada); ^cf1988-art-155-par-2-inc-vii-ali-b
+      - a) (revogada); (Redação dada pela Emenda Constitucional nº 87, de 2015) ^cf1988-art-155-par-2-inc-vii-ali-a
+      - b) (revogada); (Redação dada pela Emenda Constitucional nº 87, de 2015) ^cf1988-art-155-par-2-inc-vii-ali-b
     - ~~VIII - na hipótese da alínea "a" do inciso anterior, caberá ao Estado da localização do destinatário o imposto correspondente à diferença entre a alíquota interna e a interestadual;~~
     - VIII - a responsabilidade pelo recolhimento do imposto correspondente à diferença entre a alíquota interna e a interestadual de que trata o inciso VII será atribuída: (Redação dada pela Emenda Constitucional nº 87, de 2015) (Produção de efeito) ^cf1988-art-155-par-2-inc-viii
       - a) ao destinatário, quando este for contribuinte do imposto; ^cf1988-art-155-par-2-inc-viii-ali-a
@@ -2284,7 +2279,7 @@ tags: ["constitucional", "fixture"]
     - I - fixar as suas alíquotas máximas e mínimas; ^cf1988-art-156-par-3-inc-i
     - II - excluir da sua incidência exportações de serviços para o exterior. ^cf1988-art-156-par-3-inc-ii
     - III - regular a forma e as condições como isenções, incentivos e benefícios fiscais serão concedidos e revogados. ^cf1988-art-156-par-3-inc-iii
-#### Seção V - A (Incluído pela Emenda Constitucional nº 132, de 2023) Do Imposto de Competência Compartilhada entre Estados,Distrito Federal e Municípios
+#### Seção V-A - (Incluído pela Emenda Constitucional nº 132, de 2023) Do Imposto de Competência Compartilhada entre Estados,Distrito Federal e Municípios
 
 - Art. 156-A. Lei complementar instituirá imposto sobre bens e serviços de competência compartilhada entre Estados, Distrito Federal e Municípios. ^cf1988-art-156-a
   - § 1º O imposto previsto no caput será informado pelo princípio da neutralidade e atenderá ao seguinte: ^cf1988-art-156-a-par-1
@@ -2837,19 +2832,19 @@ tags: ["constitucional", "fixture"]
 - ~~§ 2º Os recursos financeiros relativos a programas e projetos de caráter regional, de responsabilidade da União, serão depositados em suas instituições regionais de crédito e por elas aplicados.~~
 - ~~§ 3º As taxas de juros reais, nelas incluídas comissões e quaisquer outras remunerações direta ou indiretamente referidas à concessão de crédito, não poderão ser superiores a doze por cento ao ano; a cobrança acima deste limite será conceituada como crime de usura, punido, em todas as suas modalidades, nos termos que a lei determinar.~~
 - Art. 192. O sistema financeiro nacional, estruturado de forma a promover o desenvolvimento equilibrado do País e a servir aos interesses da coletividade, em todas as partes que o compõem, abrangendo as cooperativas de crédito, será regulado por leis complementares que disporão, inclusive, sobre a participação do capital estrangeiro nas instituições que o integram. (Redação dada pela Emenda Constitucional nº 40, de 2003) (Vide Lei nº 8.392, de 1991) ^cf1988-art-192
-  - I - (Revogado). ^cf1988-art-192-inc-i
-  - II - (Revogado). ^cf1988-art-192-inc-ii
-  - III - (Revogado) ^cf1988-art-192-inc-iii
-    - a) (Revogado) ^cf1988-art-192-inc-iii-ali-a
-    - b) (Revogado) ^cf1988-art-192-inc-iii-ali-b
-  - IV - (Revogado) ^cf1988-art-192-inc-iv
-  - V - (Revogado) ^cf1988-art-192-inc-v
-  - VI - (Revogado) ^cf1988-art-192-inc-vi
-  - VII - (Revogado) ^cf1988-art-192-inc-vii
-  - VIII - (Revogado) ^cf1988-art-192-inc-viii
-  - § 1º (Revogado) ^cf1988-art-192-par-1
-  - § 2º (Revogado) ^cf1988-art-192-par-2
-  - § 3º (Revogado) ^cf1988-art-192-par-3
+  - I - (Revogado). (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-inc-i
+  - II - (Revogado). (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-inc-ii
+  - III - (Revogado) (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-inc-iii
+    - a) (Revogado) (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-inc-iii-ali-a
+    - b) (Revogado) (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-inc-iii-ali-b
+  - IV - (Revogado) (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-inc-iv
+  - V - (Revogado) (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-inc-v
+  - VI - (Revogado) (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-inc-vi
+  - VII - (Revogado) (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-inc-vii
+  - VIII - (Revogado) (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-inc-viii
+  - § 1º (Revogado) (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-par-1
+  - § 2º (Revogado) (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-par-2
+  - § 3º (Revogado) (Redação dada pela Emenda Constitucional nº 40, de 2003) ^cf1988-art-192-par-3
 
 ## Título VIII - Da Ordem Social
 
@@ -2901,7 +2896,7 @@ tags: ["constitucional", "fixture"]
   - § 11º São vedados a moratória e o parcelamento em prazo superior a 60 (sessenta) meses e, na forma de lei complementar, a remissão e a anistia das contribuições sociais de que tratam a alínea "a" do inciso I e o inciso II do caput. ^cf1988-art-195-par-11
   - § 12º A lei definirá os setores de atividade econômica para os quais as contribuições incidentes na forma dos incisos I, b; e IV do capu t, serão não-cumulativas. (Incluído pela Emenda Constitucional nº 42, de 19.12.2003) (Vide Emenda Constitucional nº 132, de 2023) Vigência ^cf1988-art-195-par-12
   - ~~§ 13. Aplica-se o disposto no § 12 inclusive na hipótese de substituição gradual, total ou parcial, da contribuição incidente na forma do inciso I, a, pela incidente sobre a receita ou o faturamento. (Incluído pela Emenda Constitucional nº 42, de 19.12.2003) (Revogado pela Emenda Constitucional nº 103, de 2019)~~
-  - § 13º (Revogado). ^cf1988-art-195-par-13
+  - § 13º (Revogado). (Redação dada pela Emenda Constitucional nº 103, de 2019) ^cf1988-art-195-par-13
   - § 14º O segurado somente terá reconhecida como tempo de contribuição ao Regime Geral de Previdência Social a competência cuja contribuição seja igual ou superior à contribuição mínima mensal exigida para sua categoria, assegurado o agrupamento de contribuições. ^cf1988-art-195-par-14
   - § 15º A contribuição prevista no inciso V do caput poderá ter sua alíquota fixada em lei ordinária. ^cf1988-art-195-par-15
   - § 16º Aplica-se à contribuição prevista no inciso V do caput o disposto no art. 156-A, § 1º, I a VI, VIII, X a XIII, § 3º, § 5º, II a VI e IX, e §§ 6º a 11 e 13. ^cf1988-art-195-par-16
@@ -2930,7 +2925,7 @@ tags: ["constitucional", "fixture"]
     - II - os critérios de rateio dos recursos da União vinculados à saúde destinados aos Estados, ao Distrito Federal e aos Municípios, e dos Estados destinados a seus respectivos Municípios, objetivando a progressiva redução das disparidades regionais; ^cf1988-art-198-par-3-inc-ii
     - III - as normas de fiscalização, avaliação e controle das despesas com saúde nas esferas federal, estadual, distrital e municipal; ^cf1988-art-198-par-3-inc-iii
     - ~~IV - as normas de cálculo do montante a ser aplicado pela União; (Incluído pela Emenda Constitucional nº 29, de 2000)~~
-    - IV - (revogado) . ^cf1988-art-198-par-3-inc-iv
+    - IV - (revogado) . (Redação dada pela Emenda Constitucional nº 86, de 2015) ^cf1988-art-198-par-3-inc-iv
   - § 4º Os gestores locais do sistema único de saúde poderão admitir agentes comunitários de saúde e agentes de combate às endemias por meio de processo seletivo público, de acordo com a natureza e complexidade de suas atribuições e requisitos específicos para sua atuação. ^cf1988-art-198-par-4
   - ~~§ 5º Lei federal disporá sobre o regime jurídico e a regulamentação das atividades de agente comunitário de saúde e agente de combate às endemias. (Incluído pela Emenda Constitucional nº 51, de 2006) (Vide Medida provisória nº 297. de 2006)~~
   - § 5º Lei federal disporá sobre o regime jurídico, o piso salarial profissional nacional, as diretrizes para os Planos de Carreira e a regulamentação das atividades de agente comunitário de saúde e agente de combate às endemias, competindo à União, nos termos da lei, prestar assistência financeira complementar aos Estados, ao Distrito Federal e aos Municípios, para o cumprimento do referido piso salarial. (Redação dada pela Emenda Constitucional nº 63, de 2010) Regulamento ^cf1988-art-198-par-5
@@ -2945,7 +2940,7 @@ tags: ["constitucional", "fixture"]
   - § 14º Compete à União, nos termos da lei, prestar assistência financeira complementar aos Estados, ao Distrito Federal e aos Municípios e às entidades filantrópicas, bem como aos prestadores de serviços contratualizados que atendam, no mínimo, 60% (sessenta por cento) de seus pacientes pelo sistema único de saúde, para o cumprimento dos pisos salariais de que trata o § 12 deste artigo. ^cf1988-art-198-par-14
   - § 15º Os recursos federais destinados aos pagamentos da assistência financeira complementar aos Estados, ao Distrito Federal e aos Municípios e às entidades filantrópicas, bem como aos prestadores de serviços contratualizados que atendam, no mínimo, 60% (sessenta por cento) de seus pacientes pelo sistema único de saúde, para o cumprimento dos pisos salariais de que trata o § 12 deste artigo serão consignados no orçamento geral da União com dotação própria e exclusiva. ^cf1988-art-198-par-15
 - Art. 199. A assistência à saúde é livre à iniciativa privada. ^cf1988-art-199
-  - § 1-Asº instituições privadas poderão participar de forma complementar do sistema único de saúde, segundo diretrizes deste, mediante contrato de direito público ou convênio, tendo preferência as entidades filantrópicas e as sem fins lucrativos. ^cf1988-art-199-par-1-as
+  - § 1º As instituições privadas poderão participar de forma complementar do sistema único de saúde, segundo diretrizes deste, mediante contrato de direito público ou convênio, tendo preferência as entidades filantrópicas e as sem fins lucrativos. ^cf1988-art-199-par-1
   - § 2º É vedada a destinação de recursos públicos para auxílios ou subvenções às instituições privadas com fins lucrativos. ^cf1988-art-199-par-2
   - § 3º É vedada a participação direta ou indireta de empresas ou capitais estrangeiros na assistência à saúde no País, salvo nos casos previstos em lei. ^cf1988-art-199-par-3
   - § 4º A lei disporá sobre as condições e os requisitos que facilitem a remoção de órgãos, tecidos e substâncias humanas para fins de transplante, pesquisa e tratamento, bem como a coleta, processamento e transfusão de sangue e seus derivados, sendo vedado todo tipo de comercialização. ^cf1988-art-199-par-4
@@ -3425,7 +3420,7 @@ tags: ["constitucional", "fixture"]
   - § 2º Na ausência de norma legal específica, caberá ao Tribunal Superior Eleitoral editar as normas necessárias à realização das eleições de 1988, respeitada a legislação vigente. ^cf1988-adct-art-5-par-2
   - § 3º Os atuais parlamentares federais e estaduais eleitos Vice-Prefeitos, se convocados a exercer a função de Prefeito, não perderão o mandato parlamentar. ^cf1988-adct-art-5-par-3
   - § 4º O número de vereadores por município será fixado, para a representação a ser eleita em 1988, pelo respectivo Tribunal Regional Eleitoral, respeitados os limites estipulados no art. 29, IV, da Constituição. ^cf1988-adct-art-5-par-4
-  - § 5-Paraº as eleições de 15 de novembro de 1988, ressalvados os que já exercem mandato eletivo, são inelegíveis para qualquer cargo, no território de jurisdição do titular, o cônjuge e os parentes por consangüinidade ou afinidade, até o segundo grau, ou por adoção, do Presidente da República, do Governador de Estado, do Governador do Distrito Federal e do Prefeito que tenham exercido mais da metade do mandato. ^cf1988-adct-art-5-par-5-para
+  - § 5º Para as eleições de 15 de novembro de 1988, ressalvados os que já exercem mandato eletivo, são inelegíveis para qualquer cargo, no território de jurisdição do titular, o cônjuge e os parentes por consangüinidade ou afinidade, até o segundo grau, ou por adoção, do Presidente da República, do Governador de Estado, do Governador do Distrito Federal e do Prefeito que tenham exercido mais da metade do mandato. ^cf1988-adct-art-5-par-5
 - Art. 6. Nos seis meses posteriores à promulgação da Constituição, parlamentares federais, reunidos em número não inferior a trinta, poderão requerer ao Tribunal Superior Eleitoral o registro de novo partido político, juntando ao requerimento o manifesto, o estatuto e o programa devidamente assinados pelos requerentes. ^cf1988-adct-art-6
   - § 1º O registro provisório, que será concedido de plano pelo Tribunal Superior Eleitoral, nos termos deste artigo, defere ao novo partido todos os direitos, deveres e prerrogativas dos atuais, entre eles o de participar, sob legenda própria, das eleições que vierem a ser realizadas nos doze meses seguintes a sua formação. ^cf1988-adct-art-6-par-1
   - § 2º O novo partido perderá automaticamente seu registro provisório se, no prazo de vinte e quatro meses, contados de sua formação, não obtiver registro definitivo no Tribunal Superior Eleitoral, na forma que a lei dispuser. ^cf1988-adct-art-6-par-2
@@ -3995,11 +3990,11 @@ tags: ["constitucional", "fixture"]
   - ~~II - o financiamento dos saldos remanescentes de precatórios a pagar a que se refere este parágrafo será feito em parcelas mensais suficientes à satisfação da dívida assim constituída; (Incluído pela Emenda constitucional nº 99, de 2017) (Revogado pela Emenda Constitucional nº 109, de 2021)~~
   - ~~III - o valor de cada parcela a que se refere o inciso II deste parágrafo será calculado percentualmente sobre a receita corrente líquida, respectivamente, do Estado, do Distrito Federal e do Município, no segundo mês anterior ao pagamento, em percentual equivalente à média do comprometimento percentual mensal de 2012 até o final do período referido no caput deste artigo, considerados para esse fim somente os recursos próprios de cada ente da Federação aplicados no pagamento de precatórios; (Incluído pela Emenda constitucional nº 99, de 2017) (Revogado pela Emenda Constitucional nº 109, de 2021)~~
   - ~~IV - nos empréstimos a que se refere este parágrafo não se aplicam os limites de endividamento de que tratam os incisos VI e VII do caput do art. 52 da Constituição Federal e quaisquer outros limites de endividamento previstos em lei. (Incluído pela Emenda constitucional nº 99, de 2017) (Revogado pela Emenda Constitucional nº 109, de 2021)~~
-  - § 4º (Revogado). ^cf1988-adct-art-101-par-4
-    - I - (revogado); ^cf1988-adct-art-101-par-4-inc-i
-    - II - (revogado); ^cf1988-adct-art-101-par-4-inc-ii
-    - III - (revogado); ^cf1988-adct-art-101-par-4-inc-iii
-    - IV - (revogado). ^cf1988-adct-art-101-par-4-inc-iv
+  - § 4º (Revogado). (Redação dada pela Emenda Constitucional nº 109, de 2021) ^cf1988-adct-art-101-par-4
+    - I - (revogado); (Redação dada pela Emenda Constitucional nº 109, de 2021) ^cf1988-adct-art-101-par-4-inc-i
+    - II - (revogado); (Redação dada pela Emenda Constitucional nº 109, de 2021) ^cf1988-adct-art-101-par-4-inc-ii
+    - III - (revogado); (Redação dada pela Emenda Constitucional nº 109, de 2021) ^cf1988-adct-art-101-par-4-inc-iii
+    - IV - (revogado). (Redação dada pela Emenda Constitucional nº 109, de 2021) ^cf1988-adct-art-101-par-4-inc-iv
   - § 5º Os empréstimos de que trata o inciso III do § 2º deste artigo poderão ser destinados, por meio de ato do Poder Executivo, exclusivamente ao pagamento de precatórios por acordo direto com os credores, na forma do disposto no inciso III do § 8º do art. 97 deste Ato das Disposições Constitucionais Transitórias. (Incluído pela Emenda Constitucional nº 113, de 2021) (Vide ADI 7047) (Vide ADI 7064) ^cf1988-adct-art-101-par-5
   - § 6º Aplica-se ao regime de pagamento de precatórios descrito no caput deste artigo o disposto nos §§ 23 a 30 do art. 100 da Constituição Federal. ^cf1988-adct-art-101-par-6
 - Art. 102. Enquanto viger o regime especial previsto nesta Emenda Constitucional, pelo menos 50% (cinquenta por cento) dos recursos que, nos termos do art. 101 deste Ato das Disposições Constitucionais Transitórias, forem destinados ao pagamento dos precatórios em mora serão utilizados no pagamento segundo a ordem cronológica de apresentação, respeitadas as preferências dos créditos alimentares, e, nessas, as relativas à idade, ao estado de saúde e à deficiência, nos termos do § 2º do art. 100 da Constituição Federal, sobre todos os demais créditos de todos os anos. ^cf1988-adct-art-102

@@ -78,6 +78,7 @@ export const EditorialReviewTargetDtoSchema = z.strictObject({
   deviceStatus: PreviewDeviceStatusSchema.nullable(),
   confidence: z.enum(['high', 'medium', 'low']),
   confidenceReasons: z.array(z.string().min(1).max(120)).max(16),
+  editorialNote: z.string().max(DESKTOP_EDITORIAL_LIMITS.maxTextCharacters).optional(),
   requiresHumanReview: z.boolean(),
   sourceRange: SourceRangeDtoSchema.nullable(),
 });

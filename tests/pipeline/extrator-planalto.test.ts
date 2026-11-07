@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import {
   decodificarHtmlPlanalto,
   extrairLinhas,
+  extrairLinhasConjunto,
   juntarContinuacoes,
   reconhecer,
   varrerPedacos,
@@ -29,6 +30,40 @@ describe('decodificação Windows-1252 estável', () => {
 });
 
 describe('os dois usos do negrito', () => {
+  it('preserva todas as linhas da ementa dentro do mesmo bloco', () => {
+    expect(
+      extrair(
+        '<p><strong>TÍTULO V<br>DOS CRIMES CONTRA O SENTIMENTO<br>RELIGIOSO E CONTRA O RESPEITO AOS MORTOS</strong></p><p><b>Rubrica</b></p><p>Art. 1. Texto.</p>',
+      ),
+    ).toEqual([
+      'TÍTULO V',
+      'DOS CRIMES CONTRA O SENTIMENTO',
+      'RELIGIOSO E CONTRA O RESPEITO AOS MORTOS',
+      'Art. 1. Texto.',
+    ]);
+  });
+
+  it('não confunde nota isolada após a divisão com sua ementa', () => {
+    expect(
+      extrair(
+        '<p>CAPÍTULO V (Incluído pela Lei nº 1)</p><p><b>DA MATÉRIA<br></b>(Incluído pela Lei nº 1)</p><p><b>Rubrica</b></p><p>Art. 1. Texto.</p>',
+      ),
+    ).toEqual([
+      'CAPÍTULO V (Incluído pela Lei nº 1)',
+      'DA MATÉRIA',
+      '(Incluído pela Lei nº 1)',
+      'Art. 1. Texto.',
+    ]);
+  });
+
+  it('preserva redação riscada por CSS e encerra o estado após o span', () => {
+    expect(
+      extrair(
+        '<p><span style="text-decoration:line-through">Art. 1. Antigo.</span></p><p>Art. 1. Atual.</p>',
+      ),
+    ).toEqual(['~~Art. 1. Antigo.~~', 'Art. 1. Atual.']);
+  });
+
   it('mantém a ementa da divisão, que vem em negrito logo após o designador', () => {
     const linhas = extrair(
       '<p>TÍTULO III<br><b>DA IMPUTABILIDADE PENAL</b><br>Art. 26 - É isento de pena.</p>',
@@ -47,6 +82,18 @@ describe('os dois usos do negrito', () => {
     expect(linhas).toContain('Art. 188. Outro artigo.');
   });
 
+  it('reconhece negrito CSS e respeita spans aninhados sem ênfase', () => {
+    expect(
+      extrair(
+        '<p>Art. 1. Texto.</p><p><span style="font-weight:700">Rubrica <span>interna</span> final</span></p><p>Art. 2. Outro.</p>',
+      ),
+    ).toEqual(['Art. 1. Texto.', 'Art. 2. Outro.']);
+    expect(
+      varrerPedacos('<p><span style="font-weight:bold">Rubrica</span> texto comum extenso.</p>')[0]
+        ?.todoEmNegrito,
+    ).toBe(false);
+  });
+
   it('nunca descarta um dispositivo, mesmo grafado em negrito', () => {
     const linhas = extrair('<p>Art. 1. Caput.<br><b>Art. 2. Também artigo.</b></p>');
 
@@ -61,6 +108,25 @@ describe('os dois usos do negrito', () => {
 
     expect(linhas).not.toContain('Rubrica qualquer');
     expect(linhas.some((l) => l.startsWith('Art. 188.'))).toBe(true);
+  });
+});
+
+describe('rubricas confirmadas no conjunto de fontes', () => {
+  it('usa a rubrica explícita de uma fonte para reconhecer a mesma linha sem negrito na outra', () => {
+    const [primaria, auxiliar] = extrairLinhasConjunto(
+      [
+        '<p>Art. 1. Texto.</p><p><b>Rubrica</b> (Redação dada pela Lei nº 1)</p><p>§ 1º Atual.</p>',
+        '<p>Art. 1. Texto.</p><p><strike>§ 1º Antigo.</strike></p><p>Rubrica (Redação dada pela Lei nº 1)</p><p>§ 1º Atual.</p><p>Texto desconhecido.</p>',
+      ],
+      { reconhecer: gramatica },
+    );
+    expect(primaria).toEqual(['Art. 1. Texto.', '§ 1º Atual.']);
+    expect(auxiliar).toEqual([
+      'Art. 1. Texto.',
+      '~~§ 1º Antigo.~~',
+      '§ 1º Atual.',
+      'Texto desconhecido.',
+    ]);
   });
 });
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { PublicationConfirmationDtoSchema } from './publication.js';
 import { DesktopErrorDtoSchema } from './desktop-api.js';
 
 export const UPDATES_LIST_CHANNEL = 'updates:list' as const;
@@ -13,7 +14,7 @@ export const DESKTOP_UPDATE_LIMITS = Object.freeze({
   commandBytes: 4 * 1024,
   listBytes: 256 * 1024,
   detailBytes: 2 * 1024 * 1024,
-  decisionBytes: 8 * 1024,
+  decisionBytes: 96 * 1024,
   maxItems: 100,
   maxDiffEntries: 5_000,
   maxTextCharacters: 40_000,
@@ -107,6 +108,7 @@ export const LegislativeUpdateDetailDtoSchema = LegislativeUpdateItemDtoSchema.e
   entries: z.array(UpdateDiffEntryDtoSchema).max(DESKTOP_UPDATE_LIMITS.maxDiffEntries),
   missingPublishedBlockIds: z.array(safeLine(240)).max(DESKTOP_UPDATE_LIMITS.maxDiffEntries),
   truncated: z.boolean(),
+  publicationConfirmation: PublicationConfirmationDtoSchema.optional(),
 });
 
 export const LegislativeUpdateListDtoSchema = z.strictObject({
@@ -129,6 +131,7 @@ export const LegislativeUpdateDecisionDtoSchema = z.strictObject({
   publicationId: uuidSchema.nullable(),
   retryCount: z.int().nonnegative(),
   reprocessRequested: z.boolean(),
+  publicationConfirmation: PublicationConfirmationDtoSchema.optional(),
 });
 
 export const ListLegislativeUpdatesCommandSchema = z.strictObject({

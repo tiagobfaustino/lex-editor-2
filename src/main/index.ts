@@ -18,6 +18,13 @@ import { createIncidentActions } from './audit/incident-actions.js';
 import { createLocalAuditJournalStore } from './audit/local-audit-journal.js';
 import { createLocalAuditProvider } from './audit/local-audit-provider.js';
 import { createMainWindow } from './window.js';
+import { readDesktopConnectionConfig } from './remote/connection.js';
+import { createDesktopSession } from './session/desktop-session.js';
+import { createAuthenticatedDesktopAdapters } from './remote/capabilities.js';
+import { createPublicationOperations } from './publication/operations.js';
+import { createPublicationDesktopCapabilities } from './publication/desktop-service.js';
+import { createLegislativeUpdateDesktopCapabilities } from './updates/desktop-service.js';
+import { createUpdatePublicationApproval } from './updates/publication-approval.js';
 
 let mainWindow: BrowserWindow | null = null;
 let disposeIpcHandlers: (() => void) | null = null;
@@ -67,6 +74,20 @@ void app.whenReady().then(async () => {
     storageRoot,
     environment: process.env,
   });
+  const connectionConfig = readDesktopConnectionConfig();
+  const desktopSession = createDesktopSession(connectionConfig);
+  let updateApproval: ReturnType<typeof createUpdatePublicationApproval> | null = null;
+  const remoteAdapters =
+    connectionConfig === null
+      ? null
+      : createAuthenticatedDesktopAdapters(desktopSession, {
+          approveUpdate: async (input) => {
+            if (updateApproval === null) throw new Error('NOT_ALLOWED');
+            return updateApproval.approveUpdate(input);
+          },
+          enrichUpdateDetail: async (input, detail) =>
+            updateApproval === null ? detail : updateApproval.enrichUpdateDetail(input, detail),
+        });
   const importCapabilities = createLocalProjectService({
     storageRoot,
     dialog,
@@ -85,6 +106,12 @@ void app.whenReady().then(async () => {
       }
     },
     auditJournalStore: auditJournal,
+    ...(remoteAdapters === null
+      ? {}
+      : {
+          activeSourceImportResolver: remoteAdapters.activeSourceImportResolver,
+          publicationHistoryAuthority: remoteAdapters.publicationHistoryAuthority,
+        }),
     ...(sourceCatalogHarness === null
       ? {}
       : {
@@ -92,10 +119,22 @@ void app.whenReady().then(async () => {
           networkPorts: sourceCatalogHarness.networkPorts,
         }),
   });
+  const publicationOperations =
+    connectionConfig === null
+      ? null
+      : createPublicationOperations({
+          repositoryRoot: connectionConfig.repositoryRoot,
+          canonicalBranch: connectionConfig.canonicalBranch,
+          storageRoot,
+          projects: importCapabilities,
+          remote: desktopSession,
+        });
+  if (publicationOperations !== null)
+    updateApproval = createUpdatePublicationApproval(desktopSession, publicationOperations);
   const federatedAuditService = createFederatedAuditService({
     providers: [
       createLocalAuditProvider(auditJournal),
-      ...(sourceCatalogHarness?.auditProviders ?? []),
+      ...(sourceCatalogHarness?.auditProviders ?? remoteAdapters?.auditProviders ?? []),
     ],
   });
   const evidenceProvider = createEvidenceProvider(auditJournal, storageRoot);
@@ -108,15 +147,38 @@ void app.whenReady().then(async () => {
     rendererLocation,
     getMainWindow: () => mainWindow,
     importCapabilities,
+    libraryCapabilities: importCapabilities,
+    sessionCapabilities: desktopSession.ipcCapabilities,
+    ...(publicationOperations === null
+      ? {}
+      : {
+          publicationCapabilities: createPublicationDesktopCapabilities({
+            projects: importCapabilities,
+            operations: publicationOperations,
+          }),
+        }),
+    ...(remoteAdapters === null
+      ? {}
+      : {
+          updateCapabilities: createLegislativeUpdateDesktopCapabilities({
+            operations: remoteAdapters.updateOperations,
+          }),
+          sourceCatalogCapabilities: createDesktopSourceCatalogIpcCapabilities({
+            service: remoteAdapters.sourceCatalogService,
+            getAccessToken: desktopSession.getAccessToken,
+          }),
+        }),
     auditCapabilities: createDesktopAuditIpcCapabilities({
       service: federatedAuditService,
-      // A identidade vem da sessão privilegiada do processo principal; o
-      // renderer nunca escolhe ator ou papel. Provedores remotos continuam
-      // indisponíveis até existir uma sessão administrativa autenticada.
-      getActor: () => ({
-        actorKey: 'local-technical-administrator',
-        actorRole: 'administrador_tecnico',
-      }),
+      getActor: () => {
+        // Explicit development-only harness; load rejects packaged applications.
+        if (sourceCatalogHarness !== null)
+          return { actorKey: 'e2e-technical-administrator', actorRole: 'administrador_tecnico' };
+        const actor = desktopSession.getActor();
+        return actor?.role !== 'administrador_tecnico'
+          ? null
+          : { actorKey: actor.actorKey, actorRole: actor.role };
+      },
       recordIncidentNote: incidentActions.recordIncidentNote,
       openEvidence: incidentActions.openEvidence,
     }),

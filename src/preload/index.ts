@@ -1,5 +1,42 @@
+import {
+  LIBRARY_CHECK_SOURCE_CHANNEL,
+  LIBRARY_APPLY_SOURCE_UPDATE_CHANNEL,
+  CheckLocalSourceCommandSchema,
+  ApplyLocalSourceUpdateCommandSchema,
+  CheckLocalSourceResultSchema,
+  ApplyLocalSourceUpdateResultSchema,
+  type CheckLocalSourceCommand,
+  type CheckLocalSourceResult,
+  type ApplyLocalSourceUpdateCommand,
+  type ApplyLocalSourceUpdateResult,
+  LIBRARY_DELETE_CHANNEL,
+  DeleteLocalLawCommandSchema,
+  DeleteLocalLawResultSchema,
+  type DeleteLocalLawCommand,
+  type DeleteLocalLawResult,
+  LIBRARY_LIST_CHANNEL,
+  LIBRARY_OPEN_CHANNEL,
+  ListLocalLawsCommandSchema,
+  OpenLocalLawCommandSchema,
+  ListLocalLawsResultSchema,
+  OpenLocalLawResultSchema,
+  type ListLocalLawsCommand,
+  type OpenLocalLawCommand,
+  type ListLocalLawsResult,
+  type OpenLocalLawResult,
+} from '../shared/ipc/library.js';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { z } from 'zod';
+import {
+  SESSION_GET_STATE_CHANNEL,
+  SESSION_SIGN_IN_CHANNEL,
+  SESSION_SIGN_OUT_CHANNEL,
+  SessionEmptyCommandSchema,
+  SessionSignInCommandSchema,
+  SessionStateResultSchema,
+  type SessionSignInCommand,
+  type SessionStateResult,
+} from '../shared/ipc/session.js';
 
 import {
   APP_GET_VERSION_CHANNEL,
@@ -295,6 +332,55 @@ const invokeValidated = async <Result>(
   } catch {
     return undefined;
   }
+};
+
+const checkSource = async (input: CheckLocalSourceCommand): Promise<CheckLocalSourceResult> => {
+  const command = CheckLocalSourceCommandSchema.safeParse(input);
+  if (!command.success) return createFailedResult('INVALID_INPUT');
+  return (
+    (await invokeValidated(
+      LIBRARY_CHECK_SOURCE_CHANNEL,
+      command.data,
+      CheckLocalSourceResultSchema,
+    )) ?? createFailedResult('FAILED')
+  );
+};
+const applySourceUpdate = async (
+  input: ApplyLocalSourceUpdateCommand,
+): Promise<ApplyLocalSourceUpdateResult> => {
+  const command = ApplyLocalSourceUpdateCommandSchema.safeParse(input);
+  if (!command.success) return createFailedResult('INVALID_INPUT');
+  return (
+    (await invokeValidated(
+      LIBRARY_APPLY_SOURCE_UPDATE_CHANNEL,
+      command.data,
+      ApplyLocalSourceUpdateResultSchema,
+    )) ?? createFailedResult('FAILED')
+  );
+};
+const deleteLocalLaw = async (input: DeleteLocalLawCommand): Promise<DeleteLocalLawResult> => {
+  const command = DeleteLocalLawCommandSchema.safeParse(input);
+  if (!command.success) return createFailedResult('INVALID_INPUT');
+  return (
+    (await invokeValidated(LIBRARY_DELETE_CHANNEL, command.data, DeleteLocalLawResultSchema)) ??
+    createFailedResult('FAILED')
+  );
+};
+const listLocalLaws = async (input: ListLocalLawsCommand): Promise<ListLocalLawsResult> => {
+  const command = ListLocalLawsCommandSchema.safeParse(input);
+  if (!command.success) return createFailedResult('INVALID_INPUT');
+  return (
+    (await invokeValidated(LIBRARY_LIST_CHANNEL, command.data, ListLocalLawsResultSchema)) ??
+    createFailedResult('FAILED')
+  );
+};
+const openLocalLaw = async (input: OpenLocalLawCommand): Promise<OpenLocalLawResult> => {
+  const command = OpenLocalLawCommandSchema.safeParse(input);
+  if (!command.success) return createFailedResult('INVALID_INPUT');
+  return (
+    (await invokeValidated(LIBRARY_OPEN_CHANNEL, command.data, OpenLocalLawResultSchema)) ??
+    createFailedResult('FAILED')
+  );
 };
 
 const getVersion = async (): Promise<AppGetVersionResult> => {
@@ -923,6 +1009,37 @@ const openEvidence = async (input: OpenEvidenceCommand): Promise<EvidenceExcerpt
 const desktopApi: LexDesktopApiV1 = Object.freeze({
   version: DESKTOP_API_VERSION,
   capabilities: DESKTOP_CAPABILITIES,
+  session: Object.freeze({
+    getState: async (): Promise<SessionStateResult> =>
+      (await invokeValidated(
+        SESSION_GET_STATE_CHANNEL,
+        SessionEmptyCommandSchema.parse({}),
+        SessionStateResultSchema,
+      )) ?? createFailedResult('FAILED'),
+    signOut: async (): Promise<SessionStateResult> =>
+      (await invokeValidated(
+        SESSION_SIGN_OUT_CHANNEL,
+        SessionEmptyCommandSchema.parse({}),
+        SessionStateResultSchema,
+      )) ?? createFailedResult('FAILED'),
+    signIn: async (input: SessionSignInCommand): Promise<SessionStateResult> => {
+      const parsed = SessionSignInCommandSchema.safeParse(input);
+      return parsed.success
+        ? ((await invokeValidated(
+            SESSION_SIGN_IN_CHANNEL,
+            parsed.data,
+            SessionStateResultSchema,
+          )) ?? createFailedResult('FAILED'))
+        : createFailedResult('INVALID_INPUT');
+    },
+  }),
+  library: Object.freeze({
+    checkSource,
+    applySourceUpdate,
+    list: listLocalLaws,
+    open: openLocalLaw,
+    delete: deleteLocalLaw,
+  }),
   app: Object.freeze({
     getVersion,
   }),

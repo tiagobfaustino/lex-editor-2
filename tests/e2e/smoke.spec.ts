@@ -1,8 +1,9 @@
 import { _electron as electron, expect, test } from '@playwright/test';
 import type { ElectronApplication, Page } from '@playwright/test';
 import { build } from 'esbuild';
-import { mkdir, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 // Lança o diretório do aplicativo, não o arquivo de entrada: assim o Electron
@@ -40,8 +41,10 @@ const inheritedEnvironment = (): Record<string, string> => {
 
 let app: ElectronApplication;
 let mainWindow: Page;
+let isolatedConfigRoot: string;
 
 test.beforeAll(async () => {
+  isolatedConfigRoot = await mkdtemp(join(tmpdir(), 'lex-smoke-config-'));
   await mkdir(e2eOutputDirectory, { recursive: true });
   await build({
     entryPoints: [join(appDirectory, 'tests/e2e/support/source-catalog-harness.ts')],
@@ -56,6 +59,7 @@ test.beforeAll(async () => {
     args: [appDirectory],
     env: {
       ...inheritedEnvironment(),
+      XDG_CONFIG_HOME: isolatedConfigRoot,
       LEX_EDITOR_E2E_SOURCE_CATALOG: '1',
       LEX_EDITOR_E2E_SOURCE_CATALOG_MODULE: sourceCatalogHarnessPath,
     },
@@ -67,6 +71,7 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   await app.close();
   await rm(e2eOutputDirectory, { recursive: true, force: true });
+  await rm(isolatedConfigRoot, { recursive: true, force: true });
 });
 
 test('abre a janela principal com as três áreas do shell', async () => {
@@ -160,11 +165,13 @@ test('não entrega Node, Electron ou ipcRenderer ao renderer', async () => {
     'diagnostics',
     'editorial',
     'export',
+    'library',
     'metadata',
     'pipeline',
     'preview',
     'publication',
     'reprocessing',
+    'session',
     'source',
     'sources',
     'updates',
@@ -226,6 +233,14 @@ test('expõe somente a capacidade declarada e ela responde', async () => {
   expect(bridge?.version).toBe(1);
   expect(bridge?.capabilities).toEqual([
     'app.getVersion',
+    'library.list',
+    'library.open',
+    'library.delete',
+    'library.checkSource',
+    'library.applySourceUpdate',
+    'session.getState',
+    'session.signIn',
+    'session.signOut',
     'source.selectLocal',
     'source.importFromUrl',
     'pipeline.start',
@@ -431,6 +446,14 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
   const registered = await app.evaluate(({ ipcMain }) => {
     const candidates = [
       'app:get-version',
+      'session:get-state',
+      'session:sign-in',
+      'session:sign-out',
+      'library:list',
+      'library:open',
+      'library:delete',
+      'library:check-source',
+      'library:apply-source-update',
       'source:select-local',
       'source:import-url',
       'pipeline:start',
@@ -497,6 +520,14 @@ test('mantém uma allowlist de canais IPC sem executor genérico', async () => {
 
   expect(registered).toEqual([
     'app:get-version',
+    'session:get-state',
+    'session:sign-in',
+    'session:sign-out',
+    'library:list',
+    'library:open',
+    'library:delete',
+    'library:check-source',
+    'library:apply-source-update',
     'source:select-local',
     'source:import-url',
     'pipeline:start',

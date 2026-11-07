@@ -55,6 +55,11 @@ import {
   SOURCES_REQUEST_CHECK_CHANNEL,
 } from '../../src/shared/ipc/sources.js';
 import '../../src/preload/index.js';
+import {
+  SESSION_GET_STATE_CHANNEL,
+  SESSION_SIGN_IN_CHANNEL,
+  SESSION_SIGN_OUT_CHANNEL,
+} from '../../src/shared/ipc/session.js';
 
 const SOURCE_ID = '11111111-1111-4111-8111-111111111111';
 const PROJECT_ID = '22222222-2222-4222-8222-222222222222';
@@ -75,6 +80,10 @@ describe('preload desktop API', () => {
     electronMocks.invoke.mockReset();
     electronMocks.invoke.mockImplementation((channel: string) => {
       switch (channel) {
+        case SESSION_GET_STATE_CHANNEL:
+        case SESSION_SIGN_IN_CHANNEL:
+        case SESSION_SIGN_OUT_CHANNEL:
+          return { ok: true, value: { sessionState: 'signed_out', userId: null, role: null } };
         case APP_GET_VERSION_CHANNEL:
           return { ok: true, value: { version: '0.1.0' } };
         case SOURCE_SELECT_LOCAL_CHANNEL:
@@ -252,6 +261,44 @@ describe('preload desktop API', () => {
     });
   });
 
+  it('biblioteca valida comandos e respostas sem aceitar AST/caminhos extras', async () => {
+    const api = exposedApi();
+    electronMocks.invoke.mockResolvedValueOnce({
+      ok: true,
+      value: { items: [], nextOffset: null, totalItems: 0 },
+    });
+    await expect(api.library.list({ query: '', offset: 0, limit: 25 })).resolves.toMatchObject({
+      ok: true,
+    });
+    expect(electronMocks.invoke).toHaveBeenLastCalledWith('library:list', {
+      query: '',
+      offset: 0,
+      limit: 25,
+    });
+    await expect(api.library.open({ projectId: '../outside' })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_INPUT' },
+    });
+    electronMocks.invoke.mockResolvedValueOnce({
+      ok: true,
+      value: { items: [], nextOffset: null, totalItems: 0, ast: {} },
+    });
+    await expect(api.library.list({ query: '', offset: 0, limit: 25 })).resolves.toMatchObject({
+      ok: false,
+    });
+    expect(Object.keys(api.library)).toEqual([
+      'checkSource',
+      'applySourceUpdate',
+      'list',
+      'open',
+      'delete',
+    ]);
+    await expect(api.library.delete({ projectId: '../outside' })).resolves.toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_INPUT' },
+    });
+  });
+
   it('expõe somente métodos nomeados e a allowlist declarada', () => {
     const api = exposedApi();
 
@@ -263,11 +310,13 @@ describe('preload desktop API', () => {
       'diagnostics',
       'editorial',
       'export',
+      'library',
       'metadata',
       'pipeline',
       'preview',
       'publication',
       'reprocessing',
+      'session',
       'source',
       'sources',
       'updates',
@@ -338,6 +387,7 @@ describe('preload desktop API', () => {
     ]);
     expect(api).not.toHaveProperty('ipcRenderer');
     expect(api).not.toHaveProperty('invoke');
+    expect(Object.keys(api.session).sort()).toEqual(['getState', 'signIn', 'signOut']);
   });
 
   it('invoca apenas canais fixos com payload mínimo', async () => {
@@ -487,6 +537,10 @@ describe('preload desktop API', () => {
 
   it('rejeita payload forjado no preload sem alcançar o canal', async () => {
     const api = exposedApi();
+    const forgedSession = api.session.signIn as (input: unknown) => Promise<unknown>;
+    await expect(
+      forgedSession({ email: 'editor@example.com', password: 'secret', accessToken: 'forged' }),
+    ).resolves.toMatchObject({ ok: false, error: { code: 'INVALID_INPUT' } });
     const forgedStart = api.pipeline.start as (input: unknown) => Promise<unknown>;
     const forgedReference = api.preview.getLegalReference as (input: unknown) => Promise<unknown>;
     const forgedSources = api.sources.list as (input: unknown) => Promise<unknown>;
@@ -539,5 +593,34 @@ describe('preload desktop API', () => {
 
     expect(result).toMatchObject({ ok: false, error: { code: 'FAILED' } });
     expect(JSON.stringify(result)).not.toMatch(/script|secret|html/iu);
+  });
+
+  it('valida sessão sem aceitar token ou credencial na resposta', async () => {
+    const api = exposedApi();
+    await expect(api.session.getState()).resolves.toMatchObject({
+      ok: true,
+      value: { sessionState: 'signed_out' },
+    });
+    electronMocks.invoke.mockResolvedValueOnce({
+      ok: true,
+      value: {
+        sessionState: 'authenticated',
+        userId: PROJECT_ID,
+        role: 'editor_juridico',
+        accessToken: 'secret',
+      },
+    });
+    const result = await api.session.signIn({
+      email: 'editor@example.com',
+      password: 'private-password',
+    });
+    expect(result).toMatchObject({ ok: false, error: { code: 'FAILED' } });
+    expect(JSON.stringify(result)).not.toMatch(/secret|password|accessToken/iu);
+    await expect(api.session.signOut()).resolves.toMatchObject({ ok: true });
+    expect(electronMocks.invoke.mock.calls).toEqual([
+      [SESSION_GET_STATE_CHANNEL, {}],
+      [SESSION_SIGN_IN_CHANNEL, { email: 'editor@example.com', password: 'private-password' }],
+      [SESSION_SIGN_OUT_CHANNEL, {}],
+    ]);
   });
 });

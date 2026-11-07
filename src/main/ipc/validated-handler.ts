@@ -73,6 +73,19 @@ const errorDetails: Record<DesktopErrorCode, Readonly<{ message: string; retryab
     message: 'O certificado TLS da fonte oficial não é válido.',
     retryable: false,
   },
+  NETWORK_FAILED: {
+    message: 'Não foi possível conectar à fonte oficial. Verifique a rede e tente novamente.',
+    retryable: true,
+  },
+  LAW_ALREADY_EXISTS: {
+    message: 'Esta lei já existe na base de dados. Abra-a na aba Minhas leis.',
+    retryable: false,
+  },
+  PROJECT_UNAVAILABLE: {
+    message:
+      'Esta importação não pôde ser reaberta. O diário ou os snapshots locais estão indisponíveis.',
+    retryable: false,
+  },
   FAILED: {
     message: 'A operação desktop não pôde ser concluída.',
     retryable: true,
@@ -168,7 +181,7 @@ export const executeValidatedIpcHandler = async <Input, Output>(
     if (error instanceof DesktopIpcError) {
       return failed(error.code);
     }
-    if (isPlanaltoNetworkError(error) && error.code !== 'NETWORK_FAILED') {
+    if (isPlanaltoNetworkError(error)) {
       const message =
         error.code === 'NETWORK_HTTP' && error.httpStatus !== undefined
           ? `A fonte oficial retornou HTTP ${String(error.httpStatus)}.`

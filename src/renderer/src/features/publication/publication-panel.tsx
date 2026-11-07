@@ -44,7 +44,7 @@ const formatTimestamp = (value: string): string =>
     timeStyle: 'short',
   }).format(new Date(value));
 
-const ConfirmationCard = ({
+export const ConfirmationCard = ({
   confirmation,
   busy,
   onCancel,
@@ -57,11 +57,16 @@ const ConfirmationCard = ({
 }>): React.JSX.Element => {
   const [acknowledged, setAcknowledged] = useState(false);
   return (
-    <section className="publication-confirmation" aria-labelledby="publication-confirmation-title">
+    <section
+      className="publication-confirmation"
+      aria-labelledby={`publication-confirmation-${confirmation.publicationId}`}
+    >
       <div className="publication-confirmation-heading">
         <div>
           <p className="eyebrow">Confirmação humana</p>
-          <h3 id="publication-confirmation-title">Revise o release antes de publicar</h3>
+          <h3 id={`publication-confirmation-${confirmation.publicationId}`}>
+            Revise o release antes de publicar
+          </h3>
         </div>
         <span>v{confirmation.version}</span>
       </div>
@@ -118,7 +123,7 @@ const ConfirmationCard = ({
   );
 };
 
-const AttemptCard = ({
+export const AttemptCard = ({
   attempt,
   busy,
   onQuery,

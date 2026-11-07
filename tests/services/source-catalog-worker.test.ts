@@ -11,12 +11,15 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   createSourceCatalogWorkerRepository,
+  type LegislativeUpdateReprocessJobRepository,
   type SourceCatalogSqlClient,
   type SourceCatalogWorkerRepository,
 } from '../../services/source-catalog/src/index.js';
 import {
   InMemoryLegislativeUpdateQueue,
+  createSourceCatalogLegislativeUpdateReprocessRunner,
   createSourceCatalogLegislativeUpdateRunner,
+  type LegislativeUpdateWorkerQueue,
 } from '../../services/update-worker/src/index.js';
 
 const NOW = new Date('2026-08-13T18:00:00.000Z');
@@ -304,6 +307,82 @@ describe('source catalog legislative update runner', () => {
   });
 });
 
+describe('source catalog legislative update reprocess runner', () => {
+  it('materializa o claim existente e o executa sem criar um source-check job', async () => {
+    const updateId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const job = capturedJob({
+      sourceCheckJobId: updateId,
+      sourceCheckTrigger: 'manual',
+      sourceCheckJobState: 'running',
+      idempotencyKey: `reprocess:${updateId}`,
+    });
+    const materializeLegislativeUpdateReprocessJob = vi.fn(() => Promise.resolve(job));
+    const completeReprocess = vi.fn(() => Promise.resolve(true));
+    const queue: LegislativeUpdateWorkerQueue = {
+      saveCandidateArtifact: () => Promise.resolve(),
+      upsertProposal: () => Promise.reject(new Error('not used for unchanged source')),
+      recordError: () => Promise.reject(new Error('not used for unchanged source')),
+      claimReprocessRequests: () =>
+        Promise.resolve([{ updateId, lawId: LAW_ID, requestId: JOB_ID }]),
+      completeReprocess,
+    };
+    const html = await readFile('fixtures/legal/l9099/snapshot.html');
+    const runner = createSourceCatalogLegislativeUpdateReprocessRunner({
+      catalog: {
+        materializeLegislativeUpdateReprocessJob,
+      } satisfies LegislativeUpdateReprocessJobRepository,
+      baselines: {
+        load: () =>
+          Promise.resolve({
+            lawId: LAW_ID,
+            lawSigla: identifiedMinima.sigla,
+            lawTitle: identifiedMinima.titulo,
+            baseVersionId: BASE_VERSION_ID,
+            baseNormativeSha256: calculateNormativeHash(identifiedMinima, sha256),
+            publishedAst: identifiedMinima,
+          }),
+      },
+      parser: {
+        parse: ({ sourceSet }) => {
+          const ast = clone(identifiedMinima);
+          updateSourceReferences(ast, sourceSet.artifacts[0]?.snapshot.sha256 ?? 'missing');
+          return Promise.resolve({ candidateAst: ast, candidateArtifactId: ARTIFACT_ID });
+        },
+      },
+      queue,
+      sha256,
+      now: () => NOW,
+      random: () => 0.5,
+      networkPorts: {
+        resolveHost: () => Promise.resolve([{ address: '1.1.1.1', family: 4 }]),
+        request: () =>
+          Promise.resolve({
+            statusCode: 200,
+            headers: { 'content-type': 'text/html; charset=windows-1252' },
+            body: html,
+          }),
+      },
+    });
+
+    await expect(runner.runBatch()).resolves.toEqual([
+      {
+        updateId,
+        lawId: LAW_ID,
+        requestId: JOB_ID,
+        outcome: 'completed',
+        detailCode: null,
+        recorded: true,
+      },
+    ]);
+    expect(materializeLegislativeUpdateReprocessJob).toHaveBeenCalledWith({
+      updateId,
+      lawId: LAW_ID,
+      requestId: JOB_ID,
+    });
+    expect(completeReprocess).toHaveBeenCalledWith(updateId, JOB_ID, 'completed', null);
+  });
+});
+
 describe('source catalog worker repository', () => {
   it('usa somente claim e completion validados para atravessar a fronteira SQL', async () => {
     const job = capturedJob();
@@ -360,5 +439,36 @@ describe('source catalog worker repository', () => {
     ]);
     await expect(repository.claimDueChecks(NOW.toISOString(), 101)).rejects.toThrow();
     expect(calls).toHaveLength(2);
+  });
+
+  it('valida o job materializado para um claim de reprocessamento', async () => {
+    const job = capturedJob({
+      sourceCheckJobId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      sourceCheckTrigger: 'manual',
+      idempotencyKey: 'reprocess:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    });
+    const calls: Readonly<{ text: string; parameters: readonly unknown[] | undefined }>[] = [];
+    const repository = createSourceCatalogWorkerRepository({
+      query: <T extends Record<string, unknown>>(text: string, parameters?: readonly unknown[]) => {
+        calls.push({ text, parameters });
+        return Promise.resolve([{ value: job }] as unknown as readonly T[]);
+      },
+    });
+
+    await expect(
+      repository.materializeLegislativeUpdateReprocessJob({
+        updateId: job.sourceCheckJobId,
+        requestId: JOB_ID,
+        lawId: LAW_ID,
+      }),
+    ).resolves.toEqual(job);
+    expect(calls).toEqual([
+      {
+        text: `select private.materialize_legislative_update_reprocess_job(
+         $1::uuid, $2::uuid, $3::uuid
+       ) as value`,
+        parameters: [job.sourceCheckJobId, LAW_ID, JOB_ID],
+      },
+    ]);
   });
 });

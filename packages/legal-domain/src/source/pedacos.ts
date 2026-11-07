@@ -25,7 +25,8 @@ const RISCADO = /^(strike|s|del)$/iu;
  * do `<b>`, faça uma rubrica curta parecer texto comum. Parentético jurídico
  * desconhecido não casa aqui e continua contando normalmente.
  */
-const NOTA_EDITORIAL = /\((?:Revogad|Vetad|Inclu[ií]d|Reda[çc][aã]o|Renumerad|Suspens)[^)]*\)/giu;
+export const NOTA_EDITORIAL =
+  /\((?:Revogad|Vetad|Inclu[ií]d|Reda[çc][aã]o|Renumerad|Suspens)[^)]*\)/giu;
 
 const ENTIDADES: Readonly<Record<string, string>> = {
   '&nbsp;': ' ',
@@ -45,6 +46,8 @@ const decodificar = (texto: string): string =>
     .replace(/&[a-z]+;|&#\d+;/giu, (entidade) => ENTIDADES[entidade.toLowerCase()] ?? entidade);
 
 export interface Pedaco {
+  /** Identifica o bloco HTML; quebras br permanecem no mesmo bloco. */
+  readonly bloco: number;
   /** Texto visível, com espaços colapsados. */
   readonly texto: string;
   /**
@@ -85,6 +88,8 @@ export const varrerPedacos = (html: string): readonly Pedaco[] => {
   const pedacos: Pedaco[] = [];
 
   let negrito = 0;
+  const spans: { forte: boolean; riscado: boolean }[] = [];
+  let bloco = 0;
   let riscado = 0;
   let texto = '';
   let caracteres: CaractereVisivel[] = [];
@@ -107,6 +112,7 @@ export const varrerPedacos = (html: string): readonly Pedaco[] => {
       const emRiscado = contaveis.filter((caractere) => caractere.emRiscado).length;
 
       pedacos.push({
+        bloco,
         texto: conteudo,
         todoEmNegrito: contaveis.length > 0 && emNegrito * 2 > contaveis.length,
         todoRiscado: contaveis.length > 0 && emRiscado * 2 > contaveis.length,
@@ -178,6 +184,26 @@ export const varrerPedacos = (html: string): readonly Pedaco[] => {
 
     if (QUEBRA_DE_BLOCO.test(nome)) {
       fechar();
+      if (!/^br$/iu.test(nome)) bloco += 1;
+      continue;
+    }
+
+    if (/^span$/iu.test(nome)) {
+      if (fechamento) {
+        const span = spans.pop();
+        if (span?.forte === true) negrito = Math.max(0, negrito - 1);
+        if (span?.riscado === true) riscado = Math.max(0, riscado - 1);
+      } else {
+        const estilo = /\bstyle\s*=\s*(["'])(.*?)\1/iu.exec(achado[0])?.[2] ?? '';
+        const forte =
+          /(?:^|;)\s*font-weight\s*:\s*(?:bold|[7-9]00)\s*(?:!important\s*)?(?:;|$)/iu.test(estilo);
+        const tachado = /(?:^|;)\s*text-decoration(?:-line)?\s*:[^;]*\bline-through\b/iu.test(
+          estilo,
+        );
+        spans.push({ forte, riscado: tachado });
+        if (forte) negrito += 1;
+        if (tachado) riscado += 1;
+      }
       continue;
     }
 
