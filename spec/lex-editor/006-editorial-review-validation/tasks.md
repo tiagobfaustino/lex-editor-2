@@ -30,4 +30,4 @@
 
 ## Correção de interface — 2026-10-08
 
-- [ ] T006-11 Reproduzir e corrigir o desaparecimento aparente da revisão, com regressão no Electron e gates relacionados.
+- [x] T006-11 Reproduzir e corrigir o desaparecimento aparente da revisão, com regressão no Electron e gates relacionados.

@@ -36,11 +36,20 @@ test('Lei 9.099 mantém preview e validação acessíveis após validar em duas 
     await expect(window.locator('.document-state')).toContainText('99 artigos');
     for (const width of [1280, 900]) {
       await window.setViewportSize({ width, height: 850 });
-      await window.getByRole('button', { name: 'Validar revisão', exact: true }).click();
+      const validateButton = window.getByRole('button', { name: 'Validar revisão', exact: true });
+      await expect(validateButton).toBeEnabled();
+      await validateButton.scrollIntoViewIfNeeded();
+      const scrollBefore = await window.evaluate(
+        () => (globalThis as unknown as { scrollY: number }).scrollY,
+      );
+      await validateButton.click();
       await expect(window.locator('.editorial-toolbar')).toContainText('Validação completa');
-      await expect(
-        window.getByRole('button', { name: 'Validar revisão', exact: true }),
-      ).toBeInViewport();
+      await expect(window.locator('.editorial-toolbar .save-saved')).toBeVisible();
+      await expect(validateButton).toBeInViewport();
+      const scrollAfter = await window.evaluate(
+        () => (globalThis as unknown as { scrollY: number }).scrollY,
+      );
+      expect(Math.abs(scrollAfter - scrollBefore)).toBeLessThan(3);
       const preview = await window.locator('#preview').boundingBox();
       const validation = await window.locator('.validation-panel').boundingBox();
       if (preview === null || validation === null) throw new Error('Painel desapareceu');

@@ -18,7 +18,7 @@
 | 003 | [Primeiro pipeline jurídico vertical](./lex-editor/003-first-legal-pipeline/spec.md) | P0 | done | 002 | Fixture local produz Markdown canônico por CLI |
 | 004 | [Hierarquia jurídica completa](./lex-editor/004-full-legal-hierarchy/spec.md) | P0 | done | 003 | Três leis de referência cobrem a gramática normativa completa |
 | 005 | [Importação, preview e exportação desktop](./lex-editor/005-desktop-import-preview-export/spec.md) | P1 | done | 001, 004 | Usuário importa, revisa e exporta no Electron |
-| 006 | [Revisão editorial e validação](./lex-editor/006-editorial-review-validation/spec.md) | P1 | in_progress | 004, 005 | Correção manual persistida e publicação bloqueada quando inválida |
+| 006 | [Revisão editorial e validação](./lex-editor/006-editorial-review-validation/spec.md) | P1 | done | 004, 005 | Correção manual persistida e publicação bloqueada quando inválida |
 | 007 | [Publicação segura](./lex-editor/007-secure-publication/spec.md) | P2 | done | 006 | SHA aprovado é promovido e sincronizado de forma idempotente |
 | 008 | [Atualizações legislativas](./lex-editor/008-legislative-updates/spec.md) | P3 | done | 007 | Worker gera proposta revisável sem publicar automaticamente |
 | 009 | [Projeções completa e vigente](./lex-editor/009-complete-current-projections/spec.md) | P1 | done | 008 | Uma revisão gera Markdown completo ou somente vigente sem perder histórico |
@@ -126,3 +126,9 @@ Feature 016 ativada em 2026-10-08 pelo pedido explícito de integrar conferênci
 Feature 016 encerrada em 2026-10-08: conferência manual na biblioteca, adoção replayable de fonte e exportação de lei integral com ALTERACOES.md. Validados 833 testes unitários/integrados, fluxo real no Electron e controles IPC; detalhes em review.md.
 
 Feature 006 reaberta em 2026-10-08 para corrigir a interface que fica em branco ao validar a revisão, conforme relato e captura do usuário.
+
+Correção de interface da Feature 006 encerrada em 2026-11-06: preview e
+validação compartilham um bloco responsivo, sem lacunas ou salto de rolagem
+ao validar a Lei 9.099. Passaram 11 E2Es direcionados, build, typecheck,
+lint e formatação. Duas falhas da suíte ampla de importação também foram
+reproduzidas no commit anterior; detalhes e evidências no review.md da feature.

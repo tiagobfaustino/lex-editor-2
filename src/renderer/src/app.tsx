@@ -1495,26 +1495,39 @@ export const App = (): React.JSX.Element => {
               onImportUrl={(url) => void importFromUrl(url)}
               onCancel={cancel}
             />
-            <PreviewPanel
-              document={document}
-              pages={pages}
-              selectedId={selectedId}
-              exportMessage={exportMessage}
-              batchExportReport={batchExportReport}
-              canExport={editorial?.canExport === true}
-              projectionBusy={projectionBusy}
-              batchProjectCount={batchProjects.length}
-              canReturnToReference={referenceHistory.length > 0}
-              onToggle={toggleNode}
-              onLoadMore={(parent, cursor) => void loadPage(parent, cursor)}
-              onProjectionChange={(profile) => void changeProjection(profile)}
-              onExport={() => void exportMarkdown()}
-              onExportBatch={() => void exportBatch()}
-              onNavigateReference={(referenceId, originPreviewNodeId, originElementId) =>
-                void navigateLegalReference(referenceId, originPreviewNodeId, originElementId)
-              }
-              onReturnToReference={() => void returnToLegalReference()}
-            />
+            <div className="revision-workspace">
+              <PreviewPanel
+                document={document}
+                pages={pages}
+                selectedId={selectedId}
+                exportMessage={exportMessage}
+                batchExportReport={batchExportReport}
+                canExport={editorial?.canExport === true}
+                projectionBusy={projectionBusy}
+                batchProjectCount={batchProjects.length}
+                canReturnToReference={referenceHistory.length > 0}
+                onToggle={toggleNode}
+                onLoadMore={(parent, cursor) => void loadPage(parent, cursor)}
+                onProjectionChange={(profile) => void changeProjection(profile)}
+                onExport={() => void exportMarkdown()}
+                onExportBatch={() => void exportBatch()}
+                onNavigateReference={(referenceId, originPreviewNodeId, originElementId) =>
+                  void navigateLegalReference(referenceId, originPreviewNodeId, originElementId)
+                }
+                onReturnToReference={() => void returnToLegalReference()}
+              />
+              <ValidationPanel
+                diagnostics={diagnostics}
+                editorial={editorial}
+                saveState={editorialSaveState}
+                onSelect={(diagnostic) => void selectDiagnostic(diagnostic)}
+                onValidate={validateEditorial}
+                onApprove={approveEditorial}
+                onConfirmWarning={confirmEditorialWarning}
+                onCorrect={correctEditorialText}
+                onConfirmInterpretation={confirmEditorialInterpretation}
+              />
+            </div>
             <MetadataPanel state={metadata} onSave={saveMetadata} onReload={reloadMetadata} />
             <PublicationPanel
               key={document?.projectId ?? 'no-project'}
@@ -1527,17 +1540,6 @@ export const App = (): React.JSX.Element => {
             <UpdatesPanel />
             <SourcesPanel />
             <AuditPanel currentProjectId={document?.projectId ?? null} />
-            <ValidationPanel
-              diagnostics={diagnostics}
-              editorial={editorial}
-              saveState={editorialSaveState}
-              onSelect={(diagnostic) => void selectDiagnostic(diagnostic)}
-              onValidate={validateEditorial}
-              onApprove={approveEditorial}
-              onConfirmWarning={confirmEditorialWarning}
-              onCorrect={correctEditorialText}
-              onConfirmInterpretation={confirmEditorialInterpretation}
-            />
           </div>
         </main>
       </div>
