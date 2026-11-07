@@ -92,3 +92,7 @@ novo comando a invalida.
 
 - Não permitir edição livre de YAML/Markdown como estado canônico.
 - Não permitir override de erro bloqueante.
+
+## Correção de interface — 2026-10-08
+
+Reproduzir a disposição dos painéis no Electron com a Lei 9.099, registrar geometria e erros do renderer antes/depois de validar, corrigir a camada responsável e validar rolagem/visibilidade em duas larguras. Não alterar conteúdo ou contratos jurídicos.

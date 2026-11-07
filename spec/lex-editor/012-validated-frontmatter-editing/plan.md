@@ -144,3 +144,20 @@ mudança invalida aliases/layout derivados e dispara nova resolução.
 - Não confirmar salvamento antes da promoção durável do diário.
 - Não incluir RF-23, editor de conteúdo livre ou mudança do schema público do
   SaaS.
+
+
+## Correção autorizada — 2026-10-08
+
+Investigar o erro genérico ao salvar metadados do Código Penal importado por
+URL. Reproduzir com os snapshots oficiais e a revisão ainda pendente;
+corrigir a camada responsável, preservando edição offline, identidade
+bloqueada, diário atômico e bloqueio de aprovação/exportação.
+
+
+A reprodução demonstrou `metadata_derivation_failed` com duas importações
+da mesma identidade: o contexto de metadados enviava ambas ao catálogo,
+que aceita uma única revisão por lei. Reutilizar a seleção da última revisão
+por identidade já aplicada na navegação. Para a transação, preferir a revisão
+editada antes de aplicar o patch, inclusive se anterior; as demais importações
+não são excluídas nem modificadas. Colisões com outra identidade após o patch
+continuam sendo rejeitadas pelo domínio. O diário e a matriz de campos não mudam.

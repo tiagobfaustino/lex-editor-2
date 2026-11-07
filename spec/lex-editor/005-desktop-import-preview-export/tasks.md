@@ -32,3 +32,13 @@
 - [x] T005-09 Testar SSRF, XSS, IPC forjado e cancelamento.
 - [x] T005-10 Executar E2E importar → preview → diagnóstico → exportar e
   validar desempenho com lei extensa.
+
+## Correção autorizada em 2026-10-08
+
+- [x] T005-11 Corrigir a extração do conjunto real do Código Penal com HTML
+  malformado sem alterar snapshots ou fundir blocos jurídicos; validar
+  regressão, importação desktop, adaptador compartilhado e gates relacionados.
+
+- [x] T005-12 Respeitar a URL informada como primária na importação manual,
+  com e sem catálogo; preservar contraparte, evidência e papéis automáticos
+  do worker; validar texto resultante, ausência/redirect e negações.

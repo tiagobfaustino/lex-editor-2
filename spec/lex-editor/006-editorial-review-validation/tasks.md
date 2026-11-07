@@ -27,3 +27,7 @@
 - [x] T006-09 Testar cada regra crítica, crash/reabertura e conflito de
   reprocessamento.
 - [x] T006-10 Executar E2E importar → corrigir → validar → exportar.
+
+## Correção de interface — 2026-10-08
+
+- [ ] T006-11 Reproduzir e corrigir o desaparecimento aparente da revisão, com regressão no Electron e gates relacionados.

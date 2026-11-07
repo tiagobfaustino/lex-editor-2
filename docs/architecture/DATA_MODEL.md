@@ -55,6 +55,7 @@ type ParseConfidenceReason =
   | 'ambiguous_designator'
   | 'irregular_table'
   | 'source_markup_lost'
+  | 'source_text_conflict'
   | 'editorial_override';
 type TipoNorma =
   | 'lei ordinária'
@@ -2121,3 +2122,14 @@ autoridade é revalidada no servidor conforme o ADR-007.
   `numero_publicacao`, ligado por `restaura_versao_id`. O histórico nunca é
   reescrito e o Supabase nunca é apontado diretamente para uma versão antiga
   sem o correspondente release commit novo.
+
+### Conflitos de fontes na candidata desktop
+
+`source_text_conflict` exige `confidence: low` e `requiresHumanReview: true`.
+O desktop pode abrir a candidata para revisão com o texto primário intacto,
+nota contendo ambas as leituras e referências aos snapshots. Histórico ou
+estado de nó auxiliar conflitante não é mesclado. Correspondência ambígua
+entre divisões exige revisão de cada candidata possível. A confirmação
+editorial usa o comando versionado existente, com justificativa e trilha de
+auditoria; até ela ocorrer, aprovação, exportação e publicação permanecem
+bloqueadas. CLI e worker mantêm a mesclagem estrita por padrão.

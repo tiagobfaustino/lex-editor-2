@@ -51,3 +51,10 @@
 - [x] T012-15 Revalidar as três leis de referência nos perfis completo/vigente,
   executar checks aplicáveis, atualizar documentação e `graphify update .` e
   encerrar somente após todos os critérios de aceite.
+
+
+## Correção autorizada — 2026-10-08
+
+- [x] T012-16 Reproduzir e corrigir o salvamento de metadados no Código Penal
+  importado por URL; provar persistência, preview atualizado e manutenção
+  dos bloqueios de revisão, com regressões e gates relacionados.

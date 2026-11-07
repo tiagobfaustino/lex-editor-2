@@ -179,6 +179,10 @@ durável, quando o projeto é recarregado, então comando obsoleto é rejeitado 
 - [x] As Leis nº 9.099/1995, nº 9.605/1998 e nº 10.826/2003 preservam o
   frontmatter canônico nos perfis completo e vigente após a edição.
 
+- [x] Salvar metadados editoriais no Código Penal importado por URL mantém
+  evidências e revisões pendentes, persiste a alteração e atualiza o preview,
+  sem exigir aprovação jurídica prévia para editar metadados.
+
 ## Validação mínima
 
 - Risco: crítico para identidade, Block IDs e publicação; alto para

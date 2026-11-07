@@ -80,6 +80,17 @@ administrativa do Supabase; a estação só pode empurrar para
 `releases/{publicationId}`. Só o Serviço de Publicação server-side promove o
 SHA ao branch protegido. Uma estação comprometida não consegue publicar.
 
+### Auditoria federada e reprocessamento isolado
+
+ADR-014. Eventos operacionais não formam uma tabela genérica gravável por todas
+as workloads: cada autoridade preserva sua projeção append-only e o processo
+principal apenas as consulta e combina. O renderer recebe DTOs redigidos e
+paginação opaca; um trecho de snapshot só é lido sob capacidade administrativa
+separada, dentro da raiz autorizada e com hash conferido. Reprocessamento local
+sempre monta uma candidata, reaplica o diário editorial quando aplicável e só
+troca a revisão de trabalho após promoção atômica. Ele não publica nem executa
+o worker remoto.
+
 ## Decisões de toolchain
 
 Registradas no `plan.md` da Feature 001 conforme a regra 11 — nenhuma
@@ -126,3 +137,17 @@ Os valores oficiais de marca do Vinculex não estão no repositório. O `plan.md
 registra que as cores atuais são baseline e que o contrato real são os **nomes**
 dos tokens — interface, severidade e estado jurídico separados, e cor nunca
 carregando significado sem rótulo textual ao lado.
+
+### Correções operacionais de 2026-10-08
+
+A identidade administrativa fixa foi removida da inicialização normal. A sessão
+individual tem tokens voláteis, refresh serializado e invalidação em logout.
+O gateway usa operações HTTP fechadas com autenticação e roles separadas;
+o main não recebe clientes SQL nem credenciais de workload.
+
+A publicação reutiliza os contratos, diário Git e publisher existentes. O
+rascunho durável vincula ator, candidata, revisão e base. Atualizações persistem
+AST e snapshots privados antes de enfileirar; a aprovação valida o mesmo digest
+no publisher e na fila. Um request de reprocessamento tem identidade própria,
+para que uma nova solicitação possa produzir um novo terminal sem alterar os
+eventos antigos. Migrations aditivas preservam a trilha append-only.

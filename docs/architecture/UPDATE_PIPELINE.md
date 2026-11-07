@@ -167,11 +167,14 @@ verificações sem aprovação não acumule diffs incrementais incorretos.
 A seleção e a precedência seguem
 `./ADR-009-fontes-compiladas-e-historicas.md`:
 
-- a página oficial compilada do Planalto é preferida como `primary_current`;
+- em coletas automáticas sem seleção manual, a revisão do catálogo define
+  `primary_current`, com preferência inicial pela compilada;
 - a página oficial anotada é registrada como `historical_auxiliary` quando
   disponível;
 - se não houver compilada, a melhor página oficial disponível pode assumir a
   função primária, com revisão obrigatória quando houver ambiguidade;
+- na importação manual, a URL escolhida determina `primary_current`; o
+  snapshot registra esse papel sem reescrever o binding monitorado;
 - LexML é `cross_check` e também cobre normas sem representação estável no
   Planalto.
 

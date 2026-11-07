@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: in_progress
+- `implementation_status`: done
 - `priority`: P2
 - `owner`: não atribuído
 
@@ -46,6 +46,12 @@ deixar estado parcial após crash.
   worker, sem executar o worker dentro do Electron.
 - Funcionamento offline para eventos e projetos locais, com estado parcial
   explícito quando as origens remotas não estiverem disponíveis.
+- Correção das integrações de publicação, atualizações, catálogo e auditoria
+  no aplicativo distribuído, usando sessão individual no main e capacidades
+  server-side autenticadas; os harnesses continuam exclusivos dos testes.
+- Identidade de solicitação de reprocessamento distinta da identidade da
+  atualização, para que retries não dupliquem terminais e novas solicitações
+  da mesma atualização conservem seu próprio resultado.
 
 ## Fora do escopo
 
@@ -164,11 +170,9 @@ remotos não são ocultados como inexistentes.
 - [x] Eventos locais sobrevivem a reabertura, mantêm ordem/correlação e uma
   entrada adulterada é detectada sem truncar ou reescrever o diário.
 - [x] Um Administrador localiza uma publicação de lei real com no máximo três
-  filtros e percorre sua correlação por cursor estável. Verificado em
-  `tests/e2e/audit-reprocessing-workflow.spec.ts` filtrando a importação da
-  LINDB (lei real, não fixture sintética); não existe evento de publicação
-  correlacionável localmente porque a origem `publisher` não é alcançável a
-  partir do Electron (mesma raiz da pendência de T013-17).
+  filtros e percorre sua correlação por cursor estável. O E2E usa publisher,
+  Git e PostgreSQL reais descartáveis; a importação da LINDB permanece somente
+  como prova do fluxo local.
 - [x] Consulta offline/parcial identifica as origens indisponíveis; retomada de
   rede não duplica nem desloca a página em curso.
 - [x] Incidente de parsing mostra código, etapa, hashes e faixa; trecho restrito
@@ -181,11 +185,11 @@ remotos não são ocultados como inexistentes.
   texto jurídico, identidade, Block IDs ou hash normativo.
 - [x] Crash antes/durante/depois da gravação e retry concorrente comprovam
   atomicidade, recuperação e idempotência do reprocessamento.
-- [ ] Reprocessar uma pendência do worker usa request/claim existentes, não
-  publica e aparece na mesma linha do tempo de auditoria. **Pendente**: o
-  contrato de correlação já existe no banco (Feature 008 + T013-04), mas
-  nenhum código TypeScript o aciona e o Electron não tem conectividade com
-  banco — ver `docs/contexto/06-pendencias-e-riscos.md`.
+- [x] Reprocessar uma pendência do worker usa request/claim existentes, não
+  publica e aparece na mesma linha do tempo de auditoria. O worker materializa
+  apenas a configuração ativa e a baseline publicada, executa a pipeline já
+  existente e grava um terminal idempotente na correlação original; o Electron
+  continua sem credencial, conexão ou executor remoto.
 - [x] Fluxo E2E por teclado cobre filtrar, abrir incidente, consultar trecho,
   reprocessar, acompanhar resultado e voltar ao preview.
 - [x] As Leis nº 9.099/1995, nº 9.605/1998 e nº 10.826/2003 permanecem canônicas

@@ -61,7 +61,7 @@
   revisão corrente.
 - [x] T013-16 Implementar validação e promoção local atômica, invalidação de
   aprovação, cancelamento seguro e recuperação de crash antes/depois do ponteiro.
-- [ ] T013-17 Correlacionar a solicitação/claim/resultado do reprocessamento do
+- [x] T013-17 Correlacionar a solicitação/claim/resultado do reprocessamento do
   worker existente, sem executar job remoto ou ampliar autoridade no Electron.
 
 ## Grupo 6 — Validação ponta a ponta e encerramento
@@ -72,9 +72,19 @@
 - [x] T013-19 Executar E2E por teclado de pesquisa → incidente → evidência →
   reprocessamento → preview e localizar uma publicação real com até três
   filtros.
-- [ ] T013-20 Reprocessar as Leis nº 9.099/1995, nº 9.605/1998 e nº 10.826/2003
+- [x] T013-20 Reprocessar as Leis nº 9.099/1995, nº 9.605/1998 e nº 10.826/2003
   nos perfis completo/vigente, comprovar texto/IDs/Markdown canônicos, atualizar
-  documentação e Graphify e encerrar somente sem aceite pendente. Reprocessamento
-  e documentação feitos; **não encerrada** — T013-17 permanece pendente (ver
-  `docs/contexto/06-pendencias-e-riscos.md`), então há aceite pendente e a
-  feature continua `in_progress`.
+  documentação e Graphify e encerrar somente sem aceite pendente.
+
+## Correções da análise de 2026-10-08
+
+- [x] T013-21 Corrigir idempotência por solicitação/tentativa do worker,
+  testar múltiplas solicitações da mesma atualização e completions obsoletos.
+- [x] T013-22 Incluir as migrations recentes e a regressão de reprocessamento
+  no gate PostgreSQL, incluindo negação por identidade sem autoridade.
+- [x] T013-23 Corrigir lint e formatação da Edge Function e fontes relacionadas.
+- [x] T013-24 Conectar sessão autenticada e capacidades remotas de publicação,
+  atualização, catálogo e auditoria ao desktop, sem clientes privilegiados na
+  estação; testar autorização e ausência de tokens nos DTOs.
+- [x] T013-25 Validar consulta de publicação pela UI, atualizar as evidências
+  reais e executar os gates completos antes de encerrar.

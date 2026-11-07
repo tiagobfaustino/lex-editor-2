@@ -30,8 +30,9 @@ não envia conteúdo/path arbitrário.
 - Uma URL inicial pode resolver páginas relacionadas, cada uma novamente
   submetida aos controles de rede e preservada como snapshot próprio.
 - Para as variantes conhecidas da ADR-009, o adaptador deriva no máximo a
-  contraparte de nome `compilado`: quando disponível ela é
-  `primary_current`; a anotada é `historical_auxiliary`. Somente 404/410 da
+  contraparte de nome `compilado`. A URL informada é `primary_current`; a
+  contraparte anotada é `historical_auxiliary`, e a compilada complementar
+  é `cross_check`. Somente 404/410 da
   contraparte opcional é tratado como ausência.
 - Revalidação de DNS e destino a cada redirect.
 - Renderização virtualizada para lei extensa.
@@ -80,3 +81,63 @@ não envia conteúdo/path arbitrário.
 
 - Não disponibilizar fetch ou readFile genérico ao renderer.
 - Não parsear Markdown renderizado para reconstruir domínio.
+
+## Correção da importação do Código Penal — 2026-10-08
+
+O snapshot preservado na estação reproduz a falha: a página anotada fecha
+`body`/`html` após o preâmbulo, deixando os dispositivos fora do corpo que o
+Defuddle processa. A padronização do Defuddle também funde blocos da versão
+compilada, removendo fronteiras que o extrator jurídico utiliza.
+
+Corrigir no wrapper compartilhado `defuddleSnapshot`: deslocar fechamentos
+externos para o fim da cópia de extração e desativar `standardize`. Continuar
+produzindo HTML/Markdown limpos sem scripts nem rede, sem mudar snapshots,
+autoridade da fonte compilada. Não adicionar dependências.
+
+A investigação também exige corrigir metadados com `N<sup>o</sup>`, sufixos
+jurídicos confundidos com palavras após o hífen, ordinais canônicos após
+sufixos, divisões com sufixo e notas anteriores à ementa. O extrator preserva
+ementas em múltiplas linhas e reconhece negrito/tachado CSS. Uma rubrica sem
+ênfase só é descartada quando há correspondência textual exata com rubrica
+explícita em outra fonte do conjunto.
+
+A mesclagem não sobrescreve divisões de número repetido. Correspondência
+única usa texto ou artigos contidos; ambiguidade continua diagnosticada.
+No desktop, conflitos produzem candidata revisável com
+`source_text_conflict`, baixa confiança e nota com os dois textos. Histórico
+conflitante não é mesclado, mas o snapshot auxiliar é preservado. O fluxo
+editorial existente exige confirmação com justificativa e bloqueia aprovação,
+exportação e publicação enquanto há pendências. CLI e worker continuam
+bloqueando conflitos por padrão. O modelo normativo documenta esse novo motivo
+sem alterar a precedência da ADR-009 ou os perfis da ADR-012.
+
+Fixtures derivadas são regeneradas contra os snapshots oficiais intactos.
+As 84 decisões de ancoragem do CP só recebem o novo hash da entrada após
+verificar que posição e hash de cada fragmento revisado permanecem iguais.
+Não há migração automática de identificadores ou aprovações existentes.
+
+Validar regressão reduzida de HTML malformado e preservação de blocos, além
+da importação real compilada/anotada pelo serviço desktop e pelo adaptador
+compartilhado. Confirmar dados normativos no preview, integridade dos bytes,
+falha de página sem norma e a suíte jurídica existente; executar lint,
+typecheck, formatação, build e atualização estrutural do Graphify.
+
+## Autoridade da URL informada — 2026-10-08
+
+Na importação manual, atribuir `primary_current` ao artefato solicitado pelo
+usuário, considerando redirecionamentos seguros. A contraparte anotada usa
+`historical_auxiliary`; a compilada complementar usa `cross_check`. Com
+catálogo ativo, coletar somente URLs autorizadas pelo binding, mas registrar
+a seleção manual nos papéis dos snapshots. Recusar URL sem correspondência
+única no conjunto antes de rede. O worker sem seleção manual continua usando
+os papéis da revisão configurada. Não reescrever projetos ou bindings antigos.
+Atualizar ADR-009/ADR-012 para refletir essa decisão explícita do usuário.
+Provar com textos divergentes que preview e metadados seguem a URL informada,
+com e sem catálogo; manter snapshots e revisão de conflitos.
+
+
+O snapshot anotado real do CP mantém o marcador `§ 2º - (VETADO).`
+antes da redação posterior da mesma posição no art. 141, sem riscado.
+O parser preserva esse marcador no histórico e sua referência de suporte
+somente como candidata de baixa confiança: exige revisão humana, não gera
+segundo Block ID e não resolve automaticamente outras duplicidades.

@@ -2,7 +2,7 @@
 
 ## Metadados
 
-- `implementation_status`: done
+- `implementation_status`: in_progress
 - `priority`: P1
 - `owner`: não atribuído
 
@@ -89,3 +89,8 @@ então a operação é negada com localização e motivo.
 
 - Operações de edição livres corromperem invariantes: usar comandos tipados.
 - Autosave mascarar estado: diário durável e estados explícitos de salvamento.
+
+## Correção de interface — 2026-10-08
+
+- [ ] Validar uma lei mantém preview e controles de revisão visíveis, sem lacunas de grid nem salto de rolagem causado pelo tamanho dos diagnósticos.
+- [ ] Layout de revisão funciona em janela larga e estreita, incluindo a Lei 9.099 com 99 artigos.

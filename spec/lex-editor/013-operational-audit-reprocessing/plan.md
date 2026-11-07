@@ -195,3 +195,37 @@ registro durável, sem promover novamente.
   o ponteiro durável.
 - Não recalcular Block IDs publicados a partir do texto atual.
 - Não executar worker, publicação ou correção automática pelo renderer.
+
+## Correção autorizada em 2026-10-08
+
+As implementações de serviço existentes não estavam conectadas ao bootstrap
+normal do desktop. A correção compõe essas implementações por uma API hospedável
+de operações fechadas. O gateway editorial usa conexões separadas das roles de
+catálogo, importação, revisão e leitura de auditoria; não recebe autoridade de
+publicação. O publisher existente continua sendo a única workload que promove
+Git e sincroniza conteúdo normativo. Não se adiciona dependência de produção.
+
+O main lê somente configuração pública de ambiente e raiz do repositório
+local. A sessão Supabase individual e seus tokens permanecem voláteis no main,
+com refresh serializado e invalidação no logout; o renderer recebe apenas
+estado, identidade e papel. O servidor deriva o usuário do bearer e revalida o
+perfil ativo. `curador` continua editorial e `administrador` continua técnico.
+
+A preparação de publicação lê exclusivamente a revisão local aprovada e
+snapshots verificados, resolve a lei previamente cadastrada e a base remota,
+gera e persiste os bytes canônicos da candidata antes da confirmação. A
+execução revalida a revisão, obtém aprovação server-side do digest e reutiliza
+o Git/journal seguro e o publisher. Retry conserva identificadores e bytes.
+Leis ausentes do catálogo falham explicitamente, sem provisionamento implícito.
+
+Candidatas legislativas precisam de armazenamento privado imutável de AST e
+snapshots antes do enqueue. A leitura editorial fica ligada à atualização e à
+baseline; a decisão de aprovação só registra a publicação preparada depois de
+verificar a identidade, o digest e a base. A estação continua sem SQL ou
+credenciais de workload.
+
+Cada nova solicitação de reprocessamento tem identidade própria; o claim e o
+terminal carregam essa identidade. Repetir a mesma solicitação é idempotente,
+uma solicitação nova conserva seu terminal e um completion obsoleto não encerra
+a tentativa corrente. Migrations corretivas são aditivas e entram no gate
+PostgreSQL com prova de concorrência e menor privilégio.

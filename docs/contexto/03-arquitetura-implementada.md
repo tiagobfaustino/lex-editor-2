@@ -3,6 +3,17 @@
 > O que existe em código hoje, não o que está planejado. Para o desenho
 > completo do ecossistema, ver `../architecture/SYSTEM_ARCHITECTURE.md`.
 
+> Atualização em 2026-08-20: as seções originais abaixo registram a fundação
+> entregue na Feature 001. Elas não são mais um inventário completo. A camada
+> de auditoria da Feature 013 adiciona o pacote puro
+> `packages/operational-audit`, providers em `src/main/audit/`, contratos
+> fechados em `src/shared/ipc/audit.ts`, capacidades de preload e a tela de
+> Logs/Diagnóstico. A consulta é federada, declara completude e só abre
+> evidência por localizador opaco; reprocessamento local continua em
+> `local-project-service.ts` com candidata isolada. O worker remoto usa
+> `services/update-worker/src/reprocess-runner.ts` e uma ponte de catálogo
+> server-side para encerrar a correlação sem ampliar a autoridade do Electron.
+
 ## As cinco camadas e suas fronteiras
 
 A fundação materializa cinco camadas com direção de dependência fixa. Um
@@ -160,6 +171,17 @@ contém apenas `export {}` e um comentário. O pacote existe hoje para fixar o
 ponto público (`exports` no `package.json`), o isolamento de compilação
 (`types: []` no tsconfig, sem tipos do Node) e a regra de lint. O conteúdo
 jurídico entra na Feature 002.
+
+## Integração remota do desktop — 2026-10-08
+
+`src/main/session` mantém a sessão individual em memória. `src/main/remote`
+executa HTTP limitado e adapta operações nomeadas para os serviços existentes.
+`services/desktop-gateway` executa as operações SQL sob roles distintas e valida
+perfil ativo a cada chamada; nenhuma conexão de banco chega à estação.
+`src/main/publication/operations.ts` congela artefatos, usa worktree isolada e
+retoma o diário de candidata existente. O publisher conserva a autoridade de
+promoção e de sincronização. O renderer recebe DTOs, inclusive o resumo de
+confirmação; AST e snapshots circulam somente entre worker, servidor e main.
 
 ## Configuração TypeScript
 

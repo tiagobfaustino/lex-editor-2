@@ -2,7 +2,8 @@
 
 ## Status
 
-Aceito em 2026-07-31.
+Aceito em 2026-07-31. Atualizado em 2026-10-08 por decisão explícita do
+usuário: a URL escolhida na importação manual define a fonte primária.
 
 ## Contexto
 
@@ -27,18 +28,25 @@ histórica disponível.
 1. **Cada importação usa um conjunto de fontes.** O conjunto possui uma fonte
    `primary_current` e pode possuir fontes `historical_auxiliary` e
    `cross_check`. A função da fonte é independente da sua variante técnica.
-2. **A versão oficial compilada é preferida para o texto vigente.** Quando ela
-   existe, está acessível e pode ser interpretada com confiança, recebe a
-   função `primary_current`. Sua estrutura e redação determinam a candidata
-   atual.
-3. **A versão oficial anotada é evidência histórica.** Quando disponível, ela
-   recebe a função `historical_auxiliary` e pode enriquecer
-   `redacoesAnteriores`, `notaStatus`, `preservarTextoRevogado` e a evidência de
-   parsing. Ela não pode substituir silenciosamente o texto vigente obtido da
-   fonte primária.
-4. **A ausência de versão compilada não bloqueia a importação.** Nesse caso, a
-   melhor página oficial disponível pode ser `primary_current`, desde que o
-   parser separe as redações e sinalize para revisão humana toda ambiguidade.
+2. **A URL escolhida determina o texto principal da importação manual.** O
+   artefato solicitado pelo usuário recebe `primary_current`, após os
+   redirecionamentos validados. Uma contraparte descoberta ou configurada não
+   substitui automaticamente esse texto, mesmo sendo compilada. Sem seleção
+   manual, coletas automáticas usam os papéis versionados no catálogo, com
+   preferência inicial pela compilada. Alterar a seleção de uma nova
+   importação não reescreve projetos nem bindings existentes.
+3. **A contraparte é evidência complementar.** Quando não foi escolhida como
+   primária, a anotada recebe `historical_auxiliary`, podendo enriquecer
+   `redacoesAnteriores`, `notaStatus`, `preservarTextoRevogado` e a evidência
+   de parsing. A compilada complementar recebe `cross_check`. Nenhuma delas
+   substitui silenciosamente o texto da URL selecionada. A fonte anotada
+   escolhida como primária exige separação segura entre redações atuais e
+   anteriores, com revisão humana de ambiguidades.
+4. **A ausência de uma contraparte não bloqueia a importação.** A URL
+   selecionada continua primária, desde que o parser separe as redações e
+   sinalize ambiguidades. Falha ao acessar a própria URL selecionada não
+   autoriza substituí-la por outra página. No catálogo, a seleção manual deve
+   corresponder a exatamente um artefato autorizado antes da coleta.
 5. **Cada artefato é preservado separadamente.** Antes de limpeza ou parsing,
    cada página recebe snapshot bruto, URL final após redirecionamentos, data de
    captura, função, variante e SHA-256 próprios. O Markdown limpo é uma
@@ -143,3 +151,14 @@ quando também estiver presente no snapshot oficial.
 - `./ADR-012-projecoes-completa-e-vigente.md`
 - `./DATA_MODEL.md`
 - `./UPDATE_PIPELINE.md`
+
+
+## Ambiguidade dentro da fonte selecionada
+
+Quando a própria fonte mantém um marcador literal de veto sem riscado,
+seguido de outra redação da mesma posição, a importação desktop pode
+apresentar uma candidata de baixa confiança com o marcador preservado no
+histórico e sua referência de suporte. Isso não comprova superação do veto:
+requer confirmação editorial explícita antes da aprovação. Não se criam
+IDs por contador, não se apaga evidência e não se substitui a fonte
+selecionada pela contraparte para contornar a ambiguidade.

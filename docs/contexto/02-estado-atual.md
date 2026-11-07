@@ -1,7 +1,37 @@
 # Estado Atual do Repositório
 
-> Verificado em 2026-08-05, contra o working tree (branch `master`,
-> último commit `f31eef6`).
+> Atualizado em 2026-10-08. As seções históricas abaixo preservam o retrato de
+> 2026-08-05; não descrevem mais o estado operacional do repositório.
+
+## Atualização operacional
+
+O estado autoritativo das features é `spec/FEATURE_INDEX.md`. A Feature 013
+foi reaberta e encerrada em 2026-10-08 após corrigir a integração desktop e
+comprovar uma publicação real na pesquisa. O código inclui o pacote puro
+`packages/operational-audit`, diário local
+append-only, consulta federada, capacidades IPC restritas, evidência limitada e
+reprocessamento local com candidata isolada. O worker também consome o claim
+remoto, materializa a fonte ativa sob autoridade server-side e encerra a mesma
+correlação sem conceder banco ou executor ao Electron. Agora a sessão individual
+volátil conecta o desktop a um gateway HTTPS de operações fechadas. Catálogo,
+atualizações, histórico e auditoria usam autoridades separadas no servidor;
+a publicação usa worktree candidata e o publisher existente. Veja
+[configuração do gateway](../../services/desktop-gateway/README.md).
+
+A validação final passou com 766 testes unitários, 19 E2Es, gate PostgreSQL,
+lint, typecheck, formatação e fronteiras. O modelo mantém 26 interfaces sem
+divergência; o pacote Linux foi gerado e inspecionado, e o grafo atualizado.
+Os serviços e migrations ainda precisam de implantação no ambiente real.
+
+Use os scripts do `package.json` para a evidência atual (`typecheck`, `lint`,
+`format:check`, testes unitários e E2E). Os números, commits e comandos da
+fotografia de 2026-08-05 abaixo são históricos e não devem ser usados como
+estado de validação atual.
+
+---
+
+> Fotografia histórica verificada em 2026-08-05, contra o working tree (branch
+> `master`, último commit `f31eef6`).
 
 ## Situação em uma tabela
 

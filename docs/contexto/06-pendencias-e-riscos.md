@@ -4,10 +4,18 @@
 > dívida é algo que já está no repositório e precisa de correção; risco é o que
 > pode dar errado adiante.
 
-> Atualização em 2026-08-14: as Features 001–012 estão concluídas e a Feature
-> 013 está ativa como `in_progress`. As seções datadas abaixo permanecem como histórico; o
-> estado operacional atual está no `spec/FEATURE_INDEX.md` e nos `review.md` das
-> features encerradas.
+> Atualização em 2026-10-08: a Feature 013 foi reaberta e encerrada após
+> correções e nova evidência de publicação. As seções
+> datadas abaixo permanecem como histórico; o estado operacional atual está no
+> `spec/FEATURE_INDEX.md` e nos `review.md` das features encerradas.
+
+## Configuração operacional
+
+O gateway, as migrations aditivas e o publisher precisam ser instalados no
+ambiente de hospedagem, com logins de banco restritos. A estação precisa das
+URLs HTTPS, chave pública e checkout Git. Os testes locais usam infraestrutura
+descartável e não comprovam implantação, assinatura ou operação em produção.
+Veja `services/desktop-gateway/README.md`.
 
 ## Resolvido em 2026-08-04
 
@@ -93,8 +101,8 @@ As Features 002–012 implementaram o domínio jurídico, parser, Block IDs,
 Formatter, importação/preview/exportação, revisão editorial, publicação segura,
 atualizações legislativas, projeções completa/vigente e referências jurídicas
 navegáveis, catálogo versionado de fontes oficiais e edição validada de
-metadados. A Feature 013 está ativa e cobre o RF-23, diagnóstico de incidentes
-e reprocessamento seguro.
+metadados. A Feature 013 concluiu o RF-23, diagnóstico de incidentes e
+reprocessamento seguro.
 
 ## Dívidas menores
 
@@ -127,7 +135,7 @@ e reprocessamento seguro.
 - **`.playwright-mcp/`** existe como diretório de ferramenta local e já está no
   `.gitignore`; não tem relação com a T001-08.
 
-## Pendência aberta — T013-17 (correlação do reprocessamento do worker)
+## Resolvido em 2026-08-20 — T013-17 (correlação do reprocessamento do worker)
 
 Levantado em 2026-08-19, durante o Grupo 5 da Feature 013. T013-17 pede para
 correlacionar solicitação/claim/resultado do reprocessamento já existente do
@@ -147,20 +155,19 @@ correlação já existe e já está completo**, só não em TypeScript:
   `get_legislative_update_audit_event`, com `update_id` como
   `correlation_id`.
 
-O que falta é uma camada acima: **nenhum código TypeScript chama essas duas
-funções SQL**. `services/update-worker/src/queue.ts` só tem
-`InMemoryLegislativeUpdateQueue` (referência/teste); não existe um
-`LegislativeUpdateQueue` de produção sobre Postgres. `src/main/index.ts` nunca
-passa `updateCapabilities` para `registerIpcHandlers` — a capacidade
-`reprocessUpdate` sempre cai no stub `unavailable` — e o processo principal do
-Electron não tem hoje nenhuma conexão com Supabase/Postgres (`grep` por
-`createClient`/`@supabase/supabase-js` em `src/main/` não encontra nada).
+O adaptador TypeScript da workload existe em
+`services/update-worker/src/postgres-queue.ts`. Ele recebe um cliente SQL
+injetado e chama apenas as RPCs privadas concedidas a `lex_update_worker`,
+incluindo `claim_legislative_update_reprocess_requests`; não pode aprovar,
+publicar ou ser usado pelo Electron. Os testes cobrem payload/resposta inválida
+e a preservação do par `updateId`/`lawId` do claim.
 
-Construir essa camada (um `LegislativeUpdateQueue` de produção + a primeira
-conexão do Electron a um banco) é uma decisão de arquitetura própria —
-credencial, papel de acesso, política de rede — e não uma tarefa de "só
-correlacionar eventos". Por isso T013-17 ficou registrada como pendência em
-aberto em vez de fechada nesta sessão; ver `spec/lex-editor/013-operational-audit-reprocessing/tasks.md`.
+O runner compõe o claim com uma função SQL server-side que materializa somente
+a configuração ativa do catálogo e a baseline ainda publicada. Ele reutiliza a
+pipeline de coleta/diff, registra `reprocess_completed` ou `reprocess_failed`
+idempotentemente no `update_id` original e não cria `source_check_job` nem
+altera a saúde do catálogo. O processo principal do Electron continua sem
+conexão com Supabase/Postgres e sem executor remoto, como exige a ADR-007.
 
 ## Riscos adiante
 
@@ -204,6 +211,7 @@ necessário.
 ## Próxima sequência
 
 1. Manter a suíte e as fixtures reais das Features 001–012 verdes.
-2. Executar a Feature 013 por grupos na ordem definida em `tasks.md`.
+2. Implantar e configurar os serviços e migrations conforme o README do
+   gateway, pausando claims e drenando workers antigos antes da migração.
 3. Tratar as dívidas menores acima sem misturá-las ao RF-23 ou ao
    reprocessamento seguro.

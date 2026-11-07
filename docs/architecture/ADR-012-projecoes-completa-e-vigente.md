@@ -23,10 +23,11 @@ compilada.
 1. **A importação é sempre completa e preserva o conjunto de fontes.** O
    sistema captura a página oficial anotada/completa, com alterações e trechos
    riscados. Quando houver página oficial compilada, captura-a separadamente
-   para comparação e aplica a precedência da ADR-009: compilada como
-   `primary_current` e anotada como `historical_auxiliary`. Quando não houver
-   compilada, a página anotada pode ser `primary_current`, com diagnósticos para
-   ambiguidades.
+   para comparação e aplica a seleção da ADR-009: na importação manual a URL
+   escolhida recebe `primary_current`; a contraparte anotada é
+   `historical_auxiliary` e a compilada complementar é `cross_check`. Sem
+   seleção manual, o catálogo define os papéis, com preferência inicial pela
+   compilada. A primária anotada exige diagnósticos para ambiguidades.
 2. **Existe uma única NormaAST autoritativa.** Redações anteriores,
    dispositivos sem eficácia e suas proveniências permanecem armazenados nela.
    Alternar a saída nunca altera, apaga nem reimporta essa árvore.

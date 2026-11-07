@@ -67,3 +67,28 @@ fonte primária e a anotada como histórica auxiliar.
 O artefato Linux desempacotado é de validação local e não possui assinatura ou
 notarização de distribuição. Não permaneceram critérios de aceite ou tarefas
 abertas na Feature 012.
+
+
+## Correção de salvamento com importações repetidas — 2026-10-08
+
+O erro genérico ao salvar metadados reproduziu como
+`metadata_derivation_failed` com duas importações da mesma lei. O contexto
+usado pela transação enviava todas as revisões ao catálogo, que exige uma
+única revisão selecionada por identidade jurídica. A navegação já aplicava
+essa seleção; o serviço agora compartilha a mesma lógica. Na edição de
+metadados, a revisão editada prevalece sobre outra importação da mesma lei,
+inclusive quando é anterior. A seleção ocorre antes do patch: colisão da
+identidade pretendida com outra lei continua falhando no domínio.
+
+A regressão prova edição da importação mais recente e da anterior, manutenção
+da outra revisão, recuperação pelo store e atualização do preview. Os dois
+snapshots reais do Código Penal também passam no salvamento de ramo e tags
+com revisões jurídicas pendentes; a alteração mantém evidências e os bloqueios
+de aprovação. O E2E importa a LINDB duas vezes antes de percorrer o formulário
+com teclado, validação, salvamento, aprovação, exportação e conflito.
+
+Validação: 69 testes nos três arquivos de serviço/domínio, um E2E completo no
+Electron, typecheck, lint, format check, build do app, fronteiras, auditoria
+das 26 interfaces sem divergências e `git diff --check`. Graphify atualizado
+por AST. Não há migração nem exclusão de dados locais; o patch utiliza os
+mesmos comandos, diário e política de mutabilidade existentes.

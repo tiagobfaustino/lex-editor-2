@@ -1,6 +1,6 @@
 # Contexto de Desenvolvimento — Lex Editor
 
-> Última atualização: 2026-08-05
+> Última atualização: 2026-10-08
 > Escopo: registro do que já foi construído, decidido e validado neste
 > repositório até a data acima.
 
@@ -37,8 +37,10 @@ registro está desatualizado:
 O Lex Editor é a ferramenta editorial interna do ecossistema Vinculex: importa
 legislação de fontes oficiais, converte em NormaAST, atribui Block IDs, gera
 Markdown Obsidian-first, permite revisão humana e publica de forma auditável.
-A arquitetura, o modelo de dados e nove ADRs já estão escritos e aceitos.
-Oito features foram especificadas e priorizadas. A Feature 001 (fundação) está
-`in_progress`, com sete de dez tarefas concluídas: workspace, fronteiras de
-import, main/preload/IPC endurecidos, shell React e testes de fronteira.
-Nenhuma linha de lógica jurídica foi escrita ainda — isso começa na Feature 002.
+A arquitetura, o modelo de dados e catorze ADRs já estão escritos e aceitos.
+Consulte `spec/FEATURE_INDEX.md` para o estado atual; a Feature 013 foi reaberta
+e encerrada em 2026-10-08 após corrigir integrações e comprovar a pesquisa de
+publicação. O repositório inclui pipeline jurídico,
+revisão, publicação, atualizações, catálogo, edição de metadados e auditoria
+operacional/reprocessamento seguro, inclusive a correlação assíncrona do worker
+sem credencial ou executor remoto no Electron.

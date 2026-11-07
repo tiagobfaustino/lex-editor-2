@@ -70,3 +70,68 @@ controles de rede são cobertos por testes de DNS, IP privado, redirects, tipo,
 tamanho e timeout. O audit completo ainda aponta o alerta preexistente de
 `nanoid` na cadeia de ferramentas Vite/PostCSS; a árvore de dependências de
 runtime usada pelo aplicativo está limpa.
+
+## Correção de importação por URL — 2026-10-08
+
+O erro “fonte não reconhecível” reproduziu com os snapshots reais do Código
+Penal: a página anotada fecha `body`/`html` antes dos dispositivos. A cópia de
+extração recupera o conteúdo sem modificar os artefatos brutos. Desativar a
+padronização do Defuddle preserva fronteiras jurídicas. O extrator agora lê
+negrito e tachado CSS, preserva ementas com quebras e confirma rubricas sem
+ênfase somente por igualdade textual com rubrica explícita no conjunto.
+Metadados e designadores foram corrigidos sem migrar IDs publicados.
+
+A importação desktop do par de 683.487/940.291 bytes conclui, mantém ambos os
+snapshots byte a byte e, na primeira correção, conservava a compilada como
+fonte atual. A regra foi substituída pela seleção manual descrita abaixo. Histórico
+compatível entra na árvore; conflitos e divisões sem correspondência única
+recebem baixa confiança, nota com as duas leituras e referências de evidência.
+O fluxo editorial existente permite confirmação justificada e auditada, mas
+bloqueia aprovação/exportação/publicação antes da revisão. CLI e worker seguem
+estritos por padrão. Não há descarte silencioso de conflitos nem aprovação
+jurídica automática. Parte das diferenças é tipográfica; não foi implementada
+normalização agressiva de palavras, números ou pontuação para ocultá-las.
+
+O teste integrado confirma histórico do art. 218-A, redação atual, DTO fechado,
+bloqueio da aprovação, confirmação editorial e integridade das duas fontes.
+Os testes da mesclagem também cobrem divisões numeradas repetidas e associação
+ambígua. A prova usa transporte injetado com snapshots reais; não afirma
+disponibilidade da rede externa do Planalto.
+
+Fixtures de projeção foram corrigidas contra os snapshots oficiais intactos.
+As 84 decisões de ancoragem do CP mantêm posição, justificativa e SHA de cada
+fragmento; somente o hash da entrada derivada foi atualizado após conferência.
+Não se revalidam decisões de projetos de usuário automaticamente.
+
+Validação: 788 unitários em 80 arquivos (`--maxWorkers=4`), 19 E2Es no Electron,
+typecheck, lint, format check, build de workspaces/app e auditoria de 26
+interfaces do modelo sem divergências. A execução concorrente de todos os
+gates teve timeouts por disputa de recursos; a suíte isolada com quatro
+workers passou.
+
+
+## Autoridade da URL na importação manual — 2026-10-08
+
+Por orientação explícita do usuário, a URL informada determina
+`primary_current`, seja compilada ou anotada. A contraparte complementa
+histórico/comparação e nunca substitui o texto escolhido. Com catálogo ativo,
+a URL precisa corresponder a exatamente um artefato autorizado antes de
+qualquer acesso à rede; a revisão/digest da configuração permanecem intactos.
+As coletas automáticas continuam seguindo os papéis versionados do catálogo.
+Falha da URL selecionada não autoriza fallback; ausência 404/410 da contraparte
+na descoberta manual continua opcional. Redirect seguro mantém o artefato
+solicitado como principal e registra sua URL final.
+
+A matriz de integração usa textos divergentes e os dois snapshots reais do CP.
+Confere fonte/metadados, preview, evidência de configuração e integridade dos
+bytes. A página anotada mantém dois § 2º do art. 141 sem riscar o primeiro,
+que contém apenas `(VETADO)`. O parser preserva esse marcador no histórico com
+referência ao fragmento original e baixa confiança; a representação exige
+confirmação editorial, sem segundo Block ID. Outras duplicidades e vetos com
+conteúdo subordinado não recebem esse tratamento. CLI/worker seguem bloqueando
+baixa confiança por padrão; decisões e projetos existentes não são migrados.
+
+Validação final: 801 testes unitários em 80 arquivos, 14 E2Es de
+importação/smoke no bundle atualizado, typecheck, lint, format check, builds de
+workspaces/app e `git diff --check`. A regressão mínima demonstrou falha antes
+da correção e passou após ela. Graphify atualizado por extração AST.

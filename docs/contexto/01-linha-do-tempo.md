@@ -147,3 +147,30 @@ Feature 001 `in_progress` com sete de dez tarefas entregues. As três restantes
 — Playwright, empacotamento com CI e demonstração dos critérios de aceite —
 são o que separa a fundação de `done` e, portanto, o que separa a Feature 002
 de poder ser ativada.
+
+## Atualização — Features 002 a 013 (2026-08-20)
+
+As etapas acima são um registro histórico da fundação. As Features 002–012
+foram implementadas e encerradas: domínio jurídico, pipeline completo,
+desktop, revisão, publicação, worker, projeções, referências, catálogo e
+metadados. A ADR-014 e a Feature 013 adicionaram auditoria federada e
+reprocessamento local seguro. A fila SQL do worker registra request/claim e o
+adaptador TypeScript materializa o job com a configuração ativa, executa a
+pipeline existente e grava o terminal idempotente na mesma correlação. O
+Electron não tem conectividade com o banco; a Feature 013 está `done`.
+
+## Correção da integração — 2026-10-08
+
+A análise encontrou capacidades remotas ausentes na inicialização normal,
+terminal do worker deduplicado por atualização em vez de solicitação e uma
+prova de importação apresentada como prova de pesquisa de publicação. A Feature
+013 foi reaberta para corrigir esses pontos. O desktop recebeu sessão individual,
+gateway HTTPS e publicação por candidata; o worker passou a persistir a
+candidata com snapshots antes de enfileirar e correlacionar terminais por request.
+O gate PostgreSQL passou a aplicar também as migrations recentes. O novo E2E
+usa publisher, Git e PostgreSQL reais descartáveis para localizar a publicação
+pela interface com três filtros.
+
+A correção foi encerrada com 766 testes unitários e 19 E2Es, gates PostgreSQL,
+qualidade, pacote Linux e atualização estrutural do grafo. A instalação dos
+serviços no ambiente real permanece uma etapa operacional documentada.

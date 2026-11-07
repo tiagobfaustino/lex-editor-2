@@ -22,6 +22,8 @@ orquestrá-lo sem transferir rede, filesystem, HTML ou autoridade ao renderer.
 - Arquivo local `.html`/`.md` por diálogo nativo.
 - URL Planalto por capacidade do main com controles de SSRF e limites.
 - Snapshot imutável, Defuddle quando aplicável e pipeline da Feature 004.
+- Recuperação de fechamentos prematuros de `body`/`html` no HTML oficial,
+  somente na cópia de extração, preservando parágrafos, títulos e riscado.
 - DTO de progresso, resumo, árvore de preview e diagnósticos.
 - Preview sanitizado de frontmatter, callouts, hierarquia, históricos e IDs.
 - Navegação interna e origem por dispositivo.
@@ -49,6 +51,9 @@ orquestrá-lo sem transferir rede, filesystem, HTML ou autoridade ao renderer.
 - RF-005-03: origem proibida, redirect indevido ou arquivo fora da seleção é
   rejeitado antes da leitura.
 - RF-005-04: diagnósticos navegam até o dispositivo correspondente.
+- RF-005-06: a URL informada determina a fonte `primary_current` na importação
+  manual, inclusive quando pertence ao conjunto configurado no catálogo.
+  A contraparte complementa histórico/comparação sem substituir o texto.
 - RF-005-05: exportação usa bytes produzidos pelo Formatter, sem reformatar.
 
 ## Invariantes
@@ -77,6 +82,15 @@ rede/preview bloqueiam o ataque sem executar conteúdo.
 - [x] SSRF, XSS e IPC forjado têm testes negativos.
 - [x] Preview navega em lei extensa sem travar o renderer.
 - [x] Falhas exibem mensagem específica e preservam estado recuperável.
+- [x] A URL do Decreto-Lei nº 2.848 processa o conjunto compilado/anotado
+  oficial sem perder artigos após fechamentos prematuros nem fundir divisões
+  jurídicas durante a limpeza; snapshots permanecem byte a byte íntegros.
+  Divergências entre fontes abrem revisão obrigatória, com texto primário
+  intacto e aprovação bloqueada até confirmação editorial.
+
+- [x] Importar uma URL anotada mantém seu texto como primário mesmo com
+  compilada disponível; importar a compilada mantém a compilada. A regra
+  também vale com catálogo ativo e conserva evidência da configuração.
 
 ## Validação mínima
 
